@@ -1,0 +1,10 @@
+[meta]
+name = "httpbin Advanced"
+description = "Status codes, custom headers, auth, timing"
+
+[steps]
+./06_status-codes.nap
+./07_response-headers.nap
+./08_user-agent.nap
+./09_delayed-response.nap
+./10_basic-auth.nap

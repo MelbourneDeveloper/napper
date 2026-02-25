@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Napper Playlist",
+  "scopeName": "source.naplist",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#section-header" },
+    { "include": "#variable-interpolation" },
+    { "include": "#key-value" },
+    { "include": "#file-path" },
+    { "include": "#string" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.naplist",
+      "match": "#.*$"
+    },
+    "section-header": {
+      "name": "entity.name.section.naplist",
+      "match": "^\\s*\\[(meta|vars|steps)\\]"
+    },
+    "variable-interpolation": {
+      "name": "variable.other.interpolation.naplist",
+      "match": "\\{\\{[^}]+\\}\\}"
+    },
+    "key-value": {
+      "match": "^\\s*([a-zA-Z_][a-zA-Z0-9_\\-]*)\\s*=\\s*(.*)",
+      "captures": {
+        "1": { "name": "variable.other.key.naplist" },
+        "2": { "name": "string.unquoted.value.naplist" }
+      }
+    },
+    "file-path": {
+      "name": "string.other.filepath.naplist",
+      "match": "^\\s*\\./[^\\s#]+"
+    },
+    "string": {
+      "name": "string.quoted.double.naplist",
+      "begin": "\"",
+      "end": "\""
+    }
+  }
+}

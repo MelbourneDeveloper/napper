@@ -1,0 +1,12 @@
+[meta]
+name = "Full Integration Suite"
+description = "Runs everything: scripts, httpbin, jsonplaceholder, petstore"
+
+[steps]
+./scripts/validate-env.fsx
+./scripts/setup.fsx
+./httpbin/all-methods.naplist
+./httpbin/advanced.naplist
+./jsonplaceholder/crud.naplist
+./petstore/smoke.naplist
+./scripts/report.fsx

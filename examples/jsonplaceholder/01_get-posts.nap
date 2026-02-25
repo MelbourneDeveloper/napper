@@ -1,0 +1,16 @@
+# Fetch all posts and assert the response shape
+[meta]
+name = "List all posts"
+description = "GET /posts returns 100 posts from JSONPlaceholder"
+tags = ["posts", "smoke", "read"]
+
+[request]
+method = GET
+url = {{baseUrl}}/posts
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+headers.Content-Type contains "json"

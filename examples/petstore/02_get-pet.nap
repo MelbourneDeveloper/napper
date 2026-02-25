@@ -1,0 +1,17 @@
+# Get a specific pet by ID
+[meta]
+name = "Get pet by ID"
+tags = ["pets"]
+
+[vars]
+petId = "1"
+
+[request]
+method = GET
+url = https://petstore.swagger.io/v2/pet/{{petId}}
+
+[request.headers]
+Accept = application/json
+
+[assert]
+body.id exists

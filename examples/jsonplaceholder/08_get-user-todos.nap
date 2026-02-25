@@ -1,0 +1,16 @@
+# Get todos for a specific user
+[meta]
+name = "User todos"
+description = "GET /users/{{userId}}/todos — verify user has todos"
+tags = ["users", "todos", "read"]
+
+[request]
+method = GET
+url = {{baseUrl}}/users/{{userId}}/todos
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+headers.Content-Type contains "json"

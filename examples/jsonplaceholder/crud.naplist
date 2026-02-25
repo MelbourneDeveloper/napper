@@ -1,0 +1,13 @@
+[meta]
+name = "JSONPlaceholder CRUD"
+description = "Full create-read-update-delete lifecycle for posts"
+
+[steps]
+../scripts/setup.fsx
+./01_get-posts.nap
+./02_get-post-by-id.nap
+./03_create-post.nap
+./04_update-post.nap
+./05_patch-post.nap
+./06_delete-post.nap
+../scripts/teardown.fsx

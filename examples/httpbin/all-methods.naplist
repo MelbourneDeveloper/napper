@@ -1,0 +1,10 @@
+[meta]
+name = "httpbin All HTTP Methods"
+description = "Exercises GET, POST, PUT, PATCH, DELETE against httpbin"
+
+[steps]
+./01_get-json.nap
+./02_post-json.nap
+./03_put-json.nap
+./04_delete.nap
+./05_patch.nap

@@ -1,0 +1,25 @@
+.too_many_cooks/
+.commandtree/
+
+bin/
+obj/
+publish/
+
+# VSCode extension
+src/Nap.VsCode/node_modules/
+src/Nap.VsCode/dist/
+src/Nap.VsCode/*.vsix
+
+# Environment secrets
+.napenv.local
+
+# VSCode workspace settings
+.vscode/
+
+node_modules/
+dist/
+src/Nap.VsCode/.vscode-test/
+out/osx-arm64/
+src/Nap.VsCode/out/
+
+.DS_Store

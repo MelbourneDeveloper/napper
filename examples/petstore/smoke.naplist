@@ -1,0 +1,6 @@
+[meta]
+name = "Petstore Smoke Tests"
+
+[steps]
+./01_list-pets.nap
+./02_get-pet.nap

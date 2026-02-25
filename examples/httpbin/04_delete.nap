@@ -1,0 +1,11 @@
+# DELETE request
+[meta]
+name = "httpbin DELETE"
+tags = ["httpbin", "write"]
+
+[request]
+method = DELETE
+url = {{baseUrl}}/delete
+
+[assert]
+status = 200

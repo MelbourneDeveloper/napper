@@ -1,0 +1,2 @@
+#!/bin/sh
+exec dotnet run --project "$(dirname "$0")/src/Nap.Cli/Nap.Cli.fsproj" -- "$@"

@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Nap.Cli/Nap.Cli.fsproj" />
+    <Project Path="src/Nap.Core/Nap.Core.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Nap.Core.Tests/Nap.Core.Tests.fsproj" />
+  </Folder>
+</Solution>

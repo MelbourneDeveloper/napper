@@ -1,0 +1,10 @@
+[meta]
+name = "JSONPlaceholder Read-Only"
+description = "Safe read-only tests — no mutations"
+
+[steps]
+./01_get-posts.nap
+./02_get-post-by-id.nap
+./07_get-comments.nap
+./08_get-user-todos.nap
+./09_get-user-detail.nap

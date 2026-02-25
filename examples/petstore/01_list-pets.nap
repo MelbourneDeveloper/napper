@@ -1,0 +1,15 @@
+# List all pets from the Petstore API
+[meta]
+name = "List pets"
+tags = ["pets", "smoke"]
+
+[request]
+method = GET
+url = https://petstore.swagger.io/v2/pet/findByStatus?status=available
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+headers.Content-Type contains "json"

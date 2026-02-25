@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Napper Environment",
+  "scopeName": "source.napenv",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#key-value" },
+    { "include": "#string" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.napenv",
+      "match": "#.*$"
+    },
+    "key-value": {
+      "match": "^\\s*([a-zA-Z_][a-zA-Z0-9_\\-]*)\\s*=\\s*(.*)",
+      "captures": {
+        "1": { "name": "variable.other.key.napenv" },
+        "2": { "name": "string.unquoted.value.napenv" }
+      }
+    },
+    "string": {
+      "name": "string.quoted.double.napenv",
+      "begin": "\"",
+      "end": "\""
+    }
+  }
+}

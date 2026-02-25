@@ -1,0 +1,16 @@
+# Get comments for a specific post (nested resource)
+[meta]
+name = "List comments for post"
+description = "GET /posts/{{postId}}/comments — nested resource lookup"
+tags = ["comments", "read"]
+
+[request]
+method = GET
+url = {{baseUrl}}/posts/{{postId}}/comments
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+headers.Content-Type contains "json"

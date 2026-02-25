@@ -1,0 +1,12 @@
+# Delete a post
+[meta]
+name = "Delete post"
+description = "DELETE /posts/{{postId}} — JSONPlaceholder returns 200 on delete"
+tags = ["posts", "write", "crud"]
+
+[request]
+method = DELETE
+url = {{baseUrl}}/posts/{{postId}}
+
+[assert]
+status = 200

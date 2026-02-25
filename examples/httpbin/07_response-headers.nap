@@ -1,0 +1,13 @@
+# Verify httpbin sets custom response headers
+[meta]
+name = "Custom response headers"
+description = "httpbin /response-headers sets arbitrary headers on the response"
+tags = ["httpbin", "headers"]
+
+[request]
+method = GET
+url = {{baseUrl}}/response-headers?X-Nap-Test=hello
+
+[assert]
+status = 200
+headers.X-Nap-Test = hello

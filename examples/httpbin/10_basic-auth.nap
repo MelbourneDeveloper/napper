@@ -1,0 +1,21 @@
+# Basic auth — httpbin verifies credentials
+[meta]
+name = "Basic auth"
+description = "Tests HTTP basic auth with httpbin"
+tags = ["httpbin", "auth"]
+
+[vars]
+authUser = "nap"
+authPass = "secret"
+
+[request]
+method = GET
+url = {{baseUrl}}/basic-auth/{{authUser}}/{{authPass}}
+
+[request.headers]
+Authorization = Basic bmFwOnNlY3JldA==
+
+[assert]
+status = 200
+body.authenticated = true
+body.user = nap

@@ -1,0 +1,26 @@
+# Partial update of a post via PATCH
+[meta]
+name = "Patch post title"
+description = "Only updates the title field of post {{postId}}"
+tags = ["posts", "write", "crud"]
+
+[request]
+method = PATCH
+url = {{baseUrl}}/posts/{{postId}}
+
+[request.headers]
+Content-Type = application/json
+Accept = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "title": "Patched by Nap"
+}
+"""
+
+[assert]
+status = 200
+body.title = Patched by Nap
+body.id exists

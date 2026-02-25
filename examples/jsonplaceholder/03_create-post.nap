@@ -1,0 +1,29 @@
+# Create a new post via POST
+[meta]
+name = "Create a new post"
+description = "POST to /posts with JSON body, expect 201 and id in response"
+tags = ["posts", "write", "crud"]
+
+[request]
+method = POST
+url = {{baseUrl}}/posts
+
+[request.headers]
+Content-Type = application/json
+Accept = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "title": "Nap Integration Test",
+  "body": "This post was created by the Nap API testing tool",
+  "userId": {{userId}}
+}
+"""
+
+[assert]
+status = 201
+body.id exists
+body.title = Nap Integration Test
+body.userId = {{userId}}

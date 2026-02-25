@@ -1,0 +1,74 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Napper Request",
+  "scopeName": "source.nap",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#section-header" },
+    { "include": "#http-method-line" },
+    { "include": "#variable-interpolation" },
+    { "include": "#key-value" },
+    { "include": "#triple-quoted-string" },
+    { "include": "#string" },
+    { "include": "#number" },
+    { "include": "#assertion-keywords" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.nap",
+      "match": "#.*$"
+    },
+    "section-header": {
+      "name": "entity.name.section.nap",
+      "match": "^\\s*\\[(meta|vars|request|request\\.headers|request\\.body|assert|script)\\]"
+    },
+    "http-method-line": {
+      "match": "^\\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.other.http-method.nap" },
+        "2": { "name": "string.other.url.nap" }
+      }
+    },
+    "variable-interpolation": {
+      "name": "variable.other.interpolation.nap",
+      "match": "\\{\\{[^}]+\\}\\}"
+    },
+    "key-value": {
+      "match": "^\\s*([a-zA-Z_][a-zA-Z0-9_.\\-]*)\\s*=\\s*(.*)",
+      "captures": {
+        "1": { "name": "variable.other.key.nap" },
+        "2": { "name": "string.unquoted.value.nap" }
+      }
+    },
+    "triple-quoted-string": {
+      "name": "meta.embedded.block.json.nap",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.nap" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.nap" }
+      },
+      "patterns": [
+        { "include": "source.json" }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.nap",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "include": "#variable-interpolation" }
+      ]
+    },
+    "number": {
+      "name": "constant.numeric.nap",
+      "match": "\\b\\d+\\b"
+    },
+    "assertion-keywords": {
+      "name": "keyword.operator.assertion.nap",
+      "match": "\\b(exists|contains|matches)\\b"
+    }
+  }
+}

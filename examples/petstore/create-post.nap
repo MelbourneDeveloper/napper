@@ -1,0 +1,26 @@
+[meta]
+name = "Create a post"
+tags = ["posts"]
+
+[request]
+method = POST
+url = https://jsonplaceholder.typicode.com/posts
+
+[request.headers]
+Content-Type = application/json
+Accept = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "title": "Test Post",
+  "body": "This is a test post from Nap",
+  "userId": 1
+}
+"""
+
+[assert]
+status = 201
+body.title = Test Post
+body.id exists

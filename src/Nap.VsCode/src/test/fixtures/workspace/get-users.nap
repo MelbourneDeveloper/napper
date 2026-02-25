@@ -1,0 +1,14 @@
+[meta]
+name = "Get users"
+tags = ["users"]
+
+[request]
+method = GET
+url = https://jsonplaceholder.typicode.com/users
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+headers.Content-Type contains "json"

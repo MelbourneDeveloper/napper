@@ -1,0 +1,19 @@
+# Fetch a single post by ID using environment variable
+[meta]
+name = "Get post by ID"
+description = "Uses {{postId}} from .napenv to fetch a specific post"
+tags = ["posts", "smoke", "read"]
+
+[request]
+method = GET
+url = {{baseUrl}}/posts/{{postId}}
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+body.id exists
+body.userId exists
+body.title exists
+body.body exists

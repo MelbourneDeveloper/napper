@@ -1,0 +1,23 @@
+# PUT request — verify httpbin echoes it back
+[meta]
+name = "httpbin PUT"
+tags = ["httpbin", "write"]
+
+[request]
+method = PUT
+url = {{baseUrl}}/put
+
+[request.headers]
+Content-Type = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "updated": true
+}
+"""
+
+[assert]
+status = 200
+body.json exists

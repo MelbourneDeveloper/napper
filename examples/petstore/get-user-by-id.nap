@@ -1,0 +1,19 @@
+[meta]
+name = "Get user by ID"
+description = "Fetches a single user and asserts shape"
+tags = ["users", "smoke"]
+
+[vars]
+userId = "1"
+
+[request]
+method = GET
+url = https://jsonplaceholder.typicode.com/users/{{userId}}
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+body.id exists
+body.name exists

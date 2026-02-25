@@ -1,0 +1,17 @@
+# Basic GET returning JSON — smoke test
+[meta]
+name = "httpbin GET"
+tags = ["httpbin", "smoke"]
+
+[request]
+method = GET
+url = {{baseUrl}}/get
+
+[request.headers]
+Accept = application/json
+X-Custom-Header = nap-test
+
+[assert]
+status = 200
+headers.Content-Type contains "json"
+body.headers exists

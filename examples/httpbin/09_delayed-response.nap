@@ -1,0 +1,13 @@
+# Verify duration assertion works with a delayed response
+[meta]
+name = "Delayed response"
+description = "httpbin /delay/1 waits 1 second — assert duration > 500ms"
+tags = ["httpbin", "performance"]
+
+[request]
+method = GET
+url = {{baseUrl}}/delay/1
+
+[assert]
+status = 200
+duration > 500ms

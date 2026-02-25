@@ -1,0 +1,15 @@
+# Request a specific status code from httpbin
+[meta]
+name = "Custom status code"
+description = "httpbin returns whatever status you ask for"
+tags = ["httpbin", "status"]
+
+[vars]
+expectedStatus = "418"
+
+[request]
+method = GET
+url = {{baseUrl}}/status/{{expectedStatus}}
+
+[assert]
+status = {{expectedStatus}}

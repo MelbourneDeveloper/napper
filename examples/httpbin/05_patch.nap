@@ -1,0 +1,23 @@
+# PATCH request
+[meta]
+name = "httpbin PATCH"
+tags = ["httpbin", "write"]
+
+[request]
+method = PATCH
+url = {{baseUrl}}/patch
+
+[request.headers]
+Content-Type = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "field": "patched"
+}
+"""
+
+[assert]
+status = 200
+body.json exists

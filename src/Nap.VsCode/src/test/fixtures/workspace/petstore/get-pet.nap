@@ -1,0 +1,13 @@
+[meta]
+name = "Get pet by ID"
+tags = ["pets"]
+
+[request]
+method = GET
+url = https://petstore.swagger.io/v2/pet/1
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200

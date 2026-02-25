@@ -1,0 +1,29 @@
+# Update an existing post via PUT
+[meta]
+name = "Update post"
+description = "Full replace of post {{postId}} via PUT"
+tags = ["posts", "write", "crud"]
+
+[request]
+method = PUT
+url = {{baseUrl}}/posts/{{postId}}
+
+[request.headers]
+Content-Type = application/json
+Accept = application/json
+
+[request.body]
+content-type = application/json
+"""
+{
+  "id": {{postId}},
+  "title": "Updated by Nap",
+  "body": "This post was updated by the Nap API testing tool",
+  "userId": {{userId}}
+}
+"""
+
+[assert]
+status = 200
+body.id exists
+body.title = Updated by Nap

@@ -1,0 +1,15 @@
+# Verify custom headers are sent (echoed back by httpbin)
+[meta]
+name = "User-Agent echo"
+tags = ["httpbin", "headers"]
+
+[request]
+method = GET
+url = {{baseUrl}}/user-agent
+
+[request.headers]
+User-Agent = Nap/0.1.0
+
+[assert]
+status = 200
+body.user-agent = Nap/0.1.0

@@ -1,0 +1,6 @@
+[meta]
+name = "Petstore with Script"
+
+[steps]
+../scripts/echo.fsx
+./list-pets.nap

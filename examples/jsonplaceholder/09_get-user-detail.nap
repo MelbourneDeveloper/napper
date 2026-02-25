@@ -1,0 +1,20 @@
+# Get full user profile with nested address and company objects
+[meta]
+name = "User detail"
+description = "Verify deeply nested JSON fields on user {{userId}}"
+tags = ["users", "smoke", "read"]
+
+[request]
+method = GET
+url = {{baseUrl}}/users/{{userId}}
+
+[request.headers]
+Accept = application/json
+
+[assert]
+status = 200
+body.id exists
+body.name exists
+body.email exists
+body.address exists
+body.company exists

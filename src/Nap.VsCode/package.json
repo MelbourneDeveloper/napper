@@ -1,0 +1,230 @@
+{
+  "name": "napper",
+  "displayName": "Napper",
+  "description": "CLI-first, test-oriented HTTP API testing tool. Send requests, run assertions, manage environments.",
+  "version": "0.1.0",
+  "publisher": "nimblesite",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MelbourneDeveloper/napper"
+  },
+  "homepage": "https://github.com/MelbourneDeveloper/napper",
+  "bugs": {
+    "url": "https://github.com/MelbourneDeveloper/napper/issues"
+  },
+  "keywords": [
+    "api",
+    "http",
+    "rest",
+    "testing",
+    "requests",
+    "api-testing",
+    "napper"
+  ],
+  "icon": "media/napper-icon.png",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.nap",
+    "workspaceContains:**/*.naplist",
+    "workspaceContains:**/*.napenv"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nap",
+        "extensions": [
+          ".nap"
+        ],
+        "aliases": [
+          "Napper Request",
+          "nap"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "naplist",
+        "extensions": [
+          ".naplist"
+        ],
+        "aliases": [
+          "Napper Playlist",
+          "naplist"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "napenv",
+        "extensions": [
+          ".napenv"
+        ],
+        "aliases": [
+          "Napper Environment",
+          "napenv"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nap",
+        "scopeName": "source.nap",
+        "path": "./syntaxes/nap.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json.nap": "json"
+        }
+      },
+      {
+        "language": "naplist",
+        "scopeName": "source.naplist",
+        "path": "./syntaxes/naplist.tmLanguage.json"
+      },
+      {
+        "language": "napenv",
+        "scopeName": "source.napenv",
+        "path": "./syntaxes/napenv.tmLanguage.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "napper-panel",
+          "title": "Napper",
+          "icon": "media/napper-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "napper-panel": [
+        {
+          "id": "napperExplorer",
+          "name": "Explorer",
+          "icon": "media/napper-icon.png"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "napper.runFile",
+        "title": "Napper: Run File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "napper.runAll",
+        "title": "Napper: Run All"
+      },
+      {
+        "command": "napper.newRequest",
+        "title": "Napper: New Request",
+        "icon": "$(add)"
+      },
+      {
+        "command": "napper.newPlaylist",
+        "title": "Napper: New Playlist"
+      },
+      {
+        "command": "napper.switchEnvironment",
+        "title": "Napper: Switch Environment"
+      },
+      {
+        "command": "napper.copyAsCurl",
+        "title": "Napper: Copy as curl"
+      },
+      {
+        "command": "napper.openResponse",
+        "title": "Napper: Open Response Panel"
+      },
+      {
+        "command": "napper.savePlaylistReport",
+        "title": "Napper: Save Playlist Report"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "napper.newRequest",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "napper.runFile",
+          "when": "view == napperExplorer && viewItem =~ /requestFile|playlist/",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Napper",
+      "properties": {
+        "napper.defaultEnvironment": {
+          "type": "string",
+          "default": "",
+          "description": "Active environment name"
+        },
+        "napper.autoRunOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Re-run the request when the file is saved"
+        },
+        "napper.splitEditorLayout": {
+          "type": "string",
+          "enum": [
+            "beside",
+            "below"
+          ],
+          "default": "beside",
+          "description": "Layout for the response panel"
+        },
+        "napper.maskSecretsInPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask variables sourced from .napenv.local in hover tooltips"
+        },
+        "napper.cliPath": {
+          "type": "string",
+          "default": "napper",
+          "description": "Path or command name for the Napper CLI binary"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "build:cli": "bash ../../scripts/build-cli.sh",
+    "compile": "webpack --mode production",
+    "compile:tests": "tsc -p tsconfig.test.json",
+    "watch": "webpack --mode development --watch",
+    "pretest": "npm run build:cli && npm run compile && npm run compile:tests",
+    "test": "vscode-test",
+    "test:unit": "npm run compile:tests && mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
+    "lint": "eslint src",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.95.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.0.0",
+    "eslint": "^9.0.0",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.5",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.7.0",
+    "webpack": "^5.97.0",
+    "webpack-cli": "^6.0.0"
+  }
+}

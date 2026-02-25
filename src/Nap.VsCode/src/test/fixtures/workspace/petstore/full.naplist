@@ -1,0 +1,6 @@
+[meta]
+name = "Full Petstore"
+
+[steps]
+./smoke.naplist
+./get-pet.nap
