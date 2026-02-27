@@ -4,6 +4,10 @@
 
 ---
 
+CRITICAL: START WITH TESTS THAT VERIFY THAT OpenAPI -> .nap is WORKING. THE OPENAPI -> .nap DETERMINISTIC PART IS F#. ENRICHMENT IS COPILOT ONLY.
+
+---
+
 ## Vision
 
 A user points Napper at an OpenAPI 3.x or Swagger 2.x specification and gets a complete test suite: one `.nap` file per operation, organized by tag into subdirectories, with a `.naplist` playlist, a `.napenv` environment file, and meaningful assertions derived from the spec's response schemas.

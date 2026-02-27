@@ -100,6 +100,24 @@ export const REPORT_SAVED_MSG = "Report saved: ";
 // CLI error messages
 export const CLI_SPAWN_FAILED_PREFIX = "Failed to run CLI: ";
 export const CLI_PARSE_FAILED_PREFIX = "Failed to parse CLI JSON: ";
+export const CLI_ERROR_PREFIX = "Napper CLI error: ";
+
+// Status bar running
+export const STATUS_RUNNING_ICON = "$(loading~spin) Running ";
+export const STATUS_RUNNING_SUFFIX = "...";
+
+// Curl
+export const CURL_CMD_PREFIX = "curl -X ";
+
+// File creation
+export const REQUEST_NAME_SUFFIX = "-request";
+
+// Nap file content formatting
+export const NAP_NAME_KEY_PREFIX = "name = \"";
+export const NAP_NAME_KEY_SUFFIX = "\"";
+
+// Property keys
+export const PROP_FILE_PATH = "filePath";
 
 // CLI installer
 export const CLI_REPO_OWNER = "MelbourneDeveloper";
@@ -193,10 +211,15 @@ export const HEADER_CONTENT_TYPE = "Content-Type";
 export const HEADER_ACCEPT = "Accept";
 export const CONTENT_TYPE_JSON = "application/json";
 export const ASSERT_STATUS_PREFIX = "status = ";
+export const ASSERT_BODY_EXISTS_SUFFIX = " exists";
+export const ASSERT_BODY_PREFIX = "body.";
 export const NAP_KEY_NAME = "name";
 export const NAP_KEY_DESCRIPTION = "description";
+export const NAP_KEY_GENERATED = "generated";
+export const NAP_VALUE_TRUE = "true";
 export const BASE_URL_VAR = "{{baseUrl}}";
 export const BASE_URL_KEY = "baseUrl";
+export const VARS_PLACEHOLDER = "REPLACE_ME";
 
 // OpenAPI generator — command
 export const CMD_IMPORT_OPENAPI = "napper.importOpenApi";
@@ -219,6 +242,16 @@ export const HTTPS_SCHEME = "https";
 export const DEFAULT_BASE_URL = "https://api.example.com";
 export const OPENAPI_DEFAULT_TITLE = "API Tests";
 export const PARAM_IN_BODY = "body";
+export const PARAM_IN_QUERY = "query";
+export const PARAM_IN_PATH = "path";
+export const AUTH_BEARER_PREFIX = "Authorization = Bearer ";
+export const AUTH_BASIC_PREFIX = "Authorization = Basic ";
+export const SECURITY_TYPE_HTTP = "http";
+export const SECURITY_SCHEME_BEARER = "bearer";
+export const SECURITY_SCHEME_BASIC = "basic";
+export const SECURITY_TYPE_API_KEY = "apiKey";
+export const SECURITY_LOCATION_HEADER = "header";
+export const SECURITY_LOCATION_QUERY = "query";
 
 // OpenAPI generator — HTTP methods (lowercase for spec parsing)
 export const OPENAPI_HTTP_METHODS = [
@@ -256,3 +289,7 @@ export const LOG_MSG_STREAM_RESULT = "Stream result:";
 export const LOG_MSG_STREAM_DONE = "Stream completed";
 export const LOG_MSG_TREE_REFRESH = "Explorer tree refresh";
 export const LOG_MSG_OPENAPI_IMPORT = "OpenAPI import:";
+
+// Numeric thresholds
+export const PERCENTAGE_MULTIPLIER = 100;
+export const HTTP_STATUS_CLIENT_ERROR_MIN = 400;

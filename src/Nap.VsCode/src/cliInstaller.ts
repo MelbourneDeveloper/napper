@@ -1,6 +1,7 @@
 // CLI Installer — downloads the correct Napper CLI binary from GitHub releases
 // Decoupled from vscode SDK — takes config values as parameters
 
+import type * as http from "http";
 import * as https from "https";
 import * as fs from "fs";
 import * as path from "path";
@@ -29,19 +30,27 @@ import {
   CLI_FILE_MODE_EXECUTABLE,
 } from "./constants";
 
+const HTTP_STATUS_OK = 200;
+const HTTP_STATUS_REDIRECT_MIN = 300;
+const HTTP_STATUS_CLIENT_ERROR_MIN = 400;
+
+const PLATFORM_RID_MAP: ReadonlyMap<string, string> = new Map([
+  [`${CLI_PLATFORM_DARWIN}-${CLI_ARCH_ARM64}`, CLI_RID_OSX_ARM64],
+  [`${CLI_PLATFORM_DARWIN}-${CLI_ARCH_X64}`, CLI_RID_OSX_X64],
+  [`${CLI_PLATFORM_LINUX}-${CLI_ARCH_X64}`, CLI_RID_LINUX_X64],
+  [`${CLI_PLATFORM_WIN32}-${CLI_ARCH_X64}`, CLI_RID_WIN_X64],
+]);
+
 export const platformToRid = (
   platform: string,
   arch: string
 ): Result<string, string> => {
-  if (platform === CLI_PLATFORM_DARWIN && arch === CLI_ARCH_ARM64)
-    return ok(CLI_RID_OSX_ARM64);
-  if (platform === CLI_PLATFORM_DARWIN && arch === CLI_ARCH_X64)
-    return ok(CLI_RID_OSX_X64);
-  if (platform === CLI_PLATFORM_LINUX && arch === CLI_ARCH_X64)
-    return ok(CLI_RID_LINUX_X64);
-  if (platform === CLI_PLATFORM_WIN32 && arch === CLI_ARCH_X64)
-    return ok(CLI_RID_WIN_X64);
-  return err(`${CLI_UNSUPPORTED_PLATFORM_MSG}${platform}-${arch}`);
+  const key = `${platform}-${arch}`;
+  const rid = PLATFORM_RID_MAP.get(key);
+  if (rid !== undefined) {
+    return ok(rid);
+  }
+  return err(`${CLI_UNSUPPORTED_PLATFORM_MSG}${key}`);
 };
 
 export const assetName = (rid: string): string => {
@@ -62,57 +71,88 @@ export const installedCliPath = (
 export const isCliInstalled = (cliPath: string): boolean =>
   fs.existsSync(cliPath);
 
-const followRedirect = (
+interface RedirectContext {
+  readonly dest: string;
+  readonly redirectCount: number;
+  readonly resolve: (value: Result<void, string>) => void;
+}
+
+const handleRedirect = (
+  response: http.IncomingMessage,
+  ctx: RedirectContext,
+): void => {
+  const location = response.headers.location;
+  if (location === undefined || location === "") {
+    ctx.resolve(err(CLI_REDIRECT_ERROR));
+    return;
+  }
+  response.resume();
+  followRedirect(location, ctx.dest, ctx.redirectCount + 1)
+    .then(ctx.resolve)
+    .catch(() => { ctx.resolve(err(CLI_REDIRECT_ERROR)); });
+};
+
+const handleDownload = (
+  response: http.IncomingMessage,
+  dest: string,
+  resolve: (value: Result<void, string>) => void
+): void => {
+  const file = fs.createWriteStream(dest);
+  response.pipe(file);
+  file.on("finish", () => {
+    file.close();
+    resolve(ok(undefined));
+  });
+  file.on("error", (e) => { resolve(err(e.message)); });
+};
+
+const buildRequestOptions = (url: string): { hostname: string; path: string; headers: Record<string, string> } => {
+  const parsedUrl = new URL(url);
+  return {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname + parsedUrl.search,
+    headers: { "User-Agent": CLI_BINARY_NAME },
+  };
+};
+
+const isRedirectStatus = (status: number): boolean =>
+  status >= HTTP_STATUS_REDIRECT_MIN && status < HTTP_STATUS_CLIENT_ERROR_MIN;
+
+const handleResponse = (
+  response: http.IncomingMessage,
+  ctx: RedirectContext,
+): void => {
+  const status = response.statusCode ?? 0;
+  if (isRedirectStatus(status)) {
+    handleRedirect(response, ctx);
+  } else if (status !== HTTP_STATUS_OK) {
+    response.resume();
+    ctx.resolve(err(`${CLI_DOWNLOAD_ERROR_PREFIX}${status}`));
+  } else {
+    handleDownload(response, ctx.dest, ctx.resolve);
+  }
+};
+
+async function followRedirect(
   url: string,
   dest: string,
   redirectCount: number
-): Promise<Result<void, string>> => {
+): Promise<Result<void, string>> {
   if (redirectCount > CLI_MAX_REDIRECTS) {
-    return Promise.resolve(err(CLI_TOO_MANY_REDIRECTS));
+    return err(CLI_TOO_MANY_REDIRECTS);
   }
 
-  return new Promise((resolve) => {
-    const parsedUrl = new URL(url);
-    const options = {
-      hostname: parsedUrl.hostname,
-      path: parsedUrl.pathname + parsedUrl.search,
-      headers: { "User-Agent": CLI_BINARY_NAME },
-    };
+  const options = buildRequestOptions(url);
 
+  return await new Promise((resolve) => {
+    const ctx: RedirectContext = { dest, redirectCount, resolve };
     https
-      .get(options, (response) => {
-        const status = response.statusCode ?? 0;
-
-        if (status >= 300 && status < 400) {
-          const location = response.headers.location;
-          if (!location) {
-            resolve(err(CLI_REDIRECT_ERROR));
-            return;
-          }
-          response.resume();
-          resolve(followRedirect(location, dest, redirectCount + 1));
-          return;
-        }
-
-        if (status !== 200) {
-          response.resume();
-          resolve(err(`${CLI_DOWNLOAD_ERROR_PREFIX}${status}`));
-          return;
-        }
-
-        const file = fs.createWriteStream(dest);
-        response.pipe(file);
-        file.on("finish", () => {
-          file.close();
-          resolve(ok(undefined));
-        });
-        file.on("error", (e) => resolve(err(e.message)));
-      })
-      .on("error", (e) => resolve(err(e.message)));
+      .get(options, (response) => { handleResponse(response, ctx); })
+      .on("error", (e) => { resolve(err(e.message)); });
   });
-};
+}
 
-export const downloadBinary = (
+export const downloadBinary = async (
   rid: string,
   destPath: string
 ): Promise<Result<void, string>> => {
@@ -124,7 +164,7 @@ export const downloadBinary = (
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  return followRedirect(url, destPath, 0);
+  return await followRedirect(url, destPath, 0);
 };
 
 export const makeExecutable = (
@@ -146,11 +186,15 @@ export const installCli = async (
   arch: string
 ): Promise<Result<InstallResult, string>> => {
   const ridResult = platformToRid(platform, arch);
-  if (!ridResult.ok) return err(ridResult.error);
+  if (!ridResult.ok) {
+    return err(ridResult.error);
+  }
 
   const destPath = installedCliPath(storageDir, platform);
   const downloadResult = await downloadBinary(ridResult.value, destPath);
-  if (!downloadResult.ok) return err(downloadResult.error);
+  if (!downloadResult.ok) {
+    return err(downloadResult.error);
+  }
 
   makeExecutable(destPath, platform);
   return ok({ cliPath: destPath });

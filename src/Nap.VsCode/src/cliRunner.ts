@@ -15,6 +15,8 @@ import {
 } from "./constants";
 import { type RunResult, type Result, ok, err } from "./types";
 
+const MAX_PREVIEW_LENGTH = 200;
+
 interface RunOptions {
   readonly cliPath: string;
   readonly filePath: string;
@@ -23,6 +25,15 @@ interface RunOptions {
   readonly cwd: string;
 }
 
+const appendEnvArgs = (
+  args: string[],
+  env: string | undefined
+): void => {
+  if (env !== undefined && env !== "") {
+    args.push(CLI_FLAG_ENV, env);
+  }
+};
+
 const buildArgs = (options: RunOptions): readonly string[] => {
   const args: string[] = [
     CLI_CMD_RUN,
@@ -30,11 +41,7 @@ const buildArgs = (options: RunOptions): readonly string[] => {
     CLI_FLAG_OUTPUT,
     CLI_OUTPUT_JSON,
   ];
-
-  if (options.env) {
-    args.push(CLI_FLAG_ENV, options.env);
-  }
-
+  appendEnvArgs(args, options.env);
   return args;
 };
 
@@ -48,7 +55,7 @@ const parseJsonOutput = (
     }
     return ok([parsed as RunResult]);
   } catch {
-    return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, 200)}`);
+    return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
 };
 
@@ -58,22 +65,22 @@ const formatSpawnError = (
   stderr: string
 ): string => {
   const code = "code" in error ? ` (${String(error.code)})` : "";
-  const stderrSuffix = stderr ? ` — ${stderr}` : "";
+  const stderrSuffix = stderr.length > 0 ? ` — ${stderr}` : "";
   return `${CLI_SPAWN_FAILED_PREFIX}${cliPath}${code}${stderrSuffix}`;
 };
 
-const spawnCli = (
+const spawnCli = async (
   cliPath: string,
   args: readonly string[],
   cwd: string
 ): Promise<Result<readonly RunResult[], string>> =>
-  new Promise((resolve) => {
+  await new Promise((resolve) => {
     execFile(
       cliPath,
       args as string[],
       { cwd, timeout: 30_000, env: { ...process.env } },
       (error, stdout, stderr) => {
-        if (error && !stdout) {
+        if (error !== null && stdout.length === 0) {
           resolve(err(formatSpawnError(cliPath, error, stderr)));
           return;
         }
@@ -82,12 +89,15 @@ const spawnCli = (
     );
   });
 
+const resolveCliPath = (cliPath: string): string =>
+  cliPath.length > 0 ? cliPath : DEFAULT_CLI_PATH;
+
 export const runCli = async (
   options: RunOptions
 ): Promise<Result<readonly RunResult[], string>> => {
-  const cliPath = options.cliPath || DEFAULT_CLI_PATH;
+  const cliPath = resolveCliPath(options.cliPath);
   const args = buildArgs(options);
-  return spawnCli(cliPath, args, options.cwd);
+  return await spawnCli(cliPath, args, options.cwd);
 };
 
 interface StreamOptions {
@@ -106,11 +116,7 @@ const buildStreamArgs = (options: StreamOptions): readonly string[] => {
     CLI_FLAG_OUTPUT,
     CLI_OUTPUT_NDJSON,
   ];
-
-  if (options.env) {
-    args.push(CLI_FLAG_ENV, options.env);
-  }
-
+  appendEnvArgs(args, options.env);
   return args;
 };
 
@@ -118,7 +124,7 @@ const parseLine = (line: string): Result<RunResult, string> => {
   try {
     return ok(JSON.parse(line) as RunResult);
   } catch {
-    return err(`${CLI_PARSE_FAILED_PREFIX}${line.slice(0, 200)}`);
+    return err(`${CLI_PARSE_FAILED_PREFIX}${line.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
 };
 
@@ -149,58 +155,83 @@ const processChunk = (
   return remainder;
 };
 
-export const streamCli = (options: StreamOptions): void => {
-  const cliPath = options.cliPath || DEFAULT_CLI_PATH;
-  const args = buildStreamArgs(options);
+interface FlushContext {
+  readonly buffer: string;
+  readonly onResult: (result: RunResult) => void;
+  readonly stderrOutput: string;
+  readonly onDone: (error?: string) => void;
+}
 
+const flushAndFinish = (ctx: FlushContext): void => {
+  const remaining = ctx.buffer.trim();
+  if (remaining.length > 0) {
+    emitParsedLine(remaining, ctx.onResult);
+  }
+  ctx.onDone(ctx.stderrOutput.length > 0 ? ctx.stderrOutput : undefined);
+};
+
+interface StreamState {
+  buffer: string;
+  stderrOutput: string;
+  finished: boolean;
+}
+
+interface StreamListenerContext {
+  readonly child: ReturnType<typeof spawn>;
+  readonly state: StreamState;
+  readonly options: StreamOptions;
+  readonly cliPath: string;
+}
+
+const attachDataListeners = (ctx: StreamListenerContext): void => {
+  ctx.child.stdout?.on("data", (chunk: Buffer) => {
+    ctx.state.buffer = processChunk(ctx.state.buffer, chunk, ctx.options.onResult);
+  });
+  ctx.child.stderr?.on("data", (chunk: Buffer) => {
+    ctx.state.stderrOutput += chunk.toString();
+  });
+};
+
+const attachLifecycleListeners = (ctx: StreamListenerContext): void => {
+  ctx.child.on("close", () => {
+    if (ctx.state.finished) { return; }
+    ctx.state.finished = true;
+    flushAndFinish({ buffer: ctx.state.buffer, onResult: ctx.options.onResult, stderrOutput: ctx.state.stderrOutput, onDone: ctx.options.onDone });
+  });
+  ctx.child.on("error", (error) => {
+    if (ctx.state.finished) { return; }
+    ctx.state.finished = true;
+    ctx.options.onDone(`${CLI_SPAWN_FAILED_PREFIX}${ctx.cliPath} — ${error.message}`);
+  });
+};
+
+export const streamCli = (options: StreamOptions): void => {
+  const cliPath = resolveCliPath(options.cliPath);
+  const args = buildStreamArgs(options);
   const child = spawn(cliPath, args as string[], {
     cwd: options.cwd,
     env: { ...process.env },
   });
-
-  let buffer = "";
-  let stderrOutput = "";
-  let finished = false;
-
-  child.stdout.on("data", (chunk: Buffer) => {
-    buffer = processChunk(buffer, chunk, options.onResult);
-  });
-
-  child.stderr.on("data", (chunk: Buffer) => {
-    stderrOutput += chunk.toString();
-  });
-
-  child.on("close", () => {
-    if (finished) return;
-    finished = true;
-    const remaining = buffer.trim();
-    if (remaining.length > 0) {
-      emitParsedLine(remaining, options.onResult);
-    }
-    options.onDone(stderrOutput.length > 0 ? stderrOutput : undefined);
-  });
-
-  child.on("error", (error) => {
-    if (finished) return;
-    finished = true;
-    options.onDone(`${CLI_SPAWN_FAILED_PREFIX}${cliPath} — ${error.message}`);
-  });
+  const state: StreamState = { buffer: "", stderrOutput: "", finished: false };
+  const ctx: StreamListenerContext = { child, state, options, cliPath };
+  attachDataListeners(ctx);
+  attachLifecycleListeners(ctx);
 };
 
-export const checkFile = (
+export const checkFile = async (
   cliPath: string,
   filePath: string,
   cwd: string
 ): Promise<Result<string, string>> =>
-  new Promise((resolve) => {
-    const cmd = cliPath || DEFAULT_CLI_PATH;
+  await new Promise((resolve) => {
+    const cmd = resolveCliPath(cliPath);
     execFile(
       cmd,
       [CLI_CMD_CHECK, filePath],
       { cwd, timeout: 10_000, env: { ...process.env } },
       (error, stdout, stderr) => {
-        if (error) {
-          resolve(err(stderr || error.message));
+        if (error !== null) {
+          resolve(err(stderr.length > 0 ? stderr : error.message));
           return;
         }
         resolve(ok(stdout));

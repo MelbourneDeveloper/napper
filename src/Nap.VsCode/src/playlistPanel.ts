@@ -3,7 +3,7 @@
 
 import * as vscode from "vscode";
 import * as path from "path";
-import { type RunResult } from "./types";
+import type { RunResult } from "./types";
 import {
   PLAYLIST_PANEL_TITLE,
   PLAYLIST_PANEL_VIEW_TYPE,
@@ -15,7 +15,7 @@ import {
 import { escapeHtml, formatBodyHtml } from "./htmlUtils";
 
 const buildStepAssertionsHtml = (result: RunResult): string => {
-  if (result.assertions.length === 0) return "";
+  if (result.assertions.length === 0) {return "";}
 
   const rows = result.assertions
     .map((a) => {
@@ -34,7 +34,7 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
 const buildStepHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
-  if (!headers) return "";
+  if (!headers) {return "";}
 
   const rows = Object.entries(headers)
     .map(
@@ -49,7 +49,7 @@ const buildStepHeadersHtml = (
 const buildStepLogHtml = (
   log: readonly string[] | undefined
 ): string => {
-  if (!log || log.length === 0) return "";
+  if (!log || log.length === 0) {return "";}
 
   const lines = log
     .map((line) => escapeHtml(line))
@@ -58,43 +58,58 @@ const buildStepLogHtml = (
   return `<div class="step-log"><h4>Output</h4><pre class="log-output">${lines}</pre></div>`;
 };
 
-const buildCompletedStepRow = (result: RunResult, index: number): string => {
-  const icon = result.passed ? "&#x2713;" : "&#x2717;";
-  const statusCls = result.passed ? "pass" : "fail";
-  const fileName = path.basename(result.file);
-  const statusCode = result.statusCode ?? "";
-  const duration =
-    result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "";
-
+const buildStepMetadata = (result: RunResult): {
+  readonly icon: string;
+  readonly statusCls: string;
+  readonly fileName: string;
+  readonly statusCode: number | string;
+  readonly duration: string;
+  readonly assertionSummary: string;
+} => {
   const assertionCount = result.assertions.length;
   const passedCount = result.assertions.filter((a) => a.passed).length;
-  const assertionSummary =
-    assertionCount > 0 ? `${passedCount}/${assertionCount}` : "";
+  return {
+    icon: result.passed ? "&#x2713;" : "&#x2717;",
+    statusCls: result.passed ? "pass" : "fail",
+    fileName: path.basename(result.file),
+    statusCode: result.statusCode ?? "",
+    duration: result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "",
+    assertionSummary: assertionCount > 0 ? `${passedCount}/${assertionCount}` : "",
+  };
+};
 
-  const errorHtml = result.error
-    ? `<div class="step-error"><pre>${escapeHtml(result.error)}</pre></div>`
+const buildStepErrorHtml = (error: string | undefined): string =>
+  error !== undefined && error !== ""
+    ? `<div class="step-error"><pre>${escapeHtml(error)}</pre></div>`
     : "";
 
-  const bodyHtml = result.body
-    ? `<div class="step-body"><h4>Body</h4><pre class="body">${formatBodyHtml(result.body)}</pre></div>`
+const buildStepBodyHtml = (body: string | undefined): string =>
+  body !== undefined && body !== ""
+    ? `<div class="step-body"><h4>Body</h4><pre class="body">${formatBodyHtml(body)}</pre></div>`
     : "";
 
-  return `
-    <div class="step" data-index="${index}">
-      <div class="step-summary ${statusCls}" onclick="toggleStep(${index})">
-        <span class="step-icon">${icon}</span>
-        <span class="step-name">${escapeHtml(fileName)}</span>
-        <span class="step-status-code">${statusCode}</span>
-        <span class="step-assertions-badge">${assertionSummary}</span>
-        <span class="step-duration">${duration}</span>
-        <span class="step-chevron" id="chevron-${index}">&#x25B6;</span>
-      </div>
-      <div class="step-detail" id="detail-${index}" style="display:none;">
-        ${errorHtml}
+const buildStepDetailSection = (result: RunResult): string =>
+  `${buildStepErrorHtml(result.error)}
         ${buildStepLogHtml(result.log)}
         ${buildStepAssertionsHtml(result)}
         ${buildStepHeadersHtml(result.headers)}
-        ${bodyHtml}
+        ${buildStepBodyHtml(result.body)}`;
+
+const buildCompletedStepRow = (result: RunResult, index: number): string => {
+  const meta = buildStepMetadata(result);
+
+  return `
+    <div class="step" data-index="${index}">
+      <div class="step-summary ${meta.statusCls}" onclick="toggleStep(${index})">
+        <span class="step-icon">${meta.icon}</span>
+        <span class="step-name">${escapeHtml(meta.fileName)}</span>
+        <span class="step-status-code">${meta.statusCode}</span>
+        <span class="step-assertions-badge">${meta.assertionSummary}</span>
+        <span class="step-duration">${meta.duration}</span>
+        <span class="step-chevron" id="chevron-${index}">&#x25B6;</span>
+      </div>
+      <div class="step-detail" id="detail-${index}" style="display:none;">
+        ${buildStepDetailSection(result)}
       </div>
     </div>`;
 };
@@ -165,52 +180,18 @@ const STYLES = `
   .report-btn svg { width: 14px; height: 14px; fill: currentColor; }
 `;
 
-const buildStreamingHtml = (
-  playlistFile: string,
-  stepFileNames: readonly string[]
-): string => {
-  const playlistName = path.basename(
-    playlistFile,
-    path.extname(playlistFile)
-  );
-
-  const stepsHtml = stepFileNames
-    .map((name, i) => buildPendingStepRow(name, i))
-    .join("\n");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<style>${STYLES}</style>
-</head>
-<body>
-  <h2>${escapeHtml(playlistName)}</h2>
-  <div class="playlist-summary" id="summary">
-    <span class="summary-badge running">RUNNING</span>
-    <span class="summary-total">${stepFileNames.length} steps</span>
-    <span class="summary-duration" id="summary-duration"></span>
-  </div>
-  <div class="steps-list" id="steps-list">
-    ${stepsHtml}
-  </div>
-  <script>
-    const vscodeApi = acquireVsCodeApi();
-
+const TOGGLE_STEP_FN = `
     function toggleStep(index) {
       const detail = document.getElementById('detail-' + index);
       const chevron = document.getElementById('chevron-' + index);
       if (!detail || !chevron) return;
       const isHidden = detail.style.display === 'none';
       detail.style.display = isHidden ? 'block' : 'none';
-      if (isHidden) {
-        chevron.classList.add('open');
-      } else {
-        chevron.classList.remove('open');
-      }
-    }
+      if (isHidden) { chevron.classList.add('open'); }
+      else { chevron.classList.remove('open'); }
+    }`;
 
+const buildMessageHandler = (): string => `
     window.addEventListener('message', function(event) {
       const msg = event.data;
       if (msg.type === '${MSG_ADD_RESULT}') {
@@ -220,28 +201,66 @@ const buildStreamingHtml = (
       } else if (msg.type === '${MSG_RUN_ERROR}') {
         updateSummary(msg.summaryHtml);
       }
-    });
+    });`;
 
+const HELPER_FNS = `
     function updateStepRow(index, html) {
       const stepEl = document.getElementById('step-' + index);
-      if (stepEl) {
-        stepEl.outerHTML = html;
-      }
+      if (stepEl) { stepEl.outerHTML = html; }
     }
-
     function updateSummary(html) {
       const summaryEl = document.getElementById('summary');
-      if (summaryEl) {
-        summaryEl.outerHTML = html;
-      }
+      if (summaryEl) { summaryEl.outerHTML = html; }
     }
-
     function saveReport() {
       vscodeApi.postMessage({ type: '${MSG_SAVE_REPORT}' });
-    }
-  </script>
+    }`;
+
+const buildStreamingScript = (): string => `
+  <script>
+    const vscodeApi = acquireVsCodeApi();
+    ${TOGGLE_STEP_FN}
+    ${buildMessageHandler()}
+    ${HELPER_FNS}
+  </script>`;
+
+const buildStreamingBody = (
+  playlistName: string,
+  stepsHtml: string,
+  stepCount: number
+): string => `
+  <h2>${escapeHtml(playlistName)}</h2>
+  <div class="playlist-summary" id="summary">
+    <span class="summary-badge running">RUNNING</span>
+    <span class="summary-total">${stepCount} steps</span>
+    <span class="summary-duration" id="summary-duration"></span>
+  </div>
+  <div class="steps-list" id="steps-list">
+    ${stepsHtml}
+  </div>`;
+
+const wrapInHtmlShell = (bodyContent: string, scriptContent: string): string =>
+  `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>${STYLES}</style>
+</head>
+<body>
+  ${bodyContent}
+  ${scriptContent}
 </body>
 </html>`;
+
+const buildStreamingHtml = (
+  playlistFile: string,
+  stepFileNames: readonly string[]
+): string => {
+  const playlistName = path.basename(playlistFile, path.extname(playlistFile));
+  const stepsHtml = stepFileNames.map((name, i) => buildPendingStepRow(name, i)).join("\n");
+  const body = buildStreamingBody(playlistName, stepsHtml, stepFileNames.length);
+  return wrapInHtmlShell(body, buildStreamingScript());
 };
 
 const buildSummaryHtml = (results: readonly RunResult[]): string => {
@@ -270,6 +289,26 @@ const buildErrorSummaryHtml = (error: string): string =>
     <span class="summary-failed">${escapeHtml(error)}</span>
   </div>`;
 
+interface CreatePanelOptions {
+  readonly viewColumn: vscode.ViewColumn;
+  readonly html: string;
+  readonly onMessage: (msg: { type: string }) => void;
+  readonly onDispose: () => void;
+}
+
+const createNewPanel = (opts: CreatePanelOptions): vscode.WebviewPanel => {
+  const panel = vscode.window.createWebviewPanel(
+    PLAYLIST_PANEL_VIEW_TYPE,
+    PLAYLIST_PANEL_TITLE,
+    opts.viewColumn,
+    { enableScripts: true, retainContextWhenHidden: true }
+  );
+  panel.webview.html = opts.html;
+  panel.webview.onDidReceiveMessage(opts.onMessage);
+  panel.onDidDispose(opts.onDispose);
+  return panel;
+};
+
 export class PlaylistPanel implements vscode.Disposable {
   private _panel: vscode.WebviewPanel | undefined;
   private _onSaveReport: (() => void) | undefined;
@@ -278,7 +317,7 @@ export class PlaylistPanel implements vscode.Disposable {
     this._onSaveReport = handler;
   }
 
-  private _handleWebviewMessage = (msg: { type: string }): void => {
+  private readonly _handleWebviewMessage = (msg: { type: string }): void => {
     if (msg.type === MSG_SAVE_REPORT && this._onSaveReport) {
       this._onSaveReport();
     }
@@ -297,24 +336,16 @@ export class PlaylistPanel implements vscode.Disposable {
       return;
     }
 
-    this._panel = vscode.window.createWebviewPanel(
-      PLAYLIST_PANEL_VIEW_TYPE,
-      PLAYLIST_PANEL_TITLE,
+    this._panel = createNewPanel({
       viewColumn,
-      { enableScripts: true, retainContextWhenHidden: true }
-    );
-
-    this._panel.webview.html = html;
-
-    this._panel.webview.onDidReceiveMessage(this._handleWebviewMessage);
-
-    this._panel.onDidDispose(() => {
-      this._panel = undefined;
+      html,
+      onMessage: this._handleWebviewMessage,
+      onDispose: () => { this._panel = undefined; },
     });
   }
 
   addResult(index: number, result: RunResult): void {
-    if (!this._panel) return;
+    if (!this._panel) {return;}
     const html = buildCompletedStepRow(result, index);
     this._panel.webview.postMessage({
       type: MSG_ADD_RESULT,
@@ -324,7 +355,7 @@ export class PlaylistPanel implements vscode.Disposable {
   }
 
   showComplete(results: readonly RunResult[]): void {
-    if (!this._panel) return;
+    if (!this._panel) {return;}
     const summaryHtml = buildSummaryHtml(results);
     this._panel.webview.postMessage({
       type: MSG_RUN_COMPLETE,
@@ -333,7 +364,7 @@ export class PlaylistPanel implements vscode.Disposable {
   }
 
   showError(error: string): void {
-    if (!this._panel) return;
+    if (!this._panel) {return;}
     const summaryHtml = buildErrorSummaryHtml(error);
     this._panel.webview.postMessage({
       type: MSG_RUN_ERROR,

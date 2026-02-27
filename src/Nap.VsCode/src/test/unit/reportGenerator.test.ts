@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { generatePlaylistReport } from "../../reportGenerator";
-import { type RunResult } from "../../types";
+import type { RunResult } from "../../types";
 import {
   REPORT_FILE_SUFFIX,
   REPORT_FILE_EXTENSION,

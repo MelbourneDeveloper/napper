@@ -9,6 +9,7 @@ import {
   closeAllEditors,
   executeCommand,
   waitForCondition,
+  extractStepLines,
 } from "../helpers/helpers";
 import * as path from "path";
 import {
@@ -51,7 +52,7 @@ suite("Playlist Panel — Real API Calls", () => {
 
     // Panel must appear within 2 seconds — API calls take much longer
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       2000
     );
 
@@ -97,7 +98,7 @@ suite("Playlist Panel — Real API Calls", () => {
 
     // Panel must appear within 2 seconds — proves immediate opening
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       2000
     );
 
@@ -145,7 +146,7 @@ suite("Playlist Panel — Real API Calls", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -154,8 +155,9 @@ suite("Playlist Panel — Real API Calls", () => {
       responseTab,
       `Tab '${RESPONSE_PANEL_TITLE}' must exist after running a single .nap file`
     );
-    assert.ok(
-      responseTab.isActive || responseTab.group !== undefined,
+    assert.notStrictEqual(
+      responseTab.group,
+      undefined,
       "Response tab should be visible in a tab group"
     );
 
@@ -186,24 +188,7 @@ suite("Playlist Panel — Real API Calls", () => {
   test("playlist steps reference files that exist", () => {
     const playlistPath = getFixturePath("petstore/smoke.naplist");
     const content = fs.readFileSync(playlistPath, "utf-8");
-    const lines = content.split("\n");
-
-    let inSteps = false;
-    const stepPaths: string[] = [];
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed === "[steps]") {
-        inSteps = true;
-        continue;
-      }
-      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-        inSteps = false;
-        continue;
-      }
-      if (inSteps && trimmed.length > 0 && !trimmed.startsWith("#")) {
-        stepPaths.push(trimmed);
-      }
-    }
+    const stepPaths = extractStepLines(content);
 
     assert.ok(
       stepPaths.length > 0,
@@ -235,7 +220,7 @@ suite("Playlist Panel — Real API Calls", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -307,7 +292,7 @@ suite("Playlist Panel — Real API Calls", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -322,7 +307,7 @@ suite("Playlist Panel — Real API Calls", () => {
 
     // Panel must still exist immediately (reused, not recreated)
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       2000
     );
 
@@ -392,7 +377,7 @@ suite("Playlist Panel — Real API Calls", () => {
 
     // Wait for panel to appear and run to complete
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -442,7 +427,7 @@ suite("Playlist Panel — Real API Calls", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -518,7 +503,7 @@ suite("Playlist Panel — Real API Calls", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -608,7 +593,7 @@ suite("Playlist Panel — Real API Calls", () => {
 
       // Panel must open even when CLI fails (showRunning fires before CLI)
       await waitForCondition(
-        async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+        () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
         5000
       );
 

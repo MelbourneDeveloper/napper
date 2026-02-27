@@ -2,15 +2,16 @@
 // Uses minimal vanilla HTML/CSS — no framework dependency
 
 import * as vscode from "vscode";
-import { type RunResult } from "./types";
+import type { RunResult } from "./types";
 import {
   RESPONSE_PANEL_TITLE,
   RESPONSE_PANEL_VIEW_TYPE,
+  HTTP_STATUS_CLIENT_ERROR_MIN,
 } from "./constants";
 import { escapeHtml, formatBodyHtml } from "./htmlUtils";
 
 const buildAssertionsHtml = (result: RunResult): string => {
-  if (result.assertions.length === 0) return "";
+  if (result.assertions.length === 0) {return "";}
 
   const rows = result.assertions
     .map((a) => {
@@ -29,7 +30,7 @@ const buildAssertionsHtml = (result: RunResult): string => {
 const buildHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
-  if (!headers) return "";
+  if (!headers) {return "";}
 
   const rows = Object.entries(headers)
     .map(
@@ -44,7 +45,7 @@ const buildHeadersHtml = (
 const buildLogHtml = (
   log: readonly string[] | undefined
 ): string => {
-  if (!log || log.length === 0) return "";
+  if (!log || log.length === 0) {return "";}
 
   const lines = log
     .map((line) => escapeHtml(line))
@@ -53,33 +54,28 @@ const buildLogHtml = (
   return `<div class="section"><h3>Output</h3><pre class="log-output">${lines}</pre></div>`;
 };
 
-const buildHtml = (result: RunResult): string => {
+const buildStatusLine = (result: RunResult): string => {
+  if (result.statusCode === undefined) {return "";}
+
   const statusClass =
-    result.statusCode !== undefined && result.statusCode < 400
+    result.statusCode < HTTP_STATUS_CLIENT_ERROR_MIN
       ? "status-ok"
       : "status-error";
 
-  const statusLine = result.statusCode
-    ? `<span class="${statusClass}">${result.statusCode}</span>`
+  return `<span class="${statusClass}">${result.statusCode}</span>`;
+};
+
+const buildBodyHtml = (body: string | undefined): string =>
+  body !== undefined && body !== ""
+    ? `<div class="section"><h3>Body</h3><pre class="body">${formatBodyHtml(body)}</pre></div>`
     : "";
 
-  const durationLine =
-    result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "";
-
-  const bodyHtml = result.body
-    ? `<div class="section"><h3>Body</h3><pre class="body">${formatBodyHtml(result.body)}</pre></div>`
+const buildErrorHtml = (error: string | undefined): string =>
+  error !== undefined && error !== ""
+    ? `<div class="section error"><h3>Error</h3><pre>${escapeHtml(error)}</pre></div>`
     : "";
 
-  const errorHtml = result.error
-    ? `<div class="section error"><h3>Error</h3><pre>${escapeHtml(result.error)}</pre></div>`
-    : "";
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<style>
+const RESPONSE_STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
   h2 { margin: 0 0 12px 0; font-size: 14px; }
   h3 { margin: 12px 0 6px 0; font-size: 13px; color: var(--vscode-descriptionForeground); }
@@ -105,23 +101,35 @@ const buildHtml = (result: RunResult): string => {
   .json-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
   .json-bool { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
   .json-null { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
-</style>
-</head>
-<body>
+`;
+
+const buildResponseBody = (result: RunResult): string => {
+  const durationLine =
+    result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "";
+
+  return `
   <h2>${escapeHtml(result.file)}</h2>
   <div class="summary">
-    ${statusLine}
+    ${buildStatusLine(result)}
     <span class="duration">${durationLine}</span>
     <span class="${result.passed ? "passed-badge" : "failed-badge"}">${result.passed ? "PASSED" : "FAILED"}</span>
   </div>
-  ${errorHtml}
+  ${buildErrorHtml(result.error)}
   ${buildLogHtml(result.log)}
   ${buildAssertionsHtml(result)}
   ${buildHeadersHtml(result.headers)}
-  ${bodyHtml}
-</body>
-</html>`;
+  ${buildBodyHtml(result.body)}`;
 };
+
+const buildHtml = (result: RunResult): string => `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>${RESPONSE_STYLES}</style>
+</head>
+<body>${buildResponseBody(result)}</body>
+</html>`;
 
 export class ResponsePanel implements vscode.Disposable {
   private _panel: vscode.WebviewPanel | undefined;

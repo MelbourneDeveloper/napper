@@ -32,6 +32,9 @@ import {
   ENCODING_UTF8,
 } from "./constants";
 
+const OPEN_COMMAND_TITLE = "Open";
+const EMPTY_STRING = "";
+
 const RUN_STATE_ICONS: Record<RunState, string> = {
   [RunState.Idle]: ICON_IDLE,
   [RunState.Running]: ICON_RUNNING,
@@ -51,71 +54,96 @@ const RUN_STATE_COLORS: Record<RunState, string | undefined> = {
 const hasChildren = (node: TreeNode): boolean =>
   node.isDirectory || (node.children !== undefined && node.children.length > 0);
 
+const applyPlaylistSectionStyle = (
+  item: vscode.TreeItem,
+): void => {
+  item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_SECTION);
+};
+
+const applyDirectoryStyle = (
+  item: vscode.TreeItem,
+  node: TreeNode,
+): void => {
+  item.resourceUri = vscode.Uri.file(node.filePath);
+  item.iconPath = vscode.ThemeIcon.Folder;
+};
+
+const runStateIcon = (state: RunState): vscode.ThemeIcon => {
+  const color = RUN_STATE_COLORS[state];
+  return new vscode.ThemeIcon(
+    RUN_STATE_ICONS[state],
+    color !== undefined ? new vscode.ThemeColor(color) : undefined,
+  );
+};
+
+const applyFileStyle = (
+  item: vscode.TreeItem,
+  node: TreeNode,
+): void => {
+  item.resourceUri = vscode.Uri.file(node.filePath);
+  item.command = {
+    command: CMD_VSCODE_OPEN,
+    title: OPEN_COMMAND_TITLE,
+    arguments: [vscode.Uri.file(node.filePath)],
+  };
+  if (node.contextValue === CONTEXT_PLAYLIST) {
+    item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_FILE);
+    return;
+  }
+  item.description = node.httpMethod ?? EMPTY_STRING;
+  item.iconPath = runStateIcon(node.runState);
+};
+
 class ExplorerTreeItem extends vscode.TreeItem {
   constructor(node: TreeNode) {
     super(
       node.label,
       hasChildren(node)
         ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None
+        : vscode.TreeItemCollapsibleState.None,
     );
-
     this.contextValue = node.contextValue;
-
     if (node.contextValue === CONTEXT_PLAYLIST_SECTION) {
-      this.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_SECTION);
-      return;
+      applyPlaylistSectionStyle(this);
+    } else if (node.isDirectory) {
+      applyDirectoryStyle(this, node);
+    } else {
+      applyFileStyle(this, node);
     }
-
-    this.resourceUri = vscode.Uri.file(node.filePath);
-
-    if (node.isDirectory) {
-      this.iconPath = vscode.ThemeIcon.Folder;
-      return;
-    }
-
-    this.command = {
-      command: CMD_VSCODE_OPEN,
-      title: "Open",
-      arguments: [vscode.Uri.file(node.filePath)],
-    };
-
-    if (node.contextValue === CONTEXT_PLAYLIST) {
-      this.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_FILE);
-      return;
-    }
-
-    this.description = node.httpMethod || "";
-    const color = RUN_STATE_COLORS[node.runState];
-    this.iconPath = new vscode.ThemeIcon(
-      RUN_STATE_ICONS[node.runState],
-      color ? new vscode.ThemeColor(color) : undefined
-    );
   }
 }
 
-const buildPlaylistStepNodes = (
+function buildStepNode(
+  stepFull: string,
+  results: ReadonlyMap<string, RunResult>,
+): TreeNode | undefined {
+  if (!fs.existsSync(stepFull)) {
+    return undefined;
+  }
+  if (stepFull.endsWith(NAPLIST_EXTENSION)) {
+    const nested = buildPlaylistStepNodes(stepFull, results);
+    return createPlaylistNode(stepFull, results, nested);
+  }
+  const content = fs.readFileSync(stepFull, ENCODING_UTF8);
+  return createFileNode(stepFull, content, results);
+}
+
+function buildPlaylistStepNodes(
   naplistPath: string,
-  results: ReadonlyMap<string, RunResult>
-): TreeNode[] => {
+  results: ReadonlyMap<string, RunResult>,
+): TreeNode[] {
   const content = fs.readFileSync(naplistPath, ENCODING_UTF8);
   const stepRelPaths = parsePlaylistStepPaths(content);
   const basePath = path.dirname(naplistPath);
   const stepNodes: TreeNode[] = [];
   for (const rel of stepRelPaths) {
-    const stepFull = path.resolve(basePath, rel);
-    if (fs.existsSync(stepFull)) {
-      if (stepFull.endsWith(NAPLIST_EXTENSION)) {
-        const nestedChildren = buildPlaylistStepNodes(stepFull, results);
-        stepNodes.push(createPlaylistNode(stepFull, results, nestedChildren));
-      } else {
-        const stepContent = fs.readFileSync(stepFull, ENCODING_UTF8);
-        stepNodes.push(createFileNode(stepFull, stepContent, results));
-      }
+    const node = buildStepNode(path.resolve(basePath, rel), results);
+    if (node !== undefined) {
+      stepNodes.push(node);
     }
   }
   return stepNodes;
-};
+}
 
 export class ExplorerAdapter
   implements vscode.TreeDataProvider<TreeNode>
@@ -124,7 +152,7 @@ export class ExplorerAdapter
     new vscode.EventEmitter<TreeNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  private _results = new Map<string, RunResult>();
+  private readonly _results = new Map<string, RunResult>();
 
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
@@ -144,11 +172,15 @@ export class ExplorerAdapter
     return new ExplorerTreeItem(element);
   }
 
-  async getChildren(element?: TreeNode): Promise<TreeNode[]> {
-    if (!vscode.workspace.workspaceFolders) return [];
+  getChildren(element?: TreeNode): TreeNode[] {
+    const folders = vscode.workspace.workspaceFolders;
+    const firstFolder = folders?.[0];
+    if (firstFolder === undefined) {
+      return [];
+    }
 
-    if (!element) {
-      const root = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    if (element === undefined) {
+      const root = firstFolder.uri.fsPath;
       const fileTree = this._buildTree(root);
       const playlistSection = this._buildPlaylistSection(root);
       return [...fileTree, playlistSection];
@@ -158,7 +190,7 @@ export class ExplorerAdapter
       return this._buildTree(element.filePath);
     }
 
-    return element.children ? [...element.children] : [];
+    return element.children !== undefined ? [...element.children] : [];
   }
 
   private _buildPlaylistSection(rootPath: string): TreeNode {
@@ -171,11 +203,15 @@ export class ExplorerAdapter
   }
 
   private _collectNaplistFiles(dirPath: string): string[] {
-    if (!fs.existsSync(dirPath)) return [];
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
     const results: string[] = [];
     for (const entry of entries) {
-      if (entry.name.startsWith(".")) continue;
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
         results.push(...this._collectNaplistFiles(fullPath));
@@ -196,35 +232,55 @@ export class ExplorerAdapter
     return createPlaylistNode(fullPath, this._results, stepNodes);
   }
 
-  private _buildTree(dirPath: string): TreeNode[] {
-    if (!fs.existsSync(dirPath)) return [];
-
+  private _sortedVisibleEntries(dirPath: string): fs.Dirent[] {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-    const nodes: TreeNode[] = [];
-
-    const sortedEntries = entries
+    return entries
       .filter((e) => !e.name.startsWith("."))
       .sort((a, b) => {
-        if (a.isDirectory() && !b.isDirectory()) return -1;
-        if (!a.isDirectory() && b.isDirectory()) return 1;
+        if (a.isDirectory() && !b.isDirectory()) {
+          return -1;
+        }
+        if (!a.isDirectory() && b.isDirectory()) {
+          return 1;
+        }
         return a.name.localeCompare(b.name);
       });
+  }
 
-    for (const entry of sortedEntries) {
-      const fullPath = path.join(dirPath, entry.name);
+  private _buildEntryNode(
+    entry: fs.Dirent,
+    fullPath: string,
+  ): TreeNode | undefined {
+    if (entry.isDirectory()) {
+      const children = this._buildTree(fullPath);
+      return children.length > 0
+        ? createFolderNode(fullPath, children)
+        : undefined;
+    }
+    if (entry.name.endsWith(NAPLIST_EXTENSION)) {
+      return this._buildNaplistNode(fullPath);
+    }
+    if (entry.name.endsWith(NAP_EXTENSION)) {
+      return this._buildFileNode(fullPath);
+    }
+    return undefined;
+  }
 
-      if (entry.isDirectory()) {
-        const children = this._buildTree(fullPath);
-        if (children.length > 0) {
-          nodes.push(createFolderNode(fullPath, children));
-        }
-      } else if (entry.name.endsWith(NAPLIST_EXTENSION)) {
-        nodes.push(this._buildNaplistNode(fullPath));
-      } else if (entry.name.endsWith(NAP_EXTENSION)) {
-        nodes.push(this._buildFileNode(fullPath));
+  private _buildTree(dirPath: string): TreeNode[] {
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+    const sorted = this._sortedVisibleEntries(dirPath);
+    const nodes: TreeNode[] = [];
+    for (const entry of sorted) {
+      const node = this._buildEntryNode(
+        entry,
+        path.join(dirPath, entry.name),
+      );
+      if (node !== undefined) {
+        nodes.push(node);
       }
     }
-
     return nodes;
   }
 }

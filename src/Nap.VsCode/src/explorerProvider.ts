@@ -28,13 +28,17 @@ export interface TreeNode {
 }
 
 const getContextValue = (filePath: string, isDirectory: boolean): string => {
-  if (isDirectory) return CONTEXT_FOLDER;
-  if (filePath.endsWith(NAPLIST_EXTENSION)) return CONTEXT_PLAYLIST;
+  if (isDirectory) {
+    return CONTEXT_FOLDER;
+  }
+  if (filePath.endsWith(NAPLIST_EXTENSION)) {
+    return CONTEXT_PLAYLIST;
+  }
   return CONTEXT_REQUEST_FILE;
 };
 
 const isMethodLine = (trimmed: string, method: string): boolean =>
-  trimmed.startsWith(method + " ") ||
+  trimmed.startsWith(`${method} `) ||
   trimmed === `${NAP_KEY_METHOD}  = ${method}` ||
   trimmed === `${NAP_KEY_METHOD} = ${method}`;
 
@@ -42,9 +46,13 @@ const extractHttpMethod = (fileContent: string): string | undefined => {
   const lines = fileContent.split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.length === 0 || trimmed.startsWith("#")) continue;
+    if (trimmed.length === 0 || trimmed.startsWith("#")) {
+      continue;
+    }
     for (const method of HTTP_METHODS) {
-      if (isMethodLine(trimmed, method)) return method;
+      if (isMethodLine(trimmed, method)) {
+        return method;
+      }
     }
   }
   return undefined;
@@ -55,25 +63,35 @@ const getRunState = (
   results: ReadonlyMap<string, RunResult>
 ): RunState => {
   const result = results.get(filePath);
-  if (!result) return RunState.Idle;
-  if (result.error) return RunState.Error;
+  if (result === undefined) {
+    return RunState.Idle;
+  }
+  if (result.error !== undefined) {
+    return RunState.Error;
+  }
   return result.passed ? RunState.Passed : RunState.Failed;
 };
 
 export const createFileNode = (
   filePath: string,
   fileContent: string,
-  results: ReadonlyMap<string, RunResult>
-): TreeNode => ({
-  label: path.basename(filePath, path.extname(filePath)),
-  filePath,
-  isDirectory: false,
-  contextValue: getContextValue(filePath, false),
-  httpMethod: filePath.endsWith(NAP_EXTENSION)
+  results: ReadonlyMap<string, RunResult>,
+): TreeNode => {
+  const method = filePath.endsWith(NAP_EXTENSION)
     ? extractHttpMethod(fileContent)
-    : undefined,
-  runState: getRunState(filePath, results),
-});
+    : undefined;
+  const base = {
+    label: path.basename(filePath, path.extname(filePath)),
+    filePath,
+    isDirectory: false as const,
+    contextValue: getContextValue(filePath, false),
+    runState: getRunState(filePath, results),
+  };
+  if (method !== undefined) {
+    return { ...base, httpMethod: method };
+  }
+  return base;
+};
 
 export const createFolderNode = (
   folderPath: string,
@@ -87,15 +105,22 @@ export const createFolderNode = (
   children,
 });
 
+const isSectionHeader = (trimmed: string): boolean =>
+  trimmed.startsWith("[") && trimmed.endsWith("]");
+
 export const parsePlaylistStepPaths = (content: string): readonly string[] => {
   const lines = content.split("\n");
   let inSteps = false;
   const steps: string[] = [];
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed === SECTION_STEPS) { inSteps = true; continue; }
-    if (trimmed.startsWith("[") && trimmed.endsWith("]")) { inSteps = false; continue; }
-    if (!inSteps || trimmed.length === 0 || trimmed.startsWith("#")) continue;
+    if (isSectionHeader(trimmed)) {
+      inSteps = trimmed === SECTION_STEPS;
+      continue;
+    }
+    if (!inSteps || trimmed.length === 0 || trimmed.startsWith("#")) {
+      continue;
+    }
     steps.push(trimmed);
   }
   return steps;

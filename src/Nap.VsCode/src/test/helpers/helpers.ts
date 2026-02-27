@@ -35,10 +35,10 @@ export const activateExtension = async (): Promise<TestContext> => {
   };
 };
 
-export const sleep = (ms: number): Promise<void> =>
-  new Promise<void>((resolve) => {
+export const sleep = async (ms: number): Promise<void> =>
+  { await new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
-  });
+  }); };
 
 export const getFixturePath = (relativePath: string): string => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -86,7 +86,7 @@ export const deleteFixtureFile = (relativePath: string): void => {
 };
 
 export const waitForCondition = async (
-  condition: () => Promise<boolean>,
+  condition: () => boolean | Promise<boolean>,
   timeout = 10000,
   interval = 200
 ): Promise<void> => {
@@ -103,10 +103,10 @@ export const waitForCondition = async (
 export const executeCommand = async <T>(
   command: string,
   ...args: unknown[]
-): Promise<T> => vscode.commands.executeCommand<T>(command, ...args);
+): Promise<T> => await vscode.commands.executeCommand<T>(command, ...args);
 
 export const getRegisteredCommands = async (): Promise<string[]> =>
-  vscode.commands.getCommands(true);
+  await vscode.commands.getCommands(true);
 
 export const openDocument = async (
   relativePath: string
@@ -119,4 +119,25 @@ export const openDocument = async (
 
 export const closeAllEditors = async (): Promise<void> => {
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+};
+
+export const extractStepLines = (content: string): string[] => {
+  const lines = content.split("\n");
+  const steps: string[] = [];
+  let inSteps = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === "[steps]") {
+      inSteps = true;
+      continue;
+    }
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      inSteps = false;
+      continue;
+    }
+    if (inSteps && trimmed.length > 0 && !trimmed.startsWith("#")) {
+      steps.push(trimmed);
+    }
+  }
+  return steps;
 };

@@ -45,7 +45,7 @@ suite("Run All — Real API Calls", () => {
     await executeCommand(CMD_RUN_ALL);
 
     await waitForCondition(
-      async () =>
+      () =>
         findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined ||
         findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       30000

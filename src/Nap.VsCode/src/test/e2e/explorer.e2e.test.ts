@@ -22,7 +22,7 @@ const EXTENSION_ID = "nimblesite.napper";
 
 const getExplorerProvider = (): ExtensionApi["explorerProvider"] => {
   const ext = vscode.extensions.getExtension<ExtensionApi>(EXTENSION_ID);
-  if (!ext) throw new Error(`Extension ${EXTENSION_ID} not found`);
+  if (!ext) {throw new Error(`Extension ${EXTENSION_ID} not found`);}
   return ext.exports.explorerProvider;
 };
 
@@ -145,10 +145,10 @@ suite("Explorer Tree View", () => {
     );
   });
 
-  test("nested playlist in tree view expands to show its own children", async function () {
+  test("nested playlist in tree view expands to show its own children", function () {
     this.timeout(10000);
     const provider = getExplorerProvider();
-    const rootNodes = await provider.getChildren();
+    const rootNodes = provider.getChildren();
 
     // Find the Playlists section
     const playlistSection = rootNodes.find(
@@ -164,7 +164,7 @@ suite("Explorer Tree View", () => {
     );
 
     // Find full.naplist — it references smoke.naplist (nested) and get-pet.nap
-    const fullPlaylist = findNodeByLabel(playlistSection.children!, "full");
+    const fullPlaylist = findNodeByLabel(playlistSection.children, "full");
     assert.ok(
       fullPlaylist,
       "Playlists section must contain 'full' playlist (from full.naplist)"
@@ -180,7 +180,7 @@ suite("Explorer Tree View", () => {
     );
 
     // The nested smoke.naplist step must itself be a playlist with children
-    const smokeChild = findNodeByLabel(fullPlaylist.children!, "smoke");
+    const smokeChild = findNodeByLabel(fullPlaylist.children, "smoke");
     assert.ok(
       smokeChild,
       "full playlist must contain 'smoke' as a child (the nested .naplist)"
@@ -196,7 +196,7 @@ suite("Explorer Tree View", () => {
     );
 
     // Verify smoke's children are the actual .nap step files
-    const smokeChildLabels = smokeChild.children!.map((c) => c.label);
+    const smokeChildLabels = smokeChild.children.map((c) => c.label);
     assert.ok(
       smokeChildLabels.includes("list-pets"),
       "Nested smoke playlist must contain list-pets step"
@@ -207,7 +207,7 @@ suite("Explorer Tree View", () => {
     );
 
     // The get-pet.nap direct child of full.naplist is a leaf (not a playlist)
-    const getPetChild = findNodeByLabel(fullPlaylist.children!, "get-pet");
+    const getPetChild = findNodeByLabel(fullPlaylist.children, "get-pet");
     assert.ok(
       getPetChild,
       "full playlist must also contain 'get-pet' as a direct step"
@@ -219,16 +219,16 @@ suite("Explorer Tree View", () => {
     );
   });
 
-  test("nested playlist in file tree also expands with children", async function () {
+  test("nested playlist in file tree also expands with children", function () {
     this.timeout(10000);
     const provider = getExplorerProvider();
-    const rootNodes = await provider.getChildren();
+    const rootNodes = provider.getChildren();
 
     // Find the petstore folder in the file tree
     const petstoreFolder = findNodeByLabel(rootNodes, "petstore");
     assert.ok(petstoreFolder, "File tree must contain petstore folder");
 
-    const petstoreChildren = await provider.getChildren(petstoreFolder);
+    const petstoreChildren = provider.getChildren(petstoreFolder);
 
     // Find full.naplist in the petstore folder
     const fullNode = findNodeByLabel(petstoreChildren, "full");
@@ -242,7 +242,7 @@ suite("Explorer Tree View", () => {
     );
 
     // The nested smoke.naplist must be a playlist with its own children
-    const smokeInFileTree = findNodeByLabel(fullNode.children!, "smoke");
+    const smokeInFileTree = findNodeByLabel(fullNode.children, "smoke");
     assert.ok(
       smokeInFileTree,
       "full playlist in file tree must contain nested 'smoke' playlist"

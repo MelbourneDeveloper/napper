@@ -33,7 +33,7 @@ suite("CodeLens", () => {
     );
 
     assert.ok(
-      lenses !== undefined && lenses.length > 0,
+      lenses.length > 0,
       "Should have at least one CodeLens for shorthand .nap file"
     );
 
@@ -65,7 +65,7 @@ suite("CodeLens", () => {
     );
 
     assert.ok(
-      lenses !== undefined && lenses.length > 0,
+      lenses.length > 0,
       "Should have CodeLens for [request] section"
     );
 
@@ -86,7 +86,7 @@ suite("CodeLens", () => {
     );
 
     assert.ok(
-      lenses !== undefined && lenses.length > 0,
+      lenses.length > 0,
       "Should have CodeLens for POST .nap file"
     );
   });
@@ -102,7 +102,7 @@ suite("CodeLens", () => {
     );
 
     assert.ok(
-      lenses !== undefined && lenses.length > 0,
+      lenses.length > 0,
       "Should have CodeLens for .naplist file with [meta] section"
     );
 
@@ -125,7 +125,7 @@ suite("CodeLens", () => {
       doc.uri
     );
 
-    const runLens = lenses?.find(
+    const runLens = lenses.find(
       (l) => l.command?.command === CMD_RUN_FILE
     );
     assert.ok(runLens, "Run lens should exist");

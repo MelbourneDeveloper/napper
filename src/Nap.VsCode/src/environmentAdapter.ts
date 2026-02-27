@@ -64,16 +64,20 @@ export class EnvironmentStatusBar implements vscode.Disposable {
     });
 
     if (selected) {
-      this._currentEnv = selected.label;
-      this._updateLabel();
-
-      const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-      await config.update(
-        CONFIG_DEFAULT_ENV,
-        this._currentEnv,
-        vscode.ConfigurationTarget.Workspace
-      );
+      await this._applySelection(selected.label);
     }
+  }
+
+  private async _applySelection(envName: string): Promise<void> {
+    this._currentEnv = envName;
+    this._updateLabel();
+
+    const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    await config.update(
+      CONFIG_DEFAULT_ENV,
+      this._currentEnv,
+      vscode.ConfigurationTarget.Workspace
+    );
   }
 
   private _updateLabel(): void {
@@ -84,6 +88,8 @@ export class EnvironmentStatusBar implements vscode.Disposable {
 
   dispose(): void {
     this._statusBarItem.dispose();
-    for (const d of this._disposables) d.dispose();
+    for (const d of this._disposables) {
+      d.dispose();
+    }
   }
 }

@@ -35,9 +35,9 @@ export const err = <E>(error: E): Result<never, E> => ({
 });
 
 export const enum RunState {
-  Idle = 0,
-  Running = 1,
-  Passed = 2,
-  Failed = 3,
-  Error = 4,
+  Idle,
+  Running,
+  Passed,
+  Failed,
+  Error,
 }

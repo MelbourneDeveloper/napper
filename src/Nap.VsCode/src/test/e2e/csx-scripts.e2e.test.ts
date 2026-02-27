@@ -10,6 +10,7 @@ import {
   closeAllEditors,
   executeCommand,
   waitForCondition,
+  extractStepLines,
 } from "../helpers/helpers";
 import {
   CMD_RUN_FILE,
@@ -58,7 +59,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -127,7 +128,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -192,7 +193,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -249,7 +250,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -315,7 +316,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
 
     // Panel must appear within 2s — the slow script takes 3s+
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       2000
     );
 
@@ -345,7 +346,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     // First run
     await executeCommand(CMD_RUN_FILE, doc.uri);
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -357,7 +358,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     // Second run
     const secondRunPromise = executeCommand(CMD_RUN_FILE, doc.uri);
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       2000
     );
 
@@ -397,7 +398,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -408,7 +409,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
 
     // Report file must be created even when playlist contains failures
     await waitForCondition(
-      async () => fs.existsSync(expectedReportPath),
+      () => fs.existsSync(expectedReportPath),
       5000
     );
 
@@ -451,7 +452,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -461,7 +462,7 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await executeCommand(CMD_SAVE_REPORT);
 
     await waitForCondition(
-      async () => fs.existsSync(expectedReportPath),
+      () => fs.existsSync(expectedReportPath),
       5000
     );
 
@@ -555,26 +556,14 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     for (const playlist of playlists) {
       const playlistPath = path.join(petstoreDir, playlist);
       const content = fs.readFileSync(playlistPath, "utf-8");
-      const lines = content.split("\n");
+      const stepLines = extractStepLines(content);
 
-      let inSteps = false;
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === "[steps]") {
-          inSteps = true;
-          continue;
-        }
-        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-          inSteps = false;
-          continue;
-        }
-        if (inSteps && trimmed.length > 0 && !trimmed.startsWith("#")) {
-          const resolved = path.resolve(petstoreDir, trimmed);
-          assert.ok(
-            fs.existsSync(resolved),
-            `Step '${trimmed}' in ${playlist} must resolve to existing file: ${resolved}`
-          );
-        }
+      for (const step of stepLines) {
+        const resolved = path.resolve(petstoreDir, step);
+        assert.ok(
+          fs.existsSync(resolved),
+          `Step '${step}' in ${playlist} must resolve to existing file: ${resolved}`
+        );
       }
     }
   });
