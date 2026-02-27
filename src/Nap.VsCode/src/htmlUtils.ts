@@ -1,7 +1,7 @@
 // Shared HTML utility functions for webview panels
 // Used by both responsePanel and playlistPanel
 
-const JSON_INDENT_SIZE = 2;
+import { JSON_INDENT_SIZE } from "./constants";
 
 export const escapeHtml = (text: string): string =>
   text

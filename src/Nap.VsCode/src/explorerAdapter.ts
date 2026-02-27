@@ -18,6 +18,7 @@ import {
   NAPLIST_EXTENSION,
   CONTEXT_PLAYLIST,
   CONTEXT_PLAYLIST_SECTION,
+  CONTEXT_SCRIPT_FILE,
   ICON_PLAYLIST_SECTION,
   ICON_PLAYLIST_FILE,
   ICON_IDLE,
@@ -88,6 +89,9 @@ const applyFileStyle = (
   };
   if (node.contextValue === CONTEXT_PLAYLIST) {
     item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_FILE);
+    return;
+  }
+  if (node.contextValue === CONTEXT_SCRIPT_FILE) {
     return;
   }
   item.description = node.httpMethod ?? EMPTY_STRING;

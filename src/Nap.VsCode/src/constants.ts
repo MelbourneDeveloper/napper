@@ -49,6 +49,7 @@ export const CONTEXT_REQUEST_FILE = "requestFile";
 export const CONTEXT_PLAYLIST = "playlist";
 export const CONTEXT_FOLDER = "folder";
 export const CONTEXT_PLAYLIST_SECTION = "playlistSection";
+export const CONTEXT_SCRIPT_FILE = "scriptFile";
 
 // Labels
 export const PLAYLIST_SECTION_LABEL = "Playlists";
@@ -292,4 +293,10 @@ export const LOG_MSG_OPENAPI_IMPORT = "OpenAPI import:";
 
 // Numeric thresholds
 export const PERCENTAGE_MULTIPLIER = 100;
+export const HTTP_STATUS_OK = 200;
+export const HTTP_STATUS_REDIRECT_MIN = 300;
 export const HTTP_STATUS_CLIENT_ERROR_MIN = 400;
+export const JSON_INDENT_SIZE = 2;
+export const PAD_DIGITS_DEFAULT = 2;
+export const PAD_DIGITS_LARGE = 3;
+export const PAD_LARGE_THRESHOLD = 100;

@@ -5,10 +5,13 @@ import * as path from "path";
 import {
   NAP_EXTENSION,
   NAPLIST_EXTENSION,
+  FSX_EXTENSION,
+  CSX_EXTENSION,
   CONTEXT_REQUEST_FILE,
   CONTEXT_PLAYLIST,
   CONTEXT_FOLDER,
   CONTEXT_PLAYLIST_SECTION,
+  CONTEXT_SCRIPT_FILE,
   PLAYLIST_SECTION_LABEL,
   SECTION_STEPS,
   HTTP_METHODS,
@@ -27,12 +30,18 @@ export interface TreeNode {
   readonly children?: readonly TreeNode[];
 }
 
+const isScriptFile = (filePath: string): boolean =>
+  filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION);
+
 const getContextValue = (filePath: string, isDirectory: boolean): string => {
   if (isDirectory) {
     return CONTEXT_FOLDER;
   }
   if (filePath.endsWith(NAPLIST_EXTENSION)) {
     return CONTEXT_PLAYLIST;
+  }
+  if (isScriptFile(filePath)) {
+    return CONTEXT_SCRIPT_FILE;
   }
   return CONTEXT_REQUEST_FILE;
 };

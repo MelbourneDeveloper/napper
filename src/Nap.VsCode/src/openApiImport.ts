@@ -29,13 +29,18 @@ const pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
     title: OPENAPI_PICK_FILE,
   });
 
+const defaultWorkspaceUri = (): { readonly defaultUri: vscode.Uri } | Record<string, never> => {
+  const uri = vscode.workspace.workspaceFolders?.[0]?.uri;
+  return uri !== undefined ? { defaultUri: uri } : {};
+};
+
 const pickOutputFolder = (): Thenable<readonly vscode.Uri[] | undefined> =>
   vscode.window.showOpenDialog({
     canSelectFiles: false,
     canSelectFolders: true,
     canSelectMany: false,
     title: OPENAPI_PICK_FOLDER,
-    defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
+    ...defaultWorkspaceUri(),
   });
 
 const writeGeneratedFile = (
@@ -82,26 +87,36 @@ const handleSuccess = async (
   );
 };
 
+interface PickedPaths {
+  readonly specFile: vscode.Uri;
+  readonly outFolder: vscode.Uri;
+}
+
+const pickPaths = async (): Promise<PickedPaths | undefined> => {
+  const specFiles = await pickSpecFile();
+  const specFile = specFiles?.[0];
+  if (specFile === undefined) { return undefined; }
+  const outputFolder = await pickOutputFolder();
+  const outFolder = outputFolder?.[0];
+  if (outFolder === undefined) { return undefined; }
+  return { specFile, outFolder };
+};
+
 export const importOpenApi = async (
   explorer: ExplorerAdapter,
   logger: Logger
 ): Promise<void> => {
-  const specFiles = await pickSpecFile();
-  if (specFiles === undefined || specFiles.length === 0) { return; }
+  const paths = await pickPaths();
+  if (paths === undefined) { return; }
 
-  const outputFolder = await pickOutputFolder();
-  if (outputFolder === undefined || outputFolder.length === 0) { return; }
-
-  const specContent = fs.readFileSync(specFiles[0].fsPath, ENCODING_UTF8);
+  const specContent = fs.readFileSync(paths.specFile.fsPath, ENCODING_UTF8);
   const result = generateFromOpenApi(specContent);
 
   if (!result.ok) {
-    await vscode.window.showErrorMessage(
-      `${OPENAPI_ERROR_PREFIX}${result.error}`
-    );
+    await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${result.error}`);
     return;
   }
 
   const ctx: ImportContext = { explorer, logger };
-  await handleSuccess(outputFolder[0].fsPath, result.value, ctx);
+  await handleSuccess(paths.outFolder.fsPath, result.value, ctx);
 };
