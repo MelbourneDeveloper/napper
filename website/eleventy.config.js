@@ -42,6 +42,28 @@ export default function (eleventyConfig) {
     return content;
   });
 
+  // Fix robots.txt: allow image crawling (Google requires image access)
+  eleventyConfig.addTransform("robots-fix", function (content) {
+    if (this.page.outputPath === "robots.txt" || this.page.outputPath?.endsWith("/robots.txt")) {
+      return content.replace(
+        "Disallow: /assets/",
+        "Disallow: /assets/css/\nDisallow: /assets/js/"
+      );
+    }
+    return content;
+  });
+
+  // Fix llms.txt: remove dead /api/ link
+  eleventyConfig.addTransform("llms-fix", function (content) {
+    if (this.page.outputPath === "llms.txt" || this.page.outputPath?.endsWith("/llms.txt")) {
+      return content.replace(
+        "- API Reference: https://napper.dev/api/",
+        ""
+      );
+    }
+    return content;
+  });
+
   return {
     dir: {
       input: "src",

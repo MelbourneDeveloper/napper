@@ -12,7 +12,18 @@
       "subtitle": "News, guides, and updates from the Napper team.",
       "tags": "Tags",
       "categories": "Categories",
-      "empty": "No blog posts yet. Check back soon!"
+      "empty": "No blog posts yet. Check back soon!",
+      "tagsTitle": "Tags",
+      "tagsDescription": "Browse blog posts by tag.",
+      "noTags": "No tags yet. Check back soon!",
+      "categoriesTitle": "Categories",
+      "categoriesDescription": "Browse blog posts by category.",
+      "noCategories": "No categories yet. Check back soon!",
+      "post": "post",
+      "allCategories": "All categories",
+      "allTags": "All tags",
+      "postsTagged": "Posts tagged",
+      "back": "Back to Blog"
     },
     "footer": {
       "copyright": "Napper",
