@@ -1,0 +1,7 @@
+[meta]
+name = "CSX With Failing Script"
+
+[steps]
+../scripts/echo.csx
+../scripts/fail.csx
+./list-pets.nap

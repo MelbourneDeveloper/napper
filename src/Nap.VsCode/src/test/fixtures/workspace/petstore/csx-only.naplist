@@ -1,0 +1,6 @@
+[meta]
+name = "CSX-Only Playlist"
+
+[steps]
+../scripts/echo.csx
+../scripts/multi-output.csx
