@@ -47,6 +47,9 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Install dotnet-script
+        run: dotnet tool install -g dotnet-script
+
       - name: Build
         run: dotnet build --nologo
 
