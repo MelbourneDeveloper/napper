@@ -37,6 +37,6 @@ Most API testing tools give you a sandboxed JavaScript environment with limited 
 
 ## Get started
 
-Install the VS Code extension or grab the CLI binary from [GitHub Releases](https://github.com/MelbourneDeveloper/ApiTesting/releases). Read the [documentation](/docs/) to learn more.
+Install the VS Code extension or grab the CLI binary from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases). Read the [documentation](/docs/) to learn more.
 
 Napper is free, open source, and MIT licensed.

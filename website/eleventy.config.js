@@ -15,6 +15,10 @@ export default function (eleventyConfig) {
         name: "Napper",
         url: "https://napper.dev",
         logo: "/assets/images/logo.png",
+        sameAs: [
+          "https://github.com/MelbourneDeveloper/napper",
+          "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper",
+        ],
       },
     },
     features: {

@@ -26,7 +26,7 @@ jobs:
 
       - name: Download Napper CLI
         run: |
-          curl -L -o napper https://github.com/MelbourneDeveloper/ApiTesting/releases/latest/download/napper-linux-x64
+          curl -L -o napper https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64
           chmod +x napper
           sudo mv napper /usr/local/bin/
 
@@ -48,7 +48,7 @@ api-tests:
   stage: test
   image: mcr.microsoft.com/dotnet/runtime:10.0
   before_script:
-    - curl -L -o /usr/local/bin/napper https://github.com/MelbourneDeveloper/ApiTesting/releases/latest/download/napper-linux-x64
+    - curl -L -o /usr/local/bin/napper https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64
     - chmod +x /usr/local/bin/napper
   script:
     - napper run ./tests/ --env ci --output junit > results.xml

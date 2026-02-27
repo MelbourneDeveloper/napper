@@ -35,7 +35,7 @@ For CI/CD pipelines or terminal-only workflows, install the standalone CLI.
 
 ### From GitHub Releases
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/MelbourneDeveloper/ApiTesting/releases):
+Download the latest binary for your platform from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases):
 
 | Platform | Binary |
 |----------|--------|
@@ -48,7 +48,7 @@ Download the latest binary for your platform from [GitHub Releases](https://gith
 
 ```bash
 # Download (replace with your platform)
-curl -L -o napper https://github.com/MelbourneDeveloper/ApiTesting/releases/latest/download/napper-osx-arm64
+curl -L -o napper https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64
 
 # Make executable
 chmod +x napper

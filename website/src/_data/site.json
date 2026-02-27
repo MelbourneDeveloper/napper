@@ -7,7 +7,7 @@
   "language": "en",
   "themeColor": "#1B4965",
   "stylesheet": "/assets/css/styles.css",
-  "github": "https://github.com/MelbourneDeveloper/ApiTesting",
+  "github": "https://github.com/MelbourneDeveloper/napper",
   "ogImage": "/assets/images/logo.png",
   "keywords": "API testing, HTTP client, VS Code extension, F# scripting, Postman alternative, Bruno alternative, CLI testing, REST API, test automation",
   "organization": {
@@ -15,7 +15,7 @@
     "url": "https://napper.dev",
     "logo": "/assets/images/logo.png",
     "sameAs": [
-      "https://github.com/MelbourneDeveloper/ApiTesting",
+      "https://github.com/MelbourneDeveloper/napper",
       "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper"
     ]
   }

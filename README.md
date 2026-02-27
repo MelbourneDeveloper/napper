@@ -15,7 +15,7 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=nimblesite.napper">VS Code Marketplace</a> &middot;
   <a href="https://napper.dev">Website</a> &middot;
   <a href="https://napper.dev/docs/">Documentation</a> &middot;
-  <a href="https://github.com/MelbourneDeveloper/ApiTesting/releases">Releases</a>
+  <a href="https://github.com/MelbourneDeveloper/napper/releases">Releases</a>
 </p>
 
 ---
@@ -47,7 +47,7 @@ code --install-extension nimblesite.napper
 
 ### Or grab the CLI binary
 
-Download from the [latest release](https://github.com/MelbourneDeveloper/ApiTesting/releases).
+Download from the [latest release](https://github.com/MelbourneDeveloper/napper/releases).
 
 ## How do you use Napper?
 

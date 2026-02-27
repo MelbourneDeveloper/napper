@@ -2,7 +2,7 @@
   "main": [
     { "text": "Docs", "url": "/docs/" },
     { "text": "Blog", "url": "/blog/" },
-    { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/ApiTesting", "external": true }
+    { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper", "external": true }
   ],
   "docs": [
     {
@@ -29,6 +29,14 @@
         { "text": "CLI Reference", "url": "/docs/cli-reference/" },
         { "text": "CI Integration", "url": "/docs/ci-integration/" }
       ]
+    },
+    {
+      "title": "Compare",
+      "items": [
+        { "text": "vs Postman", "url": "/docs/vs-postman/" },
+        { "text": "vs Bruno", "url": "/docs/vs-bruno/" },
+        { "text": "vs .http Files", "url": "/docs/vs-http-files/" }
+      ]
     }
   ],
   "footer": [
@@ -44,17 +52,17 @@
     {
       "title": "Community",
       "items": [
-        { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/ApiTesting" },
-        { "text": "Issues", "url": "https://github.com/MelbourneDeveloper/ApiTesting/issues" },
+        { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper" },
+        { "text": "Issues", "url": "https://github.com/MelbourneDeveloper/napper/issues" },
         { "text": "VS Code Marketplace", "url": "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper" }
       ]
     },
     {
       "title": "Compare",
       "items": [
-        { "text": "vs Postman", "url": "/docs/quick-start/#why-napper" },
-        { "text": "vs Bruno", "url": "/docs/quick-start/#why-napper" },
-        { "text": "vs .http files", "url": "/docs/quick-start/#why-napper" }
+        { "text": "vs Postman", "url": "/docs/vs-postman/" },
+        { "text": "vs Bruno", "url": "/docs/vs-bruno/" },
+        { "text": "vs .http Files", "url": "/docs/vs-http-files/" }
       ]
     }
   ]
