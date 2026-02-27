@@ -245,6 +245,7 @@ let parseNapList (input: string) : Result<NapPlaylist, string> =
                 if line.EndsWith ".nap" then NapFileStep line
                 elif line.EndsWith ".naplist" then PlaylistRef line
                 elif line.EndsWith ".fsx" then ScriptStep line
+                elif line.EndsWith ".csx" then ScriptStep line
                 elif not (line.Contains ".") then FolderRef line
                 else NapFileStep line  // default to nap file
             steps <- steps @ [step]

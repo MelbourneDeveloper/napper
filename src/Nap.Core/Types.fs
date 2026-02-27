@@ -99,7 +99,7 @@ type PlaylistStep =
     | NapFileStep of string       // path to a .nap file
     | PlaylistRef of string       // path to another .naplist
     | FolderRef of string         // path to a folder
-    | ScriptStep of string        // path to an .fsx orchestration script
+    | ScriptStep of string        // path to an .fsx or .csx orchestration script
 
 /// A parsed .naplist file
 type NapPlaylist = {

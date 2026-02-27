@@ -85,9 +85,9 @@ duration < 1000ms
 
 All assertions are evaluated. Napper reports each one as passed or failed.
 
-## Complex assertions with F# scripts
+## Complex assertions with scripts
 
-For assertions that go beyond the declarative syntax, use [F# post-request scripts](/docs/fsharp-scripting/):
+For assertions that go beyond the declarative syntax, use [F#](/docs/fsharp-scripting/) or [C#](/docs/csharp-scripting/) post-request scripts:
 
 ```
 [script]
