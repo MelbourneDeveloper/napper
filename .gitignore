@@ -24,6 +24,10 @@ src/Nap.VsCode/out/
 
 .DS_Store
 
+# Test coverage output
+coverage/
+TestResults/
+
 .playwright-mcp/
 
 website/_site/

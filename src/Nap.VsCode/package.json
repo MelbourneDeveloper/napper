@@ -148,13 +148,19 @@
       },
       {
         "command": "napper.importOpenApi",
-        "title": "Napper: Import from OpenAPI"
+        "title": "Napper: Import from OpenAPI",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "napper.newRequest",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "napper.importOpenApi",
           "when": "view == napperExplorer",
           "group": "navigation"
         }
@@ -211,10 +217,12 @@
     "pretest": "npm run build:cli && npm run compile && npm run compile:tests",
     "test": "vscode-test",
     "test:unit": "npm run compile:tests && mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
+    "test:unit:coverage": "npm run compile:tests && c8 mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
     "lint": "eslint src",
     "package": "vsce package"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.95.0",
@@ -223,11 +231,13 @@
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.0.0",
+    "c8": "^11.0.0",
     "eslint": "^9.0.0",
     "glob": "^13.0.6",
     "mocha": "^11.7.5",
     "ts-loader": "^9.5.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.1",
     "webpack": "^5.97.0",
     "webpack-cli": "^6.0.0"
   }

@@ -61,6 +61,7 @@ export const ICON_RUNNING = "loading~spin";
 export const ICON_PASSED = "pass";
 export const ICON_FAILED = "error";
 export const ICON_ERROR = "warning";
+export const ICON_IMPORT_OPENAPI = "cloud-download";
 
 // Section headers in .nap files
 export const SECTION_REQUEST = "[request]";
