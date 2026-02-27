@@ -22,7 +22,7 @@
     "api-testing",
     "napper"
   ],
-  "icon": "media/napper-icon.png",
+  "icon": "media/logo.png",
   "preview": true,
   "engines": {
     "vscode": "^1.95.0"

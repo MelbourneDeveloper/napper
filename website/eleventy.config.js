@@ -4,7 +4,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPlugin(techdoc, {
     site: {
       name: "Napper",
-      url: "https://napper.dev",
+      url: "https://napperapi.dev",
       description:
         "CLI-first, test-oriented HTTP API testing tool for VS Code with F# and C# scripting.",
       author: "Christian Findlay",
@@ -13,7 +13,7 @@ export default function (eleventyConfig) {
       ogImage: "/assets/images/logo.png",
       organization: {
         name: "Napper",
-        url: "https://napper.dev",
+        url: "https://napperapi.dev",
         logo: "/assets/images/logo.png",
         sameAs: [
           "https://github.com/MelbourneDeveloper/napper",
@@ -57,11 +57,23 @@ export default function (eleventyConfig) {
     return content;
   });
 
+  // Inject Nimblesite branding into footer
+  const footerBranding = '<p>Made by <a href="https://nimblesite.co">Nimblesite</a></p>';
+  eleventyConfig.addTransform("footer-branding", function (content) {
+    if (this.page.outputPath?.endsWith(".html")) {
+      return content.replace(
+        '</div>\n  </footer>',
+        `  ${footerBranding}\n      </div>\n  </footer>`
+      );
+    }
+    return content;
+  });
+
   // Fix llms.txt: remove dead /api/ link
   eleventyConfig.addTransform("llms-fix", function (content) {
     if (this.page.outputPath === "llms.txt" || this.page.outputPath?.endsWith("/llms.txt")) {
       return content.replace(
-        "- API Reference: https://napper.dev/api/",
+        "- API Reference: https://napperapi.dev/api/",
         ""
       );
     }
