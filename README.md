@@ -6,7 +6,8 @@
 
 <p align="center">
   <strong>API Testing, Supercharged.</strong><br>
-  The CLI-first HTTP testing tool for developers who live in the terminal.<br>
+  Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code.
+  Define HTTP requests as plain text <code>.nap</code> files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output.
   As simple as curl for quick requests. As powerful as F# for full test suites.
 </p>
 
@@ -14,7 +15,7 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=nimblesite.napper">VS Code Marketplace</a> &middot;
   <a href="https://napper.dev">Website</a> &middot;
   <a href="https://napper.dev/docs/">Documentation</a> &middot;
-  <a href="https://github.com/MelbourneDeveloper/napper/releases">Releases</a>
+  <a href="https://github.com/MelbourneDeveloper/ApiTesting/releases">Releases</a>
 </p>
 
 ---
@@ -25,7 +26,7 @@
 
 ---
 
-## Built for developers who ship
+## What can Napper do?
 
 Everything you need for API testing. Nothing you don't.
 
@@ -46,9 +47,9 @@ code --install-extension nimblesite.napper
 
 ### Or grab the CLI binary
 
-Download from the [latest release](https://github.com/MelbourneDeveloper/napper/releases).
+Download from the [latest release](https://github.com/MelbourneDeveloper/ApiTesting/releases).
 
-## See it in action
+## How do you use Napper?
 
 ### Minimal request
 
@@ -62,15 +63,13 @@ GET https://httpbin.org/get
 
 ```
 [request]
-method = POST
-url = {{baseUrl}}/posts
+POST {{baseUrl}}/posts
 
 [request.headers]
 Content-Type = application/json
 Accept = application/json
 
 [request.body]
-content-type = application/json
 """
 {
   "title": "Nap Integration Test",
@@ -90,30 +89,29 @@ body.userId = {{userId}}
 
 ```
 [meta]
-name        = "Get user by ID"
-description = "Fetches a single user and asserts shape"
-tags        = ["users", "smoke"]
+name = Get user by ID
+description = Fetches a single user and asserts shape
+tags = users, smoke
 
 [vars]
-userId = "42"
+userId = 42
 
 [request]
-method  = GET
-url     = https://api.example.com/users/{{userId}}
+GET https://api.example.com/users/{{userId}}
 
 [request.headers]
 Authorization = Bearer {{token}}
-Accept        = application/json
+Accept = application/json
 
 [assert]
-status  = 200
+status = 200
 body.id = {{userId}}
 body.name exists
 headers.Content-Type contains "json"
 duration < 500ms
 
 [script]
-pre  = ./scripts/auth.fsx
+pre = ./scripts/auth.fsx
 post = ./scripts/validate-user.fsx
 ```
 
@@ -130,7 +128,7 @@ napper run ./smoke.naplist
 napper run ./tests/ --env staging --output junit
 ```
 
-## File Formats
+## What file formats does Napper use?
 
 | Extension | Purpose | Example |
 |-----------|---------|---------|
@@ -145,8 +143,8 @@ napper run ./tests/ --env staging --output junit
 
 ```
 [meta]
-name = "JSONPlaceholder CRUD"
-description = "Full create-read-update-delete lifecycle for posts"
+name = JSONPlaceholder CRUD
+description = Full create-read-update-delete lifecycle for posts
 
 [steps]
 ../scripts/setup.fsx
@@ -163,15 +161,15 @@ description = "Full create-read-update-delete lifecycle for posts"
 
 **`.napenv`** (base, checked into git):
 ```
-baseUrl = "https://jsonplaceholder.typicode.com"
-userId = "1"
-postId = "1"
+baseUrl = https://jsonplaceholder.typicode.com
+userId = 1
+postId = 1
 ```
 
 **`.napenv.local`** (secrets, gitignored):
 ```
-token = "eyJhbGci..."
-apiKey = "sk-secret-key"
+token = eyJhbGci...
+apiKey = sk-secret-key
 ```
 
 Select a named environment with `--env`:
@@ -206,9 +204,7 @@ Options:
 | 1 | One or more assertions failed |
 | 2 | Runtime error (network, script error, parse error) |
 
-## Why Napper?
-
-How Napper stacks up against the alternatives:
+## How does Napper compare to other API testing tools?
 
 | Feature | Napper | Postman | Bruno | .http files |
 |---------|--------|---------|-------|-------------|

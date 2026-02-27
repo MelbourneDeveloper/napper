@@ -1,8 +1,8 @@
 ---
 layout: layouts/docs.njk
 title: Quick Start
-description: "Get started with Napper in 5 minutes. Create your first request, add assertions, and run a test suite."
-keywords: "quick start, tutorial, first request, API testing tutorial"
+description: "Get started with Napper in 5 minutes. Create your first HTTP request, add assertions, set up environments, and run a full test suite from the CLI."
+keywords: "quick start, tutorial, first request, API testing tutorial, getting started"
 eleventyNavigation:
   key: Quick Start
   order: 3
@@ -12,7 +12,7 @@ eleventyNavigation:
 
 Get up and running with Napper in under 5 minutes.
 
-## 1. Create your first request
+## How do I create my first request?
 
 Create a file called `hello.nap`:
 
@@ -28,7 +28,7 @@ napper run ./hello.nap
 
 You should see the JSON response printed to your terminal.
 
-## 2. Add assertions
+## How do I add assertions?
 
 Edit `hello.nap` to verify the response:
 
@@ -44,7 +44,7 @@ body.title exists
 
 Run it again. Napper will report whether each assertion passed or failed.
 
-## 3. Use variables
+## How do I use variables and environments?
 
 Create a `.napenv` file in the same directory:
 
@@ -64,7 +64,7 @@ status = 200
 ```
 {% endraw %}
 
-## 4. Create a test suite
+## How do I create a test suite?
 
 Create a `smoke.naplist` file:
 
@@ -84,7 +84,7 @@ Run the entire suite:
 napper run ./smoke.naplist
 ```
 
-## 5. Use in CI/CD
+## How do I use Napper in CI/CD?
 
 Output JUnit XML for your pipeline:
 
@@ -92,19 +92,7 @@ Output JUnit XML for your pipeline:
 napper run ./smoke.naplist --output junit > results.xml
 ```
 
-## Why Napper?
-
-### vs Postman
-
-Postman is a GUI-first tool that requires an account, stores collections in JSON, and locks advanced features behind a paywall. Napper is free, open source, CLI-first, and stores everything in plain text files that belong in your repo.
-
-### vs Bruno
-
-Bruno is a great open-source alternative to Postman, but it's still GUI-first. Napper puts the CLI first and gives you the full power of F# scripting instead of sandboxed JavaScript.
-
-### vs .http files
-
-`.http` files are simple and built into VS Code, but they have no assertions, no test suites, no variables, no scripting, and no CLI. Napper gives you all of that while keeping the same plain-text simplicity.
+Napper exits with code 0 when all assertions pass, 1 when any assertion fails, and 2 on runtime errors. This integrates naturally with any CI platform that fails on non-zero exit codes.
 
 ## Next steps
 

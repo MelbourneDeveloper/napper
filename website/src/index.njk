@@ -1,17 +1,18 @@
 ---
 layout: layouts/base.njk
 title: "Napper — CLI-First API Testing for VS Code"
-description: "The developer-first HTTP testing tool. As simple as curl, as powerful as F#. A modern alternative to Postman and Bruno that lives in your editor."
+description: "Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code. A modern alternative to Postman and Bruno with F# scripting, declarative assertions, and CI/CD integration."
 permalink: /
 ---
 
 {# ---- Hero ---- #}
 <section class="hero">
   <div class="hero-content">
-    <img src="/assets/images/logo.png" alt="Napper logo" class="hero-logo" width="80" height="80">
+    <img src="/assets/images/logo.png" alt="Napper logo — open-source CLI-first API testing tool for VS Code" class="hero-logo" width="80" height="80">
     <h1>API Testing,<br>Supercharged.</h1>
     <p class="hero-subtitle">
-      The CLI-first HTTP testing tool for developers who live in the terminal.
+      Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code.
+      Define HTTP requests as plain text <code>.nap</code> files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output.
       As simple as curl for quick requests. As powerful as F# for full test suites.
     </p>
     <div class="hero-actions">
@@ -60,7 +61,7 @@ permalink: /
 <section class="section-alt">
   <div class="section">
     <div class="section-heading">
-      <h2>Built for developers who ship</h2>
+      <h2>What can Napper do?</h2>
       <p>Everything you need for API testing. Nothing you don't.</p>
     </div>
 
@@ -119,8 +120,8 @@ permalink: /
 {# ---- Comparison ---- #}
 <section class="section">
   <div class="section-heading">
-    <h2>Why Napper?</h2>
-    <p>How Napper stacks up against the alternatives.</p>
+    <h2>How does Napper compare to other API testing tools?</h2>
+    <p>See how Napper stacks up against Postman, Bruno, and .http files.</p>
   </div>
 
   <div class="comparison-wrapper">
@@ -207,7 +208,7 @@ permalink: /
 <section class="section-alt">
   <div class="section">
     <div class="section-heading">
-      <h2>See it in action</h2>
+      <h2>How do you use Napper?</h2>
       <p>From one-liners to full test suites.</p>
     </div>
 
@@ -283,6 +284,55 @@ permalink: /
   </div>
 </section>
 
+{# ---- FAQ Section ---- #}
+<section class="section">
+  <div class="section-heading">
+    <h2>Frequently Asked Questions</h2>
+  </div>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <h3>What is Napper?</h3>
+      <p>Napper is a free, open-source, CLI-first API testing tool that integrates natively with VS Code. It lets you define HTTP requests as plain text <code>.nap</code> files, add declarative assertions to validate responses, compose requests into test suites with <code>.naplist</code> files, and run everything from the terminal or your editor. It uses F# for advanced scripting and outputs JUnit XML for CI/CD pipelines.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Is Napper free?</h3>
+      <p>Yes. Napper is completely free and open source under the MIT license. There are no paid tiers, no account requirements, and no feature gates. The CLI binary and the VS Code extension are both free to use.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How is Napper different from Postman?</h3>
+      <p>Postman is a GUI-first tool that requires an account, stores collections as JSON, and locks advanced features behind a paywall. Napper is CLI-first, stores everything as plain text files in your repository, requires no account, and is completely free. Napper also provides F# scripting instead of sandboxed JavaScript, and integrates directly into VS Code with native Test Explorer support.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How is Napper different from Bruno?</h3>
+      <p>Bruno is an excellent open-source alternative to Postman, but it is GUI-first with a standalone desktop application. Napper puts the CLI first and lives inside VS Code. For scripting, Bruno offers sandboxed JavaScript while Napper gives you full F# Interactive with access to the entire .NET ecosystem. Both store requests as plain text files.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Does Napper work with CI/CD pipelines?</h3>
+      <p>Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, TAP, JSON, and NDJSON formats. It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats. Exit code 0 means all assertions passed, exit code 1 means a test failed.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>What scripting language does Napper use?</h3>
+      <p>Napper uses F# Interactive (<code>.fsx</code> scripts) for pre-request and post-request hooks. Unlike the sandboxed JavaScript in Postman and Bruno, F# scripts in Napper have full access to the .NET ecosystem. You can parse XML, call databases, generate cryptographic tokens, validate complex schemas, and use any NuGet package.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>What file formats does Napper use?</h3>
+      <p>Napper uses three plain text file formats: <code>.nap</code> files for individual HTTP requests, <code>.naplist</code> files for composing requests into ordered test suites, and <code>.napenv</code> files for environment-specific variables like base URLs and tokens. All files are human-readable, git-friendly, and produce clean diffs in code reviews.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Does Napper require VS Code?</h3>
+      <p>No. The Napper CLI runs independently from any editor or IDE. You can use it entirely from the terminal. The VS Code extension is optional and provides syntax highlighting, a request explorer, environment switching, and Test Explorer integration for developers who prefer working in an editor.</p>
+    </div>
+  </div>
+</section>
+
 {# ---- Install CTA ---- #}
 <section class="install-banner">
   <h2>Ready to ship faster?</h2>
@@ -296,3 +346,111 @@ permalink: /
     <a href="/docs/installation/" class="btn btn-secondary" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4);">Read the Docs</a>
   </div>
 </section>
+
+{# ---- FAQPage + SoftwareApplication Schema ---- #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Napper?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Napper is a free, open-source, CLI-first API testing tool that integrates natively with VS Code. It lets you define HTTP requests as plain text .nap files, add declarative assertions to validate responses, compose requests into test suites with .naplist files, and run everything from the terminal or your editor. It uses F# for advanced scripting and outputs JUnit XML for CI/CD pipelines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Napper free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Napper is completely free and open source under the MIT license. There are no paid tiers, no account requirements, and no feature gates. The CLI binary and the VS Code extension are both free to use."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is Napper different from Postman?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Postman is a GUI-first tool that requires an account, stores collections as JSON, and locks advanced features behind a paywall. Napper is CLI-first, stores everything as plain text files in your repository, requires no account, and is completely free. Napper also provides F# scripting instead of sandboxed JavaScript, and integrates directly into VS Code with native Test Explorer support."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is Napper different from Bruno?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Bruno is an excellent open-source alternative to Postman, but it is GUI-first with a standalone desktop application. Napper puts the CLI first and lives inside VS Code. For scripting, Bruno offers sandboxed JavaScript while Napper gives you full F# Interactive with access to the entire .NET ecosystem."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Napper work with CI/CD pipelines?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, TAP, JSON, and NDJSON formats. It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What scripting language does Napper use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Napper uses F# Interactive (.fsx scripts) for pre-request and post-request hooks. Unlike the sandboxed JavaScript in Postman and Bruno, F# scripts in Napper have full access to the .NET ecosystem."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What file formats does Napper use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Napper uses three plain text file formats: .nap files for individual HTTP requests, .naplist files for composing requests into ordered test suites, and .napenv files for environment-specific variables like base URLs and tokens."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Napper require VS Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The Napper CLI runs independently from any editor or IDE. You can use it entirely from the terminal. The VS Code extension is optional and provides syntax highlighting, a request explorer, environment switching, and Test Explorer integration."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Napper",
+  "description": "CLI-first API testing tool for VS Code with F# scripting, declarative assertions, and CI/CD integration.",
+  "url": "https://napper.dev",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "license": "https://opensource.org/licenses/MIT",
+  "downloadUrl": "https://github.com/MelbourneDeveloper/ApiTesting/releases",
+  "installUrl": "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper",
+  "author": {
+    "@type": "Person",
+    "name": "Christian Findlay"
+  },
+  "programmingLanguage": "F#",
+  "featureList": [
+    "CLI-first HTTP API testing",
+    "VS Code extension with syntax highlighting",
+    "Declarative assertions on status, body, headers, timing",
+    "F# scripting for advanced request flows",
+    "Composable test suites with .naplist playlists",
+    "Environment variable management with .napenv files",
+    "JUnit XML, TAP, JSON, NDJSON output for CI/CD",
+    "Native VS Code Test Explorer integration"
+  ]
+}
+</script>
