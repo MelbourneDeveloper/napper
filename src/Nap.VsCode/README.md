@@ -1,6 +1,8 @@
-![Napper](media/logo.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/logo.png" alt="Napper" width="128">
+</p>
 
-# Napper
+<h1 align="center">Napper</h1>
 
 **API Testing, Supercharged.**
 
@@ -10,7 +12,7 @@ Napper is a free, open-source API testing tool that runs from the command line a
 
 ---
 
-![Napper VS Code extension showing playlist test results with response headers and body inspection](media/screenshot.png)
+![Napper VS Code extension showing playlist test results with response headers and body inspection](https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/screenshot.png)
 
 ---
 
