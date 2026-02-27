@@ -1,0 +1,22 @@
+{
+  "name": "Napper",
+  "title": "Napper — CLI-First API Testing for VS Code",
+  "description": "The developer-first HTTP testing tool. As simple as curl for one-off requests, scales to full test suites with F# scripting, assertions, and CI integration.",
+  "url": "https://napper.dev",
+  "author": "Christian Findlay",
+  "language": "en",
+  "themeColor": "#1B4965",
+  "stylesheet": "/assets/css/styles.css",
+  "github": "https://github.com/MelbourneDeveloper/napper",
+  "ogImage": "/assets/images/logo.png",
+  "keywords": "API testing, HTTP client, VS Code extension, F# scripting, Postman alternative, Bruno alternative, CLI testing, REST API, test automation",
+  "organization": {
+    "name": "Napper",
+    "url": "https://napper.dev",
+    "logo": "/assets/images/logo.png",
+    "sameAs": [
+      "https://github.com/MelbourneDeveloper/napper",
+      "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper"
+    ]
+  }
+}

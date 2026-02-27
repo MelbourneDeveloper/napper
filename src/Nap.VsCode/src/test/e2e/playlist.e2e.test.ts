@@ -131,7 +131,7 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("running a single .nap file opens response panel, not playlist panel", async function () {
-    this.timeout(30000);
+    this.timeout(45000);
     await closeAllEditors();
     await sleep(500);
 

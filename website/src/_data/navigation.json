@@ -1,0 +1,69 @@
+{
+  "main": [
+    { "text": "Docs", "url": "/docs/" },
+    { "text": "Blog", "url": "/blog/" },
+    { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper", "external": true }
+  ],
+  "docs": [
+    {
+      "title": "Getting Started",
+      "items": [
+        { "text": "Introduction", "url": "/docs/" },
+        { "text": "Installation", "url": "/docs/installation/" },
+        { "text": "Quick Start", "url": "/docs/quick-start/" }
+      ]
+    },
+    {
+      "title": "File Formats",
+      "items": [
+        { "text": ".nap Files", "url": "/docs/nap-files/" },
+        { "text": ".naplist Playlists", "url": "/docs/naplist-files/" },
+        { "text": "Environments", "url": "/docs/environments/" }
+      ]
+    },
+    {
+      "title": "Advanced",
+      "items": [
+        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" },
+        { "text": "Assertions", "url": "/docs/assertions/" },
+        { "text": "CLI Reference", "url": "/docs/cli-reference/" },
+        { "text": "CI Integration", "url": "/docs/ci-integration/" }
+      ]
+    },
+    {
+      "title": "Compare",
+      "items": [
+        { "text": "vs Postman", "url": "/docs/vs-postman/" },
+        { "text": "vs Bruno", "url": "/docs/vs-bruno/" },
+        { "text": "vs .http Files", "url": "/docs/vs-http-files/" }
+      ]
+    }
+  ],
+  "footer": [
+    {
+      "title": "Documentation",
+      "items": [
+        { "text": "Getting Started", "url": "/docs/" },
+        { "text": "File Formats", "url": "/docs/nap-files/" },
+        { "text": "CLI Reference", "url": "/docs/cli-reference/" },
+        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" }
+      ]
+    },
+    {
+      "title": "Community",
+      "items": [
+        { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper" },
+        { "text": "Issues", "url": "https://github.com/MelbourneDeveloper/napper/issues" },
+        { "text": "VS Code Marketplace", "url": "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper" }
+      ]
+    },
+    {
+      "title": "Compare",
+      "items": [
+        { "text": "vs Postman", "url": "/docs/vs-postman/" },
+        { "text": "vs Bruno", "url": "/docs/vs-bruno/" },
+        { "text": "vs .http Files", "url": "/docs/vs-http-files/" }
+      ]
+    }
+  ]
+}

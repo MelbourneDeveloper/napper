@@ -19,7 +19,11 @@ src/Nap.VsCode/*.vsix
 node_modules/
 dist/
 src/Nap.VsCode/.vscode-test/
-out/osx-arm64/
+out/
 src/Nap.VsCode/out/
 
 .DS_Store
+
+.playwright-mcp/
+
+website/_site/

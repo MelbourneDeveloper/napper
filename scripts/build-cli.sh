@@ -37,3 +37,12 @@ dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
   --nologo
 
 echo "==> CLI built → out/$NAP_RID/"
+
+# --- Copy into extension bin/ so tests can find it ---
+EXT_BIN="src/Nap.VsCode/bin"
+mkdir -p "$EXT_BIN"
+case "$NAP_RID" in
+  win-*) cp "out/$NAP_RID/napper.exe" "$EXT_BIN/napper.exe" ;;
+  *)     cp "out/$NAP_RID/napper" "$EXT_BIN/napper" ;;
+esac
+echo "==> Copied CLI → $EXT_BIN/"
