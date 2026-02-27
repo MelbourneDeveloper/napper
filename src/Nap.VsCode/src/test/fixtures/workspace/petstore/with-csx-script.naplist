@@ -1,0 +1,6 @@
+[meta]
+name = "Petstore with C# Script"
+
+[steps]
+../scripts/echo.csx
+./list-pets.nap

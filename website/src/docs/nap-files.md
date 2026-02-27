@@ -116,15 +116,15 @@ Declarative assertions on the response. See [Assertions](/docs/assertions/) for 
 
 ### `[script]`
 
-References to F# scripts that run before or after the request.
+References to F# or C# scripts that run before or after the request.
 
 ```
 [script]
 pre = ./scripts/setup.fsx
-post = ./scripts/validate.fsx
+post = ./scripts/validate.csx
 ```
 
-See [F# Scripting](/docs/fsharp-scripting/) for details.
+See [F# Scripting](/docs/fsharp-scripting/) and [C# Scripting](/docs/csharp-scripting/) for details.
 
 ## Variable interpolation
 

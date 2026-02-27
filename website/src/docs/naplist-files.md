@@ -10,7 +10,7 @@ eleventyNavigation:
 
 # .naplist Playlists
 
-A `.naplist` file defines an ordered sequence of steps to execute. Steps can be `.nap` files, folders, other playlists, or F# scripts.
+A `.naplist` file defines an ordered sequence of steps to execute. Steps can be `.nap` files, folders, other playlists, or F#/C# scripts.
 
 ## Basic format
 
@@ -81,19 +81,20 @@ Run another `.naplist` file:
 
 Nesting is recursive — playlists can reference other playlists.
 
-### F# scripts
+### F# and C# scripts
 
 Run an orchestration script:
 
 ```
 ./scripts/setup.fsx
+./scripts/setup.csx
 ```
 
-Scripts can use the injected `NapRunner` to run requests and playlists programmatically. See [F# Scripting](/docs/fsharp-scripting/).
+Scripts can use the injected `NapRunner` to run requests and playlists programmatically. See [F# Scripting](/docs/fsharp-scripting/) or [C# Scripting](/docs/csharp-scripting/).
 
 ## Variables
 
-Variables defined in `[vars]` are available to all steps. Steps can also set variables for downstream steps using F# scripts.
+Variables defined in `[vars]` are available to all steps. Steps can also set variables for downstream steps using F# or C# scripts.
 
 ## Running playlists
 

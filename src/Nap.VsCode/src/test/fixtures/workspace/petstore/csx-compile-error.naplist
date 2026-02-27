@@ -1,0 +1,7 @@
+[meta]
+name = "CSX With Compilation Error"
+
+[steps]
+../scripts/echo.csx
+../scripts/compile-error.csx
+./list-pets.nap

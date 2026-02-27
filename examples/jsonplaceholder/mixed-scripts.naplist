@@ -1,0 +1,14 @@
+[meta]
+name = "JSONPlaceholder Mixed Scripts"
+description = "CRUD lifecycle mixing F# setup with C# teardown to verify both runtimes"
+
+[steps]
+../scripts/setup.fsx
+./01_get-posts.nap
+./02_get-post-by-id.nap
+./03_create-post.nap
+../scripts/validate-env.csx
+./04_update-post.nap
+./05_patch-post.nap
+./06_delete-post.nap
+../scripts/teardown.csx

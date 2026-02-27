@@ -6,7 +6,7 @@
 
 **API Testing, Supercharged.**
 
-Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code. Define HTTP requests as plain text `.nap` files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output. As simple as curl for quick requests. As powerful as F# for full test suites.
+Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code. Define HTTP requests as plain text `.nap` files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output. As simple as curl for quick requests. As powerful as F# and C# for full test suites.
 
 [Documentation](https://napperapi.dev) | [GitHub Repository](https://github.com/MelbourneDeveloper/napper) | [Releases](https://github.com/MelbourneDeveloper/napper/releases)
 
@@ -22,7 +22,7 @@ Everything you need for API testing. Nothing you don't.
 
 - **CLI First** -- The command line is the product. Run requests, execute test suites, and integrate with CI/CD pipelines from your terminal.
 - **VS Code Native** -- Full extension with syntax highlighting, request explorer, environment switching, and Test Explorer integration. Never leave your editor.
-- **F# Scripting** -- Full power of F# for pre/post request hooks. Extract tokens, build dynamic payloads, orchestrate complex flows. No limits.
+- **F# and C# Scripting** -- Full power of F# and C# for pre/post request hooks. Extract tokens, build dynamic payloads, orchestrate complex flows with the entire .NET ecosystem.
 - **Declarative Assertions** -- Assert on status codes, JSON paths, headers, and response times with a clean, readable syntax. No scripting required for simple checks.
 - **Composable Playlists** -- Chain requests into test suites with `.naplist` files. Nest playlists, reference folders, pass variables between steps.
 - **Plain Text, Git Friendly** -- Every request is a `.nap` file. Every environment is a `.napenv` file. Version control everything. No binary blobs, no lock-in.
@@ -128,6 +128,7 @@ napper run ./tests/ --env staging --output junit
 | `.napenv.local` | Local secrets (gitignored) | `.napenv.local` |
 | `.napenv.<name>` | Named environment | `.napenv.staging` |
 | `.fsx` | F# scripts for pre/post hooks and orchestration | `setup.fsx` |
+| `.csx` | C# scripts for pre/post hooks and orchestration | `setup.csx` |
 
 ### Playlists
 
@@ -202,7 +203,7 @@ Options:
 | VS Code integration | Native | Separate app | Separate app | Built-in |
 | Git-friendly files | Yes | JSON blobs | Yes | Yes |
 | Assertions | Declarative + scripts | JS scripts | JS scripts | None |
-| Full scripting language | F# (.fsx) | Sandboxed JS | Sandboxed JS | None |
+| Full scripting language | F# + C# (.fsx/.csx) | Sandboxed JS | Sandboxed JS | None |
 | CI/CD output formats | JUnit, TAP, JSON | Via Newman | Via CLI | None |
 | Test Explorer | Native | No | No | No |
 | Free & open source | Yes | Freemium | Yes | Yes |
@@ -224,6 +225,7 @@ my-api/
 │   └── 03_delete-user.nap
 ├── scripts/
 │   ├── setup.fsx
+│   ├── setup.csx
 │   └── teardown.fsx
 └── smoke.naplist
 ```

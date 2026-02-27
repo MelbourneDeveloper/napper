@@ -145,6 +145,10 @@
       {
         "command": "napper.savePlaylistReport",
         "title": "Napper: Save Playlist Report"
+      },
+      {
+        "command": "napper.importOpenApi",
+        "title": "Napper: Import from OpenAPI"
       }
     ],
     "menus": {

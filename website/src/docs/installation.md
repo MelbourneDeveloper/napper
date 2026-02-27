@@ -71,7 +71,7 @@ napper --help
 
 - **CLI**: Self-contained binary, no runtime dependencies
 - **VS Code Extension**: VS Code 1.100.0 or later
-- **F# Scripts**: .NET 10 SDK (only needed if using `.fsx` script hooks)
+- **F# / C# Scripts**: .NET 10 SDK (only needed if using `.fsx` or `.csx` script hooks)
 
 ## Next steps
 

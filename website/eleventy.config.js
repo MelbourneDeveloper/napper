@@ -6,7 +6,7 @@ export default function (eleventyConfig) {
       name: "Napper",
       url: "https://napperapi.dev",
       description:
-        "CLI-first, test-oriented HTTP API testing tool for VS Code with F# scripting.",
+        "CLI-first, test-oriented HTTP API testing tool for VS Code with F# and C# scripting.",
       author: "Christian Findlay",
       themeColor: "#1B4965",
       stylesheet: "/assets/css/styles.css",

@@ -13,6 +13,7 @@ import { runCli, streamCli } from "./cliRunner";
 import { type RunResult } from "./types";
 import { parsePlaylistStepPaths } from "./explorerProvider";
 import { generatePlaylistReport } from "./reportGenerator";
+import { generateFromOpenApi } from "./openApiGenerator";
 import { createLogger, type Logger } from "./logger";
 import {
   isCliInstalled,
@@ -62,6 +63,7 @@ import {
   REPORT_FILE_SUFFIX,
   REPORT_SAVED_MSG,
   CMD_SAVE_REPORT,
+  CMD_IMPORT_OPENAPI,
   LOG_CHANNEL_NAME,
   LOG_MSG_ACTIVATED,
   LOG_MSG_DEACTIVATED,
@@ -76,6 +78,14 @@ import {
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_BIN_DIR,
+  OPENAPI_PICK_FILE,
+  OPENAPI_PICK_FOLDER,
+  OPENAPI_FILTER_LABEL,
+  OPENAPI_FILE_EXTENSIONS,
+  OPENAPI_SUCCESS_PREFIX,
+  OPENAPI_SUCCESS_SUFFIX,
+  OPENAPI_ERROR_PREFIX,
+  LOG_MSG_OPENAPI_IMPORT,
 } from "./constants";
 
 let explorerProvider: ExplorerAdapter;
@@ -399,6 +409,68 @@ const copyAsCurl = async (uri?: vscode.Uri): Promise<void> => {
   void vscode.window.showInformationMessage(MSG_COPIED);
 };
 
+const importOpenApi = async (): Promise<void> => {
+  const specFiles = await vscode.window.showOpenDialog({
+    canSelectFiles: true,
+    canSelectFolders: false,
+    canSelectMany: false,
+    filters: { [OPENAPI_FILTER_LABEL]: [...OPENAPI_FILE_EXTENSIONS] },
+    title: OPENAPI_PICK_FILE,
+  });
+  if (!specFiles || specFiles.length === 0) return;
+
+  const outputFolder = await vscode.window.showOpenDialog({
+    canSelectFiles: false,
+    canSelectFolders: true,
+    canSelectMany: false,
+    title: OPENAPI_PICK_FOLDER,
+    defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
+  });
+  if (!outputFolder || outputFolder.length === 0) return;
+
+  const specContent = fs.readFileSync(specFiles[0].fsPath, ENCODING_UTF8);
+  const result = generateFromOpenApi(specContent);
+
+  if (!result.ok) {
+    void vscode.window.showErrorMessage(
+      `${OPENAPI_ERROR_PREFIX}${result.error}`
+    );
+    return;
+  }
+
+  const outDir = outputFolder[0].fsPath;
+  const { napFiles, playlist, environment } = result.value;
+
+  fs.writeFileSync(
+    path.join(outDir, environment.fileName),
+    environment.content,
+    ENCODING_UTF8
+  );
+  for (const nap of napFiles) {
+    fs.writeFileSync(
+      path.join(outDir, nap.fileName),
+      nap.content,
+      ENCODING_UTF8
+    );
+  }
+  fs.writeFileSync(
+    path.join(outDir, playlist.fileName),
+    playlist.content,
+    ENCODING_UTF8
+  );
+
+  logger.info(`${LOG_MSG_OPENAPI_IMPORT} ${napFiles.length} files`);
+  explorerProvider.refresh();
+
+  const playlistPath = path.join(outDir, playlist.fileName);
+  const doc = await vscode.workspace.openTextDocument(playlistPath);
+  await vscode.window.showTextDocument(doc);
+
+  void vscode.window.showInformationMessage(
+    `${OPENAPI_SUCCESS_PREFIX}${napFiles.length}${OPENAPI_SUCCESS_SUFFIX}`
+  );
+};
+
 const openResponse = async (): Promise<void> => {
   if (lastResult) {
     responsePanel.show(lastResult, getResponseColumn());
@@ -495,7 +567,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
       if (lastPlaylistReport) {
         lastPlaylistReport();
       }
-    })
+    }),
+    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI, importOpenApi)
   );
 
   registerWatchers(context);

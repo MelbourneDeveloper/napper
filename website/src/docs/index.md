@@ -1,7 +1,7 @@
 ---
 layout: layouts/docs.njk
 title: Introduction
-description: "Napper is a free, open-source, CLI-first API testing tool for VS Code. Define HTTP requests as plain text .nap files with declarative assertions and F# scripting. A modern alternative to Postman, Bruno, and .http files."
+description: "Napper is a free, open-source, CLI-first API testing tool for VS Code. Define HTTP requests as plain text .nap files with declarative assertions and F# or C# scripting. A modern alternative to Postman, Bruno, and .http files."
 keywords: "API testing, HTTP client, developer tools, VS Code extension, Postman alternative, Bruno alternative"
 eleventyNavigation:
   key: Introduction
@@ -15,7 +15,7 @@ eleventyNavigation:
 Napper is built for developers who want:
 
 - **Simple things to be simple** — a one-off request is nearly as terse as curl
-- **Complex things to be possible** — full F# scripting for advanced flows
+- **Complex things to be possible** — full F# and C# scripting for advanced flows
 - **Everything in version control** — plain text files, no binary blobs
 - **First-class VS Code support** — syntax highlighting, Test Explorer, environment switching
 
@@ -64,7 +64,7 @@ body.id exists
 duration < 500ms
 ```
 
-Chain requests into test suites with `.naplist` files. Add F# scripts for advanced orchestration. Output JUnit XML for your CI pipeline.
+Chain requests into test suites with `.naplist` files. Add F# or C# scripts for advanced orchestration. Output JUnit XML for your CI pipeline.
 
 ## Why is the CLI the primary interface?
 

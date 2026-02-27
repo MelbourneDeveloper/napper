@@ -142,12 +142,18 @@ let evaluateAssertions (assertions: Assertion list) (response: NapResponse) : As
             { Assertion = assertion; Passed = passed; Expected = $"> {expected}"; Actual = actual |> Option.defaultValue "<missing>" }
     )
 
-/// Run an F# script (.fsx) and capture its output
+/// Determine the dotnet CLI arguments for a script file
+let private scriptArgs (scriptPath: string) : string =
+    if scriptPath.EndsWith ".csx"
+    then $"script \"{scriptPath}\""
+    else $"fsi \"{scriptPath}\""
+
+/// Run a script (.fsx or .csx) and capture its output
 let runScript (scriptPath: string) : Async<NapResult> = async {
     Logger.info $"Script start: {scriptPath}"
     let psi = ProcessStartInfo()
     psi.FileName <- "dotnet"
-    psi.Arguments <- $"fsi \"{scriptPath}\""
+    psi.Arguments <- scriptArgs scriptPath
     psi.WorkingDirectory <- System.IO.Path.GetDirectoryName(scriptPath)
     psi.RedirectStandardOutput <- true
     psi.RedirectStandardError <- true

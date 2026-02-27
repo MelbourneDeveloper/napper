@@ -1,0 +1,6 @@
+[meta]
+name = "CSX Slow Script"
+
+[steps]
+../scripts/slow.csx
+./list-pets.nap

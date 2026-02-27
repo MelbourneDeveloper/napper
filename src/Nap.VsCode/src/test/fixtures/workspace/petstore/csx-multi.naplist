@@ -1,0 +1,9 @@
+[meta]
+name = "Multiple CSX Scripts"
+
+[steps]
+../scripts/echo.csx
+./list-pets.nap
+../scripts/multi-output.csx
+./get-pet.nap
+../scripts/echo.csx
