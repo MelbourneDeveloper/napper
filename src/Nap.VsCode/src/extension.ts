@@ -424,7 +424,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   initLogger(context);
   initProviders();
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider(VIEW_EXPLORER, explorerProvider)
+    vscode.window.registerTreeDataProvider(VIEW_EXPLORER, explorerProvider),
+    vscode.window.registerFileDecorationProvider(explorerProvider),
   );
   registerCodeLens(context);
   registerRunCommands(context);

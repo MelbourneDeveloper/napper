@@ -26,6 +26,9 @@ import {
   ICON_PASSED,
   ICON_FAILED,
   ICON_ERROR,
+  BADGE_PASSED,
+  BADGE_FAILED,
+  BADGE_ERROR,
   THEME_COLOR_PASSED,
   THEME_COLOR_FAILED,
   THEME_COLOR_ERROR,
@@ -149,14 +152,51 @@ function buildPlaylistStepNodes(
   return stepNodes;
 }
 
+const runStateBadge = (
+  result: RunResult,
+): vscode.FileDecoration | undefined => {
+  if (result.error !== undefined) {
+    return new vscode.FileDecoration(
+      BADGE_ERROR,
+      result.error,
+      new vscode.ThemeColor(THEME_COLOR_ERROR),
+    );
+  }
+  return result.passed
+    ? new vscode.FileDecoration(
+        BADGE_PASSED,
+        undefined,
+        new vscode.ThemeColor(THEME_COLOR_PASSED),
+      )
+    : new vscode.FileDecoration(
+        BADGE_FAILED,
+        undefined,
+        new vscode.ThemeColor(THEME_COLOR_FAILED),
+      );
+};
+
 export class ExplorerAdapter
-  implements vscode.TreeDataProvider<TreeNode>
+  implements
+    vscode.TreeDataProvider<TreeNode>,
+    vscode.FileDecorationProvider
 {
   private readonly _onDidChangeTreeData =
     new vscode.EventEmitter<TreeNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+  private readonly _onDidChangeFileDecorations =
+    new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>();
+  readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+
   private readonly _results = new Map<string, RunResult>();
+
+  provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
+    const result = this._results.get(uri.fsPath);
+    if (result === undefined) {
+      return undefined;
+    }
+    return runStateBadge(result);
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
@@ -164,11 +204,13 @@ export class ExplorerAdapter
 
   clearResults(): void {
     this._results.clear();
+    this._onDidChangeFileDecorations.fire(undefined);
     this.refresh();
   }
 
   updateResult(filePath: string, result: RunResult): void {
     this._results.set(filePath, result);
+    this._onDidChangeFileDecorations.fire(vscode.Uri.file(filePath));
     this.refresh();
   }
 

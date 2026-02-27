@@ -40,9 +40,12 @@ export const CLI_OUTPUT_JSON = "json";
 export const CLI_OUTPUT_NDJSON = "ndjson";
 export const CLI_CMD_RUN = "run";
 export const CLI_CMD_CHECK = "check";
+export const CLI_CMD_GENERATE = "generate";
+export const CLI_SUBCMD_OPENAPI = "openapi";
 export const CLI_FLAG_OUTPUT = "--output";
 export const CLI_FLAG_ENV = "--env";
 export const CLI_FLAG_VAR = "--var";
+export const CLI_FLAG_OUTPUT_DIR = "--output-dir";
 
 // Context values for tree items
 export const CONTEXT_REQUEST_FILE = "requestFile";
@@ -63,6 +66,11 @@ export const ICON_PASSED = "pass";
 export const ICON_FAILED = "error";
 export const ICON_ERROR = "warning";
 export const ICON_IMPORT_OPENAPI = "cloud-download";
+
+// Badge decorations (single-char for file decorations)
+export const BADGE_PASSED = "\u2713";
+export const BADGE_FAILED = "\u2717";
+export const BADGE_ERROR = "!";
 
 // Section headers in .nap files
 export const SECTION_REQUEST = "[request]";
