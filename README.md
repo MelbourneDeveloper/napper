@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=nimblesite.napper">VS Code Marketplace</a> &middot;
-  <a href="https://napper.dev">Website</a> &middot;
-  <a href="https://napper.dev/docs/">Documentation</a> &middot;
+  <a href="https://marketplace.visualstudio.com/items?itemName=Nimblesite.napper">VS Code Marketplace</a> &middot;
+  <a href="https://napperapi.dev">Website</a> &middot;
+  <a href="https://napperapi.dev/docs/">Documentation</a> &middot;
   <a href="https://github.com/MelbourneDeveloper/napper/releases">Releases</a>
 </p>
 
