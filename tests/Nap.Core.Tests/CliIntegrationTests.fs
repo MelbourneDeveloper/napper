@@ -126,10 +126,10 @@ let ``CLI check with no file returns exit code 2`` () =
 // ─── Run command: single file ─────────────────────────────────
 
 [<Fact>]
-let ``CLI run shorthand GET against httpbin`` () =
+let ``CLI run shorthand GET against jsonplaceholder`` () =
     let dir = createTempDir ()
     try
-        File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
+        File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://jsonplaceholder.typicode.com/posts/1")
         let exitCode, stdout, _ = runCli "run test.nap --output json" dir
         Assert.Equal(0, exitCode)
         let doc = System.Text.Json.JsonDocument.Parse(stdout)
