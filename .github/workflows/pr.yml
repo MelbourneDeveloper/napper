@@ -31,11 +31,18 @@ jobs:
       - name: Build CLI, compile extension & tests
         run: npm run pretest
 
-      - name: Unit tests
+      - name: Unit tests with coverage
         run: npm run test:unit
 
       - name: E2E tests
         run: xvfb-run --auto-servernum npm test
+
+      - name: Upload TypeScript coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-coverage
+          path: coverage/typescript/report/
 
   test-fsharp:
     name: F# Build & Tests
@@ -47,11 +54,21 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
       - name: Build
         run: dotnet build --nologo
 
-      - name: Test
-        run: dotnet test --nologo --verbosity normal
+      - name: Test with coverage
+        run: bash scripts/test-fsharp.sh
+
+      - name: Upload F# coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsharp-coverage
+          path: coverage/fsharp/report/
 
   build-website:
     name: Website Build

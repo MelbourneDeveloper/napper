@@ -216,8 +216,7 @@
     "watch": "webpack --mode development --watch",
     "pretest": "npm run build:cli && npm run compile && npm run compile:tests",
     "test": "vscode-test",
-    "test:unit": "npm run compile:tests && mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
-    "test:unit:coverage": "npm run compile:tests && c8 mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
+    "test:unit": "npm run compile:tests && c8 mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
     "lint": "eslint src",
     "package": "vsce package"
   },
