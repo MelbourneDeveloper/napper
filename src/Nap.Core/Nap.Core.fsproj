@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="OpenApiTypes.fs" />
     <Compile Include="Logger.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Environment.fs" />

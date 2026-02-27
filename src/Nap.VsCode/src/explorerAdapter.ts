@@ -152,27 +152,22 @@ function buildPlaylistStepNodes(
   return stepNodes;
 }
 
+const makeDecoration = (
+  badge: string,
+  color: string,
+  tooltip?: string,
+): vscode.FileDecoration =>
+  new vscode.FileDecoration(badge, tooltip, new vscode.ThemeColor(color));
+
 const runStateBadge = (
   result: RunResult,
 ): vscode.FileDecoration | undefined => {
   if (result.error !== undefined) {
-    return new vscode.FileDecoration(
-      BADGE_ERROR,
-      result.error,
-      new vscode.ThemeColor(THEME_COLOR_ERROR),
-    );
+    return makeDecoration(BADGE_ERROR, THEME_COLOR_ERROR, result.error);
   }
   return result.passed
-    ? new vscode.FileDecoration(
-        BADGE_PASSED,
-        undefined,
-        new vscode.ThemeColor(THEME_COLOR_PASSED),
-      )
-    : new vscode.FileDecoration(
-        BADGE_FAILED,
-        undefined,
-        new vscode.ThemeColor(THEME_COLOR_FAILED),
-      );
+    ? makeDecoration(BADGE_PASSED, THEME_COLOR_PASSED)
+    : makeDecoration(BADGE_FAILED, THEME_COLOR_FAILED);
 };
 
 export class ExplorerAdapter
