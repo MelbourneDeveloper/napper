@@ -23,3 +23,7 @@ out/osx-arm64/
 src/Nap.VsCode/out/
 
 .DS_Store
+
+.playwright-mcp/
+
+website/_site/
