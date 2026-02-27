@@ -57,6 +57,18 @@ export default function (eleventyConfig) {
     return content;
   });
 
+  // Inject Nimblesite branding into footer
+  const footerBranding = '<p>Made by <a href="https://nimblesite.co">Nimblesite</a></p>';
+  eleventyConfig.addTransform("footer-branding", function (content) {
+    if (this.page.outputPath?.endsWith(".html")) {
+      return content.replace(
+        '</div>\n  </footer>',
+        `  ${footerBranding}\n      </div>\n  </footer>`
+      );
+    }
+    return content;
+  });
+
   // Fix llms.txt: remove dead /api/ link
   eleventyConfig.addTransform("llms-fix", function (content) {
     if (this.page.outputPath === "llms.txt" || this.page.outputPath?.endsWith("/llms.txt")) {

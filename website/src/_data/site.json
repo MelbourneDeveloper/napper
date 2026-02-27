@@ -10,6 +10,10 @@
   "github": "https://github.com/MelbourneDeveloper/napper",
   "ogImage": "/assets/images/logo.png",
   "keywords": "API testing, HTTP client, VS Code extension, F# scripting, Postman alternative, Bruno alternative, CLI testing, REST API, test automation",
+  "company": {
+    "name": "Nimblesite",
+    "url": "https://nimblesite.co"
+  },
   "organization": {
     "name": "Napper",
     "url": "https://napperapi.dev",
