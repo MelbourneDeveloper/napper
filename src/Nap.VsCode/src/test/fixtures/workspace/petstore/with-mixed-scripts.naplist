@@ -1,0 +1,8 @@
+[meta]
+name = "Petstore with Mixed F# and C# Scripts"
+
+[steps]
+../scripts/echo.fsx
+./list-pets.nap
+../scripts/echo.csx
+./get-pet.nap

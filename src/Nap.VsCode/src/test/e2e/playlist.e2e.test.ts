@@ -427,6 +427,164 @@ suite("Playlist Panel — Real API Calls", () => {
     fs.unlinkSync(expectedReportPath);
   });
 
+  test("playlist with CSX script step opens panel and completes without error", async function () {
+    this.timeout(60000);
+    await closeAllEditors();
+    await sleep(500);
+
+    const doc = await openDocument("petstore/with-csx-script.naplist");
+    assert.strictEqual(
+      doc.languageId,
+      "naplist",
+      "with-csx-script.naplist should have naplist language mode"
+    );
+
+    const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
+
+    await waitForCondition(
+      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      5000
+    );
+
+    const playlistTab = findTabByLabel(PLAYLIST_PANEL_TITLE);
+    assert.ok(
+      playlistTab,
+      `Tab '${PLAYLIST_PANEL_TITLE}' must open when running playlist that includes .csx script steps`
+    );
+
+    const responseTabDuringRun = findTabByLabel(RESPONSE_PANEL_TITLE);
+    assert.strictEqual(
+      responseTabDuringRun,
+      undefined,
+      `Tab '${RESPONSE_PANEL_TITLE}' must NOT exist — playlist with C# scripts should use playlist panel`
+    );
+
+    await runPromise;
+
+    const panelAfterCompletion = findTabByLabel(PLAYLIST_PANEL_TITLE);
+    assert.ok(
+      panelAfterCompletion,
+      `Tab '${PLAYLIST_PANEL_TITLE}' must persist after playlist with C# scripts completes`
+    );
+
+    const responseTabAfterCompletion = findTabByLabel(RESPONSE_PANEL_TITLE);
+    assert.strictEqual(
+      responseTabAfterCompletion,
+      undefined,
+      `Tab '${RESPONSE_PANEL_TITLE}' must NOT appear after playlist with C# scripts completes`
+    );
+  });
+
+  test("with-csx-script.naplist fixture references existing files", () => {
+    const playlistPath = getFixturePath("petstore/with-csx-script.naplist");
+    const content = fs.readFileSync(playlistPath, "utf-8");
+
+    assert.ok(content.includes("[meta]"), "Should have [meta] section");
+    assert.ok(content.includes("[steps]"), "Should have [steps] section");
+    assert.ok(
+      content.includes("echo.csx"),
+      "Should reference echo.csx script step"
+    );
+    assert.ok(
+      content.includes("list-pets.nap"),
+      "Should reference list-pets.nap API step"
+    );
+
+    const scriptsDir = getFixturePath("scripts");
+    assert.ok(
+      fs.existsSync(`${scriptsDir}/echo.csx`),
+      "echo.csx fixture script must exist"
+    );
+
+    const echoContent = fs.readFileSync(`${scriptsDir}/echo.csx`, "utf-8");
+    assert.ok(
+      echoContent.includes("Console.WriteLine"),
+      "echo.csx must contain Console.WriteLine to produce output"
+    );
+  });
+
+  test("playlist with mixed FSX and CSX scripts opens panel and completes without error", async function () {
+    this.timeout(90000);
+    await closeAllEditors();
+    await sleep(500);
+
+    const doc = await openDocument("petstore/with-mixed-scripts.naplist");
+    assert.strictEqual(
+      doc.languageId,
+      "naplist",
+      "with-mixed-scripts.naplist should have naplist language mode"
+    );
+
+    const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
+
+    await waitForCondition(
+      async () => findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined,
+      5000
+    );
+
+    const playlistTab = findTabByLabel(PLAYLIST_PANEL_TITLE);
+    assert.ok(
+      playlistTab,
+      `Tab '${PLAYLIST_PANEL_TITLE}' must open when running playlist with mixed F# and C# scripts`
+    );
+
+    const responseTabDuringRun = findTabByLabel(RESPONSE_PANEL_TITLE);
+    assert.strictEqual(
+      responseTabDuringRun,
+      undefined,
+      `Tab '${RESPONSE_PANEL_TITLE}' must NOT exist — mixed-script playlist should use playlist panel`
+    );
+
+    await runPromise;
+
+    const panelAfterCompletion = findTabByLabel(PLAYLIST_PANEL_TITLE);
+    assert.ok(
+      panelAfterCompletion,
+      `Tab '${PLAYLIST_PANEL_TITLE}' must persist after mixed F#/C# playlist completes`
+    );
+
+    const responseTabAfterCompletion = findTabByLabel(RESPONSE_PANEL_TITLE);
+    assert.strictEqual(
+      responseTabAfterCompletion,
+      undefined,
+      `Tab '${RESPONSE_PANEL_TITLE}' must NOT appear after mixed F#/C# playlist completes`
+    );
+  });
+
+  test("with-mixed-scripts.naplist fixture references both FSX and CSX files", () => {
+    const playlistPath = getFixturePath("petstore/with-mixed-scripts.naplist");
+    const content = fs.readFileSync(playlistPath, "utf-8");
+
+    assert.ok(content.includes("[meta]"), "Should have [meta] section");
+    assert.ok(content.includes("[steps]"), "Should have [steps] section");
+    assert.ok(
+      content.includes("echo.fsx"),
+      "Should reference echo.fsx F# script step"
+    );
+    assert.ok(
+      content.includes("echo.csx"),
+      "Should reference echo.csx C# script step"
+    );
+    assert.ok(
+      content.includes("list-pets.nap"),
+      "Should reference list-pets.nap API step"
+    );
+    assert.ok(
+      content.includes("get-pet.nap"),
+      "Should reference get-pet.nap API step"
+    );
+
+    const scriptsDir = getFixturePath("scripts");
+    assert.ok(
+      fs.existsSync(`${scriptsDir}/echo.fsx`),
+      "echo.fsx must exist for mixed playlist"
+    );
+    assert.ok(
+      fs.existsSync(`${scriptsDir}/echo.csx`),
+      "echo.csx must exist for mixed playlist"
+    );
+  });
+
   test("playlist with missing CLI shows error in panel, never PASSED", async function () {
     this.timeout(30000);
     await closeAllEditors();

@@ -339,6 +339,64 @@ let ``CLI run naplist with failing script returns exit code 1`` () =
     finally
         cleanupDir dir
 
+// ─── Run command: C# script step ─────────────────────────────
+
+[<Fact>]
+let ``CLI run naplist with CSX script step`` () =
+    let dir = createTempDir ()
+    try
+        File.WriteAllText(Path.Combine(dir, "setup.csx"), "Console.WriteLine(\"[csx-setup] ready\");")
+        File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://jsonplaceholder.typicode.com/posts/1")
+        File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nsetup.csx\ntest.nap\n")
+        let exitCode, stdout, _ = runCli "run suite.naplist --output json" dir
+        Assert.Equal(0, exitCode)
+        let doc = System.Text.Json.JsonDocument.Parse(stdout)
+        Assert.Equal(2, doc.RootElement.GetArrayLength())
+        let scriptResult = doc.RootElement[0]
+        Assert.True(scriptResult.GetProperty("passed").GetBoolean())
+        let logArray = scriptResult.GetProperty("log")
+        Assert.True(logArray.GetArrayLength() >= 1)
+    finally
+        cleanupDir dir
+
+[<Fact>]
+let ``CLI run naplist with failing CSX script returns exit code 1`` () =
+    let dir = createTempDir ()
+    try
+        File.WriteAllText(Path.Combine(dir, "bad.csx"), "throw new Exception(\"boom\");")
+        File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nbad.csx\n")
+        let exitCode, _, _ = runCli "run suite.naplist --output json" dir
+        Assert.Equal(1, exitCode)
+    finally
+        cleanupDir dir
+
+// ─── Run command: mixed F# + C# script steps ────────────────
+
+[<Fact>]
+let ``CLI run naplist with mixed FSX and CSX scripts`` () =
+    let dir = createTempDir ()
+    try
+        File.WriteAllText(Path.Combine(dir, "setup.fsx"), "printfn \"[fsx] setup done\"")
+        File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://jsonplaceholder.typicode.com/posts/1")
+        File.WriteAllText(Path.Combine(dir, "teardown.csx"), "Console.WriteLine(\"[csx] teardown done\");")
+        File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nsetup.fsx\ntest.nap\nteardown.csx\n")
+        let exitCode, stdout, _ = runCli "run suite.naplist --output json" dir
+        Assert.Equal(0, exitCode)
+        let doc = System.Text.Json.JsonDocument.Parse(stdout)
+        Assert.Equal(3, doc.RootElement.GetArrayLength())
+        // First: FSX script
+        let fsxResult = doc.RootElement[0]
+        Assert.True(fsxResult.GetProperty("passed").GetBoolean())
+        // Second: HTTP request
+        let httpResult = doc.RootElement[1]
+        Assert.True(httpResult.GetProperty("passed").GetBoolean())
+        Assert.Equal(200, httpResult.GetProperty("statusCode").GetInt32())
+        // Third: CSX script
+        let csxResult = doc.RootElement[2]
+        Assert.True(csxResult.GetProperty("passed").GetBoolean())
+    finally
+        cleanupDir dir
+
 // ─── Unknown command ──────────────────────────────────────────
 
 [<Fact>]
