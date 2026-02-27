@@ -1,0 +1,61 @@
+{
+  "main": [
+    { "text": "Docs", "url": "/docs/" },
+    { "text": "Blog", "url": "/blog/" },
+    { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/ApiTesting", "external": true }
+  ],
+  "docs": [
+    {
+      "title": "Getting Started",
+      "items": [
+        { "text": "Introduction", "url": "/docs/" },
+        { "text": "Installation", "url": "/docs/installation/" },
+        { "text": "Quick Start", "url": "/docs/quick-start/" }
+      ]
+    },
+    {
+      "title": "File Formats",
+      "items": [
+        { "text": ".nap Files", "url": "/docs/nap-files/" },
+        { "text": ".naplist Playlists", "url": "/docs/naplist-files/" },
+        { "text": "Environments", "url": "/docs/environments/" }
+      ]
+    },
+    {
+      "title": "Advanced",
+      "items": [
+        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" },
+        { "text": "Assertions", "url": "/docs/assertions/" },
+        { "text": "CLI Reference", "url": "/docs/cli-reference/" },
+        { "text": "CI Integration", "url": "/docs/ci-integration/" }
+      ]
+    }
+  ],
+  "footer": [
+    {
+      "title": "Documentation",
+      "items": [
+        { "text": "Getting Started", "url": "/docs/" },
+        { "text": "File Formats", "url": "/docs/nap-files/" },
+        { "text": "CLI Reference", "url": "/docs/cli-reference/" },
+        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" }
+      ]
+    },
+    {
+      "title": "Community",
+      "items": [
+        { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/ApiTesting" },
+        { "text": "Issues", "url": "https://github.com/MelbourneDeveloper/ApiTesting/issues" },
+        { "text": "VS Code Marketplace", "url": "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper" }
+      ]
+    },
+    {
+      "title": "Compare",
+      "items": [
+        { "text": "vs Postman", "url": "/docs/quick-start/#why-napper" },
+        { "text": "vs Bruno", "url": "/docs/quick-start/#why-napper" },
+        { "text": "vs .http files", "url": "/docs/quick-start/#why-napper" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "en": {
+    "nav": {
+      "docs": "Docs",
+      "blog": "Blog",
+      "github": "GitHub",
+      "getStarted": "Get Started",
+      "darkMode": "Toggle dark mode"
+    },
+    "footer": {
+      "copyright": "Napper",
+      "tagline": "CLI-first API testing for VS Code"
+    }
+  }
+}
