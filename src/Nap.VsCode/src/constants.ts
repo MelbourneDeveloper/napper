@@ -299,6 +299,52 @@ export const LOG_MSG_STREAM_DONE = "Stream completed";
 export const LOG_MSG_TREE_REFRESH = "Explorer tree refresh";
 export const LOG_MSG_OPENAPI_IMPORT = "OpenAPI import:";
 
+// AI enrichment
+export const OPENAPI_AI_CHOICE_TITLE = "How should tests be generated?";
+export const OPENAPI_AI_CHOICE_BASIC = "Generate tests";
+export const OPENAPI_AI_CHOICE_ENHANCED = "Generate with AI enhancement";
+export const OPENAPI_AI_PROGRESS_TITLE = "Enhancing with AI...";
+export const OPENAPI_AI_NO_COPILOT = "GitHub Copilot not available for AI enhancement";
+export const OPENAPI_AI_COPILOT_FAMILY = "copilot-gpt-4o";
+export const OPENAPI_AI_ENRICHING_ASSERTIONS = "Enriching assertions";
+export const OPENAPI_AI_ENRICHING_TEST_DATA = "Enriching test data";
+export const OPENAPI_AI_REORDERING_PLAYLIST = "Reordering playlist";
+
+// Context menu command IDs
+export const CMD_ADD_TO_PLAYLIST = "napper.addToPlaylist";
+export const CMD_PERF_TEST = "napper.performanceTest";
+export const CMD_DELETE_FILE = "napper.deleteFile";
+export const CMD_ADD_NAP_TO_PLAYLIST = "napper.addNapToPlaylist";
+export const CMD_ADD_SCRIPT_TO_PLAYLIST = "napper.addScriptToPlaylist";
+export const CMD_DUPLICATE_PLAYLIST = "napper.duplicatePlaylist";
+export const CMD_COPY_PATH = "napper.copyPath";
+
+// Context menu prompts
+export const PROMPT_SELECT_PLAYLIST = "Select a playlist to add this script to";
+export const PROMPT_SELECT_NAP_FILE = "Select a .nap file to add";
+export const PROMPT_SELECT_SCRIPT_FILE = "Select a script file to add";
+export const PROMPT_CONFIRM_DELETE_PREFIX = "Are you sure you want to delete \"";
+export const PROMPT_CONFIRM_DELETE_SUFFIX = "\"?";
+export const PROMPT_DUPLICATE_NAME = "Enter name for the duplicated playlist";
+export const CONFIRM_YES = "Yes";
+export const CONFIRM_NO = "No";
+
+// Context menu messages
+export const MSG_ADDED_TO_PLAYLIST = "Added to playlist: ";
+export const MSG_FILE_DELETED = "Deleted: ";
+export const MSG_PLAYLIST_DUPLICATED = "Duplicated playlist: ";
+export const MSG_PATH_COPIED = "Path copied to clipboard";
+export const MSG_PERF_TEST_COMING_SOON = "Performance Test: Coming soon";
+export const MSG_NO_PLAYLISTS = "No .naplist files found in workspace";
+export const MSG_NO_NAP_FILES = "No .nap files found in workspace";
+export const MSG_NO_SCRIPT_FILES = "No script files found in workspace";
+
+// Glob patterns for context menu pickers
+export const SCRIPT_GLOB = "**/*.{fsx,csx}";
+
+// Playlist duplication
+export const DUPLICATE_SUFFIX = "-copy";
+
 // Numeric thresholds
 export const PERCENTAGE_MULTIPLIER = 100;
 export const HTTP_STATUS_OK = 200;

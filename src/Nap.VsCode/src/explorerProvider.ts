@@ -16,6 +16,8 @@ import {
   SECTION_STEPS,
   HTTP_METHODS,
   NAP_KEY_METHOD,
+  NAP_NAME_KEY_PREFIX,
+  NAP_NAME_KEY_SUFFIX,
 } from "./constants";
 import { RunState, type RunResult } from "./types";
 
@@ -158,3 +160,44 @@ export const createPlaylistSectionNode = (
   runState: RunState.Idle,
   children,
 });
+
+export const appendStepToPlaylist = (
+  content: string,
+  stepPath: string
+): string => {
+  const lines = content.split("\n");
+  let insertIndex = -1;
+  let inSteps = false;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed === SECTION_STEPS) {
+      inSteps = true;
+      continue;
+    }
+    if (inSteps && isSectionHeader(trimmed)) {
+      insertIndex = i;
+      break;
+    }
+  }
+  if (!inSteps) {
+    return `${content}\n${SECTION_STEPS}\n${stepPath}\n`;
+  }
+  if (insertIndex === -1) {
+    insertIndex = lines.length;
+  }
+  lines.splice(insertIndex, 0, stepPath);
+  return lines.join("\n");
+};
+
+export const updatePlaylistName = (
+  content: string,
+  newName: string
+): string => {
+  const lines = content.split("\n");
+  const updated = lines.map((line) =>
+    line.trim().startsWith(NAP_NAME_KEY_PREFIX)
+      ? `${NAP_NAME_KEY_PREFIX}${newName}${NAP_NAME_KEY_SUFFIX}`
+      : line
+  );
+  return updated.join("\n");
+};
