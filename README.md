@@ -19,6 +19,12 @@
 
 ---
 
+<p align="center">
+  <img src="screenshot.png" alt="Napper VS Code extension showing playlist test results with response headers and body inspection" width="720">
+</p>
+
+---
+
 ## Built for developers who ship
 
 Everything you need for API testing. Nothing you don't.
