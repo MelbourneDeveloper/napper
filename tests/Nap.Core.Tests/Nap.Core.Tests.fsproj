@@ -15,6 +15,7 @@
     <Compile Include="ScriptEdgeCaseTests.fs" />
     <Compile Include="CsxScriptTests.fs" />
     <Compile Include="CliIntegrationTests.fs" />
+    <Compile Include="OpenApiGeneratorTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -284,7 +284,7 @@ const runSingleFile = async (
   const result = await runCli({
     cliPath: getCliPath(),
     filePath: fileUri.fsPath,
-    ...envOption(),
+    env: currentEnvOrUndefined(),
     cwd,
   });
   statusMsg.dispose();

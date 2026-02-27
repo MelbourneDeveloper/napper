@@ -20,7 +20,7 @@ const MAX_PREVIEW_LENGTH = 200;
 interface RunOptions {
   readonly cliPath: string;
   readonly filePath: string;
-  readonly env?: string;
+  readonly env?: string | undefined;
   readonly vars?: readonly string[];
   readonly cwd: string;
 }
@@ -103,7 +103,7 @@ export const runCli = async (
 interface StreamOptions {
   readonly cliPath: string;
   readonly filePath: string;
-  readonly env?: string;
+  readonly env?: string | undefined;
   readonly cwd: string;
   readonly onResult: (result: RunResult) => void;
   readonly onDone: (error?: string) => void;

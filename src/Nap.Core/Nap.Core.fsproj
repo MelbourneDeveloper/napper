@@ -12,6 +12,7 @@
     <Compile Include="Environment.fs" />
     <Compile Include="Runner.fs" />
     <Compile Include="Output.fs" />
+    <Compile Include="OpenApiGenerator.fs" />
   </ItemGroup>
 
   <ItemGroup>
