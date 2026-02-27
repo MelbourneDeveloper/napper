@@ -7,6 +7,13 @@
       "getStarted": "Get Started",
       "darkMode": "Toggle dark mode"
     },
+    "blog": {
+      "title": "Blog",
+      "subtitle": "News, guides, and updates from the Napper team.",
+      "tags": "Tags",
+      "categories": "Categories",
+      "empty": "No blog posts yet. Check back soon!"
+    },
     "footer": {
       "copyright": "Napper",
       "tagline": "CLI-first API testing for VS Code"

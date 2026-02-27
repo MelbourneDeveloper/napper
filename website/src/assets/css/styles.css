@@ -173,6 +173,72 @@ pre code {
   padding: 0;
   font-size: 0.875rem;
   line-height: 1.6;
+  color: var(--color-code-text);
+}
+
+/* ---- Prism.js Syntax Highlighting ---- */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #64748B;
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: #94A3B8;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #E8734A;
+}
+
+.token.boolean,
+.token.number {
+  color: #BEE3F8;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.inserted {
+  color: #0D9488;
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+  color: #F5A623;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #5BA4CF;
+}
+
+.token.function,
+.token.class-name {
+  color: #E8734A;
+  font-weight: 600;
+}
+
+.token.important,
+.token.bold {
+  font-weight: 700;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.namespace {
+  opacity: 0.8;
 }
 
 /* ---- Header / Nav ---- */
