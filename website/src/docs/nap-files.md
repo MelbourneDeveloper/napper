@@ -124,7 +124,7 @@ pre = ./scripts/setup.fsx
 post = ./scripts/validate.fsx
 ```
 
-See [F# Scripting](/docs/fsharp-scripting/) for details.
+See [F# Scripting](/docs/fsharp-scripting/) and [C# Scripting](/docs/csharp-scripting/) for details.
 
 ## Variable interpolation
 

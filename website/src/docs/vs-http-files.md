@@ -1,7 +1,7 @@
 ---
 layout: layouts/docs.njk
 title: "Napper vs .http Files"
-description: "Comparing Napper and .http files for API testing. Napper adds assertions, test suites, environments, F# scripting, and CLI execution to the plain-text simplicity of .http files."
+description: "Comparing Napper and .http files for API testing. Napper adds assertions, test suites, environments, F# and C# scripting, and CLI execution to the plain-text simplicity of .http files."
 keywords: "Napper vs http files, http file alternative, REST Client alternative, VS Code API testing"
 eleventyNavigation:
   key: vs .http Files
@@ -23,7 +23,7 @@ Napper adds five major capabilities that `.http` files lack:
 - **Declarative assertions** — Verify status codes, JSON body paths, headers, and response times with a clean, readable syntax directly in the request file.
 - **Composable test suites** — Chain multiple requests into ordered playlists with `.naplist` files. Nest playlists and reference entire folders.
 - **Environment management** — Define variables in `.napenv` files, create named environments for staging and production, and override secrets locally with `.napenv.local`.
-- **F# scripting** — Run pre-request and post-request scripts with full access to the .NET ecosystem for token generation, data setup, and complex validation.
+- **F# and C# scripting** — Run pre-request and post-request scripts with full access to the .NET ecosystem for token generation, data setup, and complex validation.
 - **CLI execution** — Run any request or test suite from the terminal. Output JUnit XML, TAP, JSON, or NDJSON for CI/CD pipelines.
 
 ## Feature comparison
@@ -33,10 +33,10 @@ Napper adds five major capabilities that `.http` files lack:
 | Plain text requests | Yes (`.nap` files) | Yes (`.http` files) |
 | VS Code support | Native extension | REST Client extension |
 | CLI execution | Yes (primary interface) | No |
-| Assertions | Declarative + F# scripts | None |
+| Assertions | Declarative + F#/C# scripts | None |
 | Test suites | `.naplist` playlists | None |
 | Environment variables | `.napenv` files with layering | Limited (REST Client) |
-| Scripting | Full F# Interactive | None |
+| Scripting | Full F# and C# scripting | None |
 | CI/CD output | JUnit, TAP, JSON, NDJSON | None |
 | Test Explorer | Native VS Code support | No |
 

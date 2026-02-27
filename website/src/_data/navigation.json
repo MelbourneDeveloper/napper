@@ -25,6 +25,7 @@
       "title": "Advanced",
       "items": [
         { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" },
+        { "text": "C# Scripting", "url": "/docs/csharp-scripting/" },
         { "text": "Assertions", "url": "/docs/assertions/" },
         { "text": "CLI Reference", "url": "/docs/cli-reference/" },
         { "text": "CI Integration", "url": "/docs/ci-integration/" }
@@ -46,7 +47,8 @@
         { "text": "Getting Started", "url": "/docs/" },
         { "text": "File Formats", "url": "/docs/nap-files/" },
         { "text": "CLI Reference", "url": "/docs/cli-reference/" },
-        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" }
+        { "text": "F# Scripting", "url": "/docs/fsharp-scripting/" },
+        { "text": "C# Scripting", "url": "/docs/csharp-scripting/" }
       ]
     },
     {
