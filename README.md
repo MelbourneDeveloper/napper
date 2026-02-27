@@ -30,7 +30,7 @@
 Everything you need for API testing. Nothing you don't.
 
 - **CLI First** &mdash; The command line is the product. Run requests, execute test suites, and integrate with CI/CD pipelines from your terminal.
-- **VS Code Native** &mdash; Full extension with syntax highlighting, request explorer, environment switching, and response panel. Never leave your editor.
+- **VS Code Native** &mdash; Full extension with syntax highlighting, request explorer, environment switching, and Test Explorer integration. Never leave your editor.
 - **F# Scripting** &mdash; Full power of F# for pre/post request hooks. Extract tokens, build dynamic payloads, orchestrate complex flows. No limits.
 - **Declarative Assertions** &mdash; Assert on status codes, JSON paths, headers, and response times with a clean, readable syntax. No scripting required for simple checks.
 - **Composable Playlists** &mdash; Chain requests into test suites with `.naplist` files. Nest playlists, reference folders, pass variables between steps.
