@@ -147,9 +147,48 @@
         "title": "Napper: Save Playlist Report"
       },
       {
-        "command": "napper.importOpenApi",
-        "title": "Napper: Import from OpenAPI",
+        "command": "napper.importOpenApiUrl",
+        "title": "Napper: Import from OpenAPI URL",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "napper.importOpenApiFile",
+        "title": "Napper: Import from OpenAPI File",
+        "icon": "$(file-symlink-file)"
+      },
+      {
+        "command": "napper.addToPlaylist",
+        "title": "Add to Playlist..."
+      },
+      {
+        "command": "napper.performanceTest",
+        "title": "Performance Test"
+      },
+      {
+        "command": "napper.deleteFile",
+        "title": "Delete",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "napper.addNapToPlaylist",
+        "title": "Add .nap..."
+      },
+      {
+        "command": "napper.addScriptToPlaylist",
+        "title": "Add Script..."
+      },
+      {
+        "command": "napper.duplicatePlaylist",
+        "title": "Duplicate"
+      },
+      {
+        "command": "napper.copyPath",
+        "title": "Copy Path"
+      },
+      {
+        "command": "napper.enrichWithAi",
+        "title": "Enrich with AI",
+        "icon": "$(sparkle)"
       }
     ],
     "menus": {
@@ -160,7 +199,12 @@
           "group": "navigation"
         },
         {
-          "command": "napper.importOpenApi",
+          "command": "napper.importOpenApiUrl",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "napper.importOpenApiFile",
           "when": "view == napperExplorer",
           "group": "navigation"
         }
@@ -170,6 +214,61 @@
           "command": "napper.runFile",
           "when": "view == napperExplorer && viewItem =~ /requestFile|playlist/",
           "group": "inline"
+        },
+        {
+          "command": "napper.runFile",
+          "when": "view == napperExplorer && viewItem =~ /requestFile|playlist/",
+          "group": "1_run"
+        },
+        {
+          "command": "napper.addToPlaylist",
+          "when": "view == napperExplorer && viewItem == scriptFile",
+          "group": "2_add"
+        },
+        {
+          "command": "napper.addNapToPlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@1"
+        },
+        {
+          "command": "napper.addScriptToPlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@2"
+        },
+        {
+          "command": "napper.importOpenApiUrl",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@3"
+        },
+        {
+          "command": "napper.importOpenApiFile",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@4"
+        },
+        {
+          "command": "napper.duplicatePlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@1"
+        },
+        {
+          "command": "napper.copyPath",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@2"
+        },
+        {
+          "command": "napper.enrichWithAi",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@3"
+        },
+        {
+          "command": "napper.performanceTest",
+          "when": "view == napperExplorer && viewItem == scriptFile",
+          "group": "3_edit"
+        },
+        {
+          "command": "napper.deleteFile",
+          "when": "view == napperExplorer && viewItem =~ /scriptFile|playlist/",
+          "group": "9_delete"
         }
       ]
     },

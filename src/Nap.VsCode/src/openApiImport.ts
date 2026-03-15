@@ -9,6 +9,8 @@ import type { ExplorerAdapter } from "./explorerAdapter";
 import type { Logger } from "./logger";
 import type { Result } from "./types";
 import { ok, err } from "./types";
+import * as https from "https";
+import type { IncomingMessage } from "http";
 import {
   OPENAPI_PICK_FILE,
   OPENAPI_PICK_FOLDER,
@@ -17,6 +19,12 @@ import {
   OPENAPI_SUCCESS_PREFIX,
   OPENAPI_SUCCESS_SUFFIX,
   OPENAPI_ERROR_PREFIX,
+  OPENAPI_URL_PROMPT,
+  OPENAPI_URL_PLACEHOLDER,
+  OPENAPI_DOWNLOAD_FAILED_PREFIX,
+  OPENAPI_DOWNLOADING,
+  HTTP_STATUS_REDIRECT_MIN,
+  HTTP_STATUS_CLIENT_ERROR_MIN,
   LOG_MSG_OPENAPI_IMPORT,
   DEFAULT_CLI_PATH,
   CONFIG_SECTION,
@@ -80,6 +88,19 @@ interface LmRequestParams {
   readonly systemPrompt: string;
   readonly userPrompt: string;
   readonly token: vscode.CancellationToken;
+}
+
+interface EnrichStepParams {
+  readonly lm: LmRequestParams;
+  readonly operations: readonly OperationSummary[];
+  readonly files: readonly GeneratedFile[];
+}
+
+interface EnrichmentContext {
+  readonly progress: vscode.Progress<{ message?: string }>;
+  readonly baseParams: LmRequestParams;
+  readonly outDir: string;
+  readonly logger: Logger;
 }
 
 const MAX_PREVIEW_LENGTH = 200;
@@ -260,34 +281,30 @@ const extractSummary = (file: GeneratedFile): OperationSummary => {
 // ─── Enrichment steps ───────────────────────────────────────
 
 const enrichAssertionStep = async (
-  params: LmRequestParams,
-  operations: readonly OperationSummary[],
-  files: readonly GeneratedFile[],
+  step: EnrichStepParams,
   logger: Logger
 ): Promise<readonly GeneratedFile[]> => {
   const response = await sendLmRequest({
-    ...params, systemPrompt: getAssertionSystemPrompt(),
-    userPrompt: buildAssertionPrompt(operations),
+    ...step.lm, systemPrompt: getAssertionSystemPrompt(),
+    userPrompt: buildAssertionPrompt(step.operations),
   });
   const result = parseAssertionResponse(response);
-  if (!result.ok) { logger.info(result.error); return files; }
-  return applyAssertionEnrichments(files, result.value);
+  if (!result.ok) { logger.info(result.error); return step.files; }
+  return applyAssertionEnrichments(step.files, result.value);
 };
 
 const enrichTestDataStep = async (
-  params: LmRequestParams,
-  operations: readonly OperationSummary[],
-  files: readonly GeneratedFile[],
+  step: EnrichStepParams,
   logger: Logger
 ): Promise<readonly GeneratedFile[]> => {
-  const prompt = buildTestDataPrompt(operations);
-  if (prompt.length === 0) { return files; }
+  const prompt = buildTestDataPrompt(step.operations);
+  if (prompt.length === 0) { return step.files; }
   const response = await sendLmRequest({
-    ...params, systemPrompt: getTestDataSystemPrompt(), userPrompt: prompt,
+    ...step.lm, systemPrompt: getTestDataSystemPrompt(), userPrompt: prompt,
   });
   const result = parseTestDataResponse(response);
-  if (!result.ok) { logger.info(result.error); return files; }
-  return applyTestDataEnrichments(files, result.value);
+  if (!result.ok) { logger.info(result.error); return step.files; }
+  return applyTestDataEnrichments(step.files, result.value);
 };
 
 const reorderPlaylistStep = async (
@@ -321,7 +338,25 @@ const writeEnrichedFiles = (
 
 // ─── AI enrichment orchestrator ─────────────────────────────
 
-const runAiEnrichment = async (
+const executeEnrichmentSteps = async (
+  ctx: EnrichmentContext
+): Promise<void> => {
+  const files = readGeneratedFiles(ctx.outDir);
+  const operations = files.map(extractSummary);
+
+  ctx.progress.report({ message: OPENAPI_AI_ENRICHING_ASSERTIONS });
+  let enriched = await enrichAssertionStep({ lm: ctx.baseParams, operations, files }, ctx.logger);
+
+  ctx.progress.report({ message: OPENAPI_AI_ENRICHING_TEST_DATA });
+  enriched = await enrichTestDataStep({ lm: ctx.baseParams, operations, files: enriched }, ctx.logger);
+
+  ctx.progress.report({ message: OPENAPI_AI_REORDERING_PLAYLIST });
+  await reorderPlaylistStep(ctx.baseParams, ctx.outDir, enriched.map((f) => f.fileName));
+
+  writeEnrichedFiles(ctx.outDir, enriched);
+};
+
+export const runAiEnrichment = async (
   outDir: string,
   logger: Logger
 ): Promise<void> => {
@@ -334,40 +369,107 @@ const runAiEnrichment = async (
     { location: vscode.ProgressLocation.Notification, title: OPENAPI_AI_PROGRESS_TITLE, cancellable: true },
     async (progress, token) => {
       const baseParams: LmRequestParams = { model, systemPrompt: "", userPrompt: "", token };
-      const files = readGeneratedFiles(outDir);
-      const operations = files.map(extractSummary);
-
-      progress.report({ message: OPENAPI_AI_ENRICHING_ASSERTIONS });
-      let enriched = await enrichAssertionStep(baseParams, operations, files, logger);
-
-      progress.report({ message: OPENAPI_AI_ENRICHING_TEST_DATA });
-      enriched = await enrichTestDataStep(baseParams, operations, enriched, logger);
-
-      progress.report({ message: OPENAPI_AI_REORDERING_PLAYLIST });
-      await reorderPlaylistStep(baseParams, outDir, enriched.map((f) => f.fileName));
-
-      writeEnrichedFiles(outDir, enriched);
+      await executeEnrichmentSteps({ progress, baseParams, outDir, logger });
     }
   );
 };
 
-// ─── Main entry point ───────────────────────────────────────
+// ─── URL download ───────────────────────────────────────────
 
-export const importOpenApi = async (
-  explorer: ExplorerAdapter,
-  logger: Logger
+const isRedirect = (code: number): boolean =>
+  code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN;
+
+const isClientError = (code: number): boolean =>
+  code >= HTTP_STATUS_CLIENT_ERROR_MIN;
+
+const collectBody = (
+  res: IncomingMessage,
+  resolve: (r: Result<string, string>) => void
+): void => {
+  const chunks: Buffer[] = [];
+  res.on("data", (chunk: Buffer) => { chunks.push(chunk); });
+  res.on("end", () => { resolve(ok(Buffer.concat(chunks).toString("utf-8"))); });
+  res.on("error", (e) => { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`)); });
+};
+
+// Use function declaration for hoisting (recursive redirect)
+export async function downloadSpec(url: string): Promise<Result<string, string>> {
+  return await new Promise((resolve) => {
+    https.get(url, (res) => {
+      const status = res.statusCode ?? 0;
+      if (isRedirect(status) && res.headers.location !== undefined) {
+        downloadSpec(res.headers.location).then(resolve).catch(() => {
+          resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}redirect`));
+        });
+        return;
+      }
+      if (isClientError(status)) { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}HTTP ${status}`)); return; }
+      collectBody(res, resolve);
+    }).on("error", (e) => { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`)); });
+  });
+}
+
+const askForUrl = async (): Promise<string | undefined> =>
+  await vscode.window.showInputBox({
+    prompt: OPENAPI_URL_PROMPT,
+    placeHolder: OPENAPI_URL_PLACEHOLDER,
+    ignoreFocusOut: true,
+  });
+
+export const saveTempSpec = (content: string, outDir: string): string => {
+  const specPath = path.join(outDir, ".openapi-spec.json");
+  fs.writeFileSync(specPath, content, "utf-8");
+  return specPath;
+};
+
+// ─── Shared generate + enrich flow ──────────────────────────
+
+const generateAndEnrich = async (
+  specPath: string,
+  outDir: string,
+  ctx: ImportContext
 ): Promise<void> => {
-  const paths = await pickPaths();
-  if (paths === undefined) { return; }
   const choice = await askAiChoice();
   if (choice === undefined) { return; }
-  const result = await callCliGenerate(paths.specFile.fsPath, paths.outFolder.fsPath);
+  const result = await callCliGenerate(specPath, outDir);
   if (!result.ok) {
     await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${result.error}`);
     return;
   }
   if (choice === OPENAPI_AI_CHOICE_ENHANCED) {
-    await runAiEnrichment(paths.outFolder.fsPath, logger);
+    await runAiEnrichment(outDir, ctx.logger);
   }
-  await handleSuccess(paths.outFolder.fsPath, result.value, { explorer, logger });
+  await handleSuccess(outDir, result.value, ctx);
+};
+
+// ─── Main entry points ──────────────────────────────────────
+
+export const importOpenApiFromUrl = async (
+  explorer: ExplorerAdapter,
+  logger: Logger
+): Promise<void> => {
+  const url = await askForUrl();
+  if (url === undefined || url.length === 0) { return; }
+  const outFolder = await pickOutputFolder();
+  const outDir = outFolder?.[0]?.fsPath;
+  if (outDir === undefined) { return; }
+  const specResult = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: OPENAPI_DOWNLOADING, cancellable: false },
+    async () => await downloadSpec(url)
+  );
+  if (!specResult.ok) {
+    await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${specResult.error}`);
+    return;
+  }
+  const specPath = saveTempSpec(specResult.value, outDir);
+  await generateAndEnrich(specPath, outDir, { explorer, logger });
+};
+
+export const importOpenApiFromFile = async (
+  explorer: ExplorerAdapter,
+  logger: Logger
+): Promise<void> => {
+  const paths = await pickPaths();
+  if (paths === undefined) { return; }
+  await generateAndEnrich(paths.specFile.fsPath, paths.outFolder.fsPath, { explorer, logger });
 };

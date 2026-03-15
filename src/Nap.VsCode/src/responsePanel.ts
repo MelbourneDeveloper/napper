@@ -7,8 +7,34 @@ import {
   RESPONSE_PANEL_TITLE,
   RESPONSE_PANEL_VIEW_TYPE,
   HTTP_STATUS_CLIENT_ERROR_MIN,
+  SECTION_LABEL_REQUEST_HEADERS,
+  SECTION_LABEL_RESPONSE_HEADERS,
+  SECTION_LABEL_BODY,
+  SECTION_LABEL_ASSERTIONS,
+  SECTION_LABEL_OUTPUT,
+  SECTION_LABEL_ERROR,
+  NO_REQUEST_HEADERS,
 } from "./constants";
 import { escapeHtml, formatBodyHtml } from "./htmlUtils";
+
+const buildCollapsibleSection = (title: string, content: string, open: boolean): string =>
+  `<details class="section"${open ? " open" : ""}>
+    <summary><h3>${title}</h3><span class="chevron">&#x25B6;</span></summary>
+    <div class="section-content">${content}</div>
+  </details>`;
+
+const buildHeadersTable = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  if (!headers) {return "";}
+
+  return Object.entries(headers)
+    .map(
+      ([k, v]) =>
+        `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
+    )
+    .join("\n");
+};
 
 const buildAssertionsHtml = (result: RunResult): string => {
   if (result.assertions.length === 0) {return "";}
@@ -24,22 +50,25 @@ const buildAssertionsHtml = (result: RunResult): string => {
     })
     .join("\n");
 
-  return `<div class="section"><h3>Assertions</h3>${rows}</div>`;
+  return buildCollapsibleSection(SECTION_LABEL_ASSERTIONS, rows, true);
+};
+
+const buildRequestHeadersHtml = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  const rows = buildHeadersTable(headers);
+  const content = rows === ""
+    ? `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`
+    : `<table>${rows}</table>`;
+  return buildCollapsibleSection(SECTION_LABEL_REQUEST_HEADERS, content, false);
 };
 
 const buildHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
-  if (!headers) {return "";}
-
-  const rows = Object.entries(headers)
-    .map(
-      ([k, v]) =>
-        `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
-    )
-    .join("\n");
-
-  return `<div class="section"><h3>Response Headers</h3><table>${rows}</table></div>`;
+  const rows = buildHeadersTable(headers);
+  if (rows === "") {return "";}
+  return buildCollapsibleSection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${rows}</table>`, false);
 };
 
 const buildLogHtml = (
@@ -51,7 +80,7 @@ const buildLogHtml = (
     .map((line) => escapeHtml(line))
     .join("\n");
 
-  return `<div class="section"><h3>Output</h3><pre class="log-output">${lines}</pre></div>`;
+  return buildCollapsibleSection(SECTION_LABEL_OUTPUT, `<pre class="log-output">${lines}</pre>`, true);
 };
 
 const buildStatusLine = (result: RunResult): string => {
@@ -67,23 +96,31 @@ const buildStatusLine = (result: RunResult): string => {
 
 const buildBodyHtml = (body: string | undefined): string =>
   body !== undefined && body !== ""
-    ? `<div class="section"><h3>Body</h3><pre class="body">${formatBodyHtml(body)}</pre></div>`
+    ? buildCollapsibleSection(SECTION_LABEL_BODY, `<pre class="body">${formatBodyHtml(body)}</pre>`, true)
     : "";
 
 const buildErrorHtml = (error: string | undefined): string =>
   error !== undefined && error !== ""
-    ? `<div class="section error"><h3>Error</h3><pre>${escapeHtml(error)}</pre></div>`
+    ? `<details class="section error" open>
+    <summary><h3>${SECTION_LABEL_ERROR}</h3><span class="chevron">&#x25B6;</span></summary>
+    <div class="section-content"><pre>${escapeHtml(error)}</pre></div>
+  </details>`
     : "";
 
 const RESPONSE_STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
   h2 { margin: 0 0 12px 0; font-size: 14px; }
-  h3 { margin: 12px 0 6px 0; font-size: 13px; color: var(--vscode-descriptionForeground); }
+  h3 { margin: 0; font-size: 13px; color: var(--vscode-descriptionForeground); display: inline; }
   .summary { display: flex; gap: 16px; align-items: baseline; margin-bottom: 16px; padding: 8px 12px; background: var(--vscode-editorWidget-background); border-radius: 4px; }
   .status-ok { color: var(--vscode-testing-iconPassed); font-weight: bold; font-size: 18px; }
   .status-error { color: var(--vscode-testing-iconFailed); font-weight: bold; font-size: 18px; }
   .duration { color: var(--vscode-descriptionForeground); }
-  .section { margin-bottom: 16px; }
+  details.section { margin-bottom: 16px; }
+  details.section > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; padding: 4px 0; user-select: none; }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary .chevron { font-size: 10px; color: var(--vscode-descriptionForeground); transition: transform 0.15s; }
+  details.section[open] > summary .chevron { transform: rotate(90deg); }
+  .section-content { padding-top: 6px; }
   .body { background: var(--vscode-textCodeBlock-background); padding: 12px; border-radius: 4px; overflow-x: auto; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); white-space: pre-wrap; word-break: break-word; }
   table { width: 100%; border-collapse: collapse; }
   td { padding: 4px 8px; border-bottom: 1px solid var(--vscode-widget-border); font-size: 12px; }
@@ -101,7 +138,15 @@ const RESPONSE_STYLES = `
   .json-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
   .json-bool { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
   .json-null { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
+  .empty-hint { color: var(--vscode-descriptionForeground); font-size: 12px; font-style: italic; }
+  .request-url { font-size: 12px; color: var(--vscode-textLink-foreground); word-break: break-all; margin-bottom: 16px; }
+  .request-method { font-weight: bold; color: var(--vscode-foreground); }
 `;
+
+const buildRequestUrlHtml = (result: RunResult): string =>
+  result.requestUrl !== undefined && result.requestUrl !== ""
+    ? `<div class="request-url"><span class="request-method">${escapeHtml(result.requestMethod ?? "")}</span> ${escapeHtml(result.requestUrl)}</div>`
+    : "";
 
 const buildResponseBody = (result: RunResult): string => {
   const durationLine =
@@ -114,9 +159,11 @@ const buildResponseBody = (result: RunResult): string => {
     <span class="duration">${durationLine}</span>
     <span class="${result.passed ? "passed-badge" : "failed-badge"}">${result.passed ? "PASSED" : "FAILED"}</span>
   </div>
+  ${buildRequestUrlHtml(result)}
   ${buildErrorHtml(result.error)}
   ${buildLogHtml(result.log)}
   ${buildAssertionsHtml(result)}
+  ${buildRequestHeadersHtml(result.requestHeaders)}
   ${buildHeadersHtml(result.headers)}
   ${buildBodyHtml(result.body)}`;
 };

@@ -22,7 +22,8 @@ import {
 } from "./cliInstaller";
 import { newRequest, newPlaylist } from "./fileCreation";
 import { copyAsCurl } from "./curlCopy";
-import { importOpenApi } from "./openApiImport";
+import { importOpenApiFromUrl, importOpenApiFromFile, runAiEnrichment } from "./openApiImport";
+import { registerContextMenuCommands } from "./contextMenuCommands";
 import {
   VIEW_EXPLORER,
   CMD_RUN_FILE,
@@ -52,7 +53,9 @@ import {
   REPORT_FILE_SUFFIX,
   REPORT_SAVED_MSG,
   CMD_SAVE_REPORT,
-  CMD_IMPORT_OPENAPI,
+  CMD_IMPORT_OPENAPI_URL,
+  CMD_IMPORT_OPENAPI_FILE,
+  CMD_ENRICH_AI,
   LOG_CHANNEL_NAME,
   LOG_MSG_ACTIVATED,
   LOG_MSG_DEACTIVATED,
@@ -382,9 +385,23 @@ const registerEditCommands = (context: vscode.ExtensionContext): void => {
     }),
     vscode.commands.registerCommand(CMD_SWITCH_ENV, async () => {
       await envStatusBar.showPicker();
+    })
+  );
+};
+
+const registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
+      await importOpenApiFromUrl(explorerProvider, logger);
     }),
-    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI, async () => {
-      await importOpenApi(explorerProvider, logger);
+    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
+      await importOpenApiFromFile(explorerProvider, logger);
+    }),
+    vscode.commands.registerCommand(CMD_ENRICH_AI, async (arg?: { readonly filePath?: string }) => {
+      const fp = arg?.filePath;
+      if (fp === undefined) { return; }
+      await runAiEnrichment(path.dirname(fp), logger);
+      explorerProvider.refresh();
     })
   );
 };
@@ -430,6 +447,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   registerCodeLens(context);
   registerRunCommands(context);
   registerEditCommands(context);
+  registerOpenApiCommands(context);
+  registerContextMenuCommands(context, explorerProvider);
   registerWatchers(context);
   registerAutoRun(context);
   context.subscriptions.push(envStatusBar, responsePanel, playlistPanel);

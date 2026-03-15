@@ -90,6 +90,13 @@ export const THEME_COLOR_ERROR = "problemsWarningIcon.foreground";
 // Response panel
 export const RESPONSE_PANEL_TITLE = "Napper Response";
 export const RESPONSE_PANEL_VIEW_TYPE = "napperResponse";
+export const SECTION_LABEL_REQUEST_HEADERS = "Request Headers";
+export const SECTION_LABEL_RESPONSE_HEADERS = "Response Headers";
+export const SECTION_LABEL_BODY = "Body";
+export const SECTION_LABEL_ASSERTIONS = "Assertions";
+export const SECTION_LABEL_OUTPUT = "Output";
+export const SECTION_LABEL_ERROR = "Error";
+export const NO_REQUEST_HEADERS = "No request headers";
 
 // Playlist panel
 export const PLAYLIST_PANEL_TITLE = "Napper Playlist";
@@ -230,9 +237,9 @@ export const BASE_URL_VAR = "{{baseUrl}}";
 export const BASE_URL_KEY = "baseUrl";
 export const VARS_PLACEHOLDER = "REPLACE_ME";
 
-// OpenAPI generator — command
-export const CMD_IMPORT_OPENAPI = "napper.importOpenApi";
-export const OPENAPI_CMD_TITLE = "Napper: Import from OpenAPI";
+// OpenAPI generator — commands
+export const CMD_IMPORT_OPENAPI_URL = "napper.importOpenApiUrl";
+export const CMD_IMPORT_OPENAPI_FILE = "napper.importOpenApiFile";
 export const OPENAPI_PICK_FILE = "Select OpenAPI specification file";
 export const OPENAPI_PICK_FOLDER = "Select output folder";
 export const OPENAPI_SUCCESS_PREFIX = "Generated ";
@@ -240,6 +247,11 @@ export const OPENAPI_SUCCESS_SUFFIX = " test files from OpenAPI spec";
 export const OPENAPI_ERROR_PREFIX = "Failed to import OpenAPI: ";
 export const OPENAPI_FILTER_LABEL = "OpenAPI Spec";
 export const OPENAPI_FILE_EXTENSIONS = ["json", "yaml", "yml"];
+export const OPENAPI_URL_PROMPT = "Enter OpenAPI specification URL";
+export const OPENAPI_URL_PLACEHOLDER = "https://petstore3.swagger.io/api/v3/openapi.json";
+export const OPENAPI_DOWNLOAD_FAILED_PREFIX = "Failed to download spec: ";
+export const OPENAPI_DOWNLOADING = "Downloading OpenAPI spec...";
+export const ICON_IMPORT_OPENAPI_FILE = "file-symlink-file";
 
 // OpenAPI generator — validation
 export const OPENAPI_INVALID_SPEC = "Invalid OpenAPI specification: missing paths";
@@ -318,6 +330,7 @@ export const CMD_ADD_NAP_TO_PLAYLIST = "napper.addNapToPlaylist";
 export const CMD_ADD_SCRIPT_TO_PLAYLIST = "napper.addScriptToPlaylist";
 export const CMD_DUPLICATE_PLAYLIST = "napper.duplicatePlaylist";
 export const CMD_COPY_PATH = "napper.copyPath";
+export const CMD_ENRICH_AI = "napper.enrichWithAi";
 
 // Context menu prompts
 export const PROMPT_SELECT_PLAYLIST = "Select a playlist to add this script to";

@@ -161,31 +161,35 @@ export const createPlaylistSectionNode = (
   children,
 });
 
-export const appendStepToPlaylist = (
-  content: string,
-  stepPath: string
-): string => {
-  const lines = content.split("\n");
-  let insertIndex = -1;
+const findStepsInsertIndex = (
+  lines: readonly string[]
+): { readonly inSteps: boolean; readonly index: number } => {
   let inSteps = false;
   for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
+    const line = lines[i];
+    if (line === undefined) { continue; }
+    const trimmed = line.trim();
     if (trimmed === SECTION_STEPS) {
       inSteps = true;
       continue;
     }
     if (inSteps && isSectionHeader(trimmed)) {
-      insertIndex = i;
-      break;
+      return { inSteps: true, index: i };
     }
   }
-  if (!inSteps) {
+  return { inSteps, index: lines.length };
+};
+
+export const appendStepToPlaylist = (
+  content: string,
+  stepPath: string
+): string => {
+  const lines = content.split("\n");
+  const result = findStepsInsertIndex(lines);
+  if (!result.inSteps) {
     return `${content}\n${SECTION_STEPS}\n${stepPath}\n`;
   }
-  if (insertIndex === -1) {
-    insertIndex = lines.length;
-  }
-  lines.splice(insertIndex, 0, stepPath);
+  lines.splice(result.index, 0, stepPath);
   return lines.join("\n");
 };
 

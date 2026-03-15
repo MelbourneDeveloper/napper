@@ -11,6 +11,8 @@ import {
   MSG_RUN_COMPLETE,
   MSG_RUN_ERROR,
   MSG_SAVE_REPORT,
+  SECTION_LABEL_REQUEST_HEADERS,
+  SECTION_LABEL_RESPONSE_HEADERS,
 } from "./constants";
 import { escapeHtml, formatBodyHtml } from "./htmlUtils";
 
@@ -31,19 +33,33 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
   return `<div class="step-assertions">${rows}</div>`;
 };
 
-const buildStepHeadersHtml = (
+const buildStepHeadersTable = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   if (!headers) {return "";}
 
-  const rows = Object.entries(headers)
+  return Object.entries(headers)
     .map(
       ([k, v]) =>
         `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
     )
     .join("\n");
+};
 
-  return `<div class="step-headers"><h4>Response Headers</h4><table>${rows}</table></div>`;
+const buildStepRequestHeadersHtml = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  const rows = buildStepHeadersTable(headers);
+  if (rows === "") {return "";}
+  return `<div class="step-headers"><h4>${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${rows}</table></div>`;
+};
+
+const buildStepHeadersHtml = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  const rows = buildStepHeadersTable(headers);
+  if (rows === "") {return "";}
+  return `<div class="step-headers"><h4>${SECTION_LABEL_RESPONSE_HEADERS}</h4><table>${rows}</table></div>`;
 };
 
 const buildStepLogHtml = (
@@ -92,6 +108,7 @@ const buildStepDetailSection = (result: RunResult): string =>
   `${buildStepErrorHtml(result.error)}
         ${buildStepLogHtml(result.log)}
         ${buildStepAssertionsHtml(result)}
+        ${buildStepRequestHeadersHtml(result.requestHeaders)}
         ${buildStepHeadersHtml(result.headers)}
         ${buildStepBodyHtml(result.body)}`;
 

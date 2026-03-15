@@ -12,6 +12,8 @@ import {
   REPORT_FOOTER_GENERATED_BY,
   REPORT_FOOTER_MADE_BY,
   PERCENTAGE_MULTIPLIER,
+  SECTION_LABEL_REQUEST_HEADERS,
+  SECTION_LABEL_RESPONSE_HEADERS,
 } from "./constants";
 
 const buildReportAssertionRow = (a: {
@@ -45,20 +47,42 @@ const buildReportAssertions = (result: RunResult): string => {
   </div>`;
 };
 
-const buildReportHeaders = (
+const buildReportHeadersTable = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   if (!headers) {return "";}
 
-  const rows = Object.entries(headers)
+  return Object.entries(headers)
     .map(
       ([k, v]) =>
         `<tr><td class="h-key">${escapeHtml(k)}</td><td class="h-val">${escapeHtml(v)}</td></tr>`
     )
     .join("\n");
+};
+
+const buildReportRequestHeaders = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  const rows = buildReportHeadersTable(headers);
+  if (!rows) {return "";}
 
   return `<div class="detail-section">
-    <div class="detail-section-title">Response Headers</div>
+    <div class="detail-section-title">${SECTION_LABEL_REQUEST_HEADERS}</div>
+    <table class="headers-table">
+      <thead><tr><th>Header</th><th>Value</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+};
+
+const buildReportHeaders = (
+  headers: Readonly<Record<string, string>> | undefined
+): string => {
+  const rows = buildReportHeadersTable(headers);
+  if (!rows) {return "";}
+
+  return `<div class="detail-section">
+    <div class="detail-section-title">${SECTION_LABEL_RESPONSE_HEADERS}</div>
     <table class="headers-table">
       <thead><tr><th>Header</th><th>Value</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -163,6 +187,7 @@ const buildStepCardDetail = (result: RunResult): string =>
   `${buildStepCardErrorHtml(result.error)}
       ${buildReportLog(result.log)}
       ${buildReportAssertions(result)}
+      ${buildReportRequestHeaders(result.requestHeaders)}
       ${buildReportHeaders(result.headers)}
       ${buildReportBody(result.body)}`;
 

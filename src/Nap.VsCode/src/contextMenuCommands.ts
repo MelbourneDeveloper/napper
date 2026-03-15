@@ -58,6 +58,43 @@ const toPickItems = (
     uri,
   }));
 
+const writeStepToPlaylist = async (
+  playlistPath: string,
+  pickedFilePath: string,
+  explorer: ExplorerAdapter
+): Promise<void> => {
+  const playlistDir = path.dirname(playlistPath);
+  const relStep = path.relative(playlistDir, pickedFilePath);
+  const content = fs.readFileSync(playlistPath, ENCODING_UTF8);
+  const updated = appendStepToPlaylist(content, relStep);
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.file(playlistPath),
+    Buffer.from(updated, ENCODING_UTF8)
+  );
+  await vscode.window.showInformationMessage(
+    `${MSG_ADDED_TO_PLAYLIST}${path.basename(playlistPath)}`
+  );
+  explorer.refresh();
+};
+
+const pickFileFromGlob = async (
+  glob: string,
+  prompt: string,
+  emptyMsg: string
+): Promise<FilePickItem | undefined> => {
+  const files = await vscode.workspace.findFiles(glob);
+  if (files.length === 0) {
+    await vscode.window.showInformationMessage(emptyMsg);
+    return undefined;
+  }
+  const root = workspaceRoot();
+  if (root === undefined) { return undefined; }
+  return await vscode.window.showQuickPick(
+    toPickItems(files, root),
+    { placeHolder: prompt }
+  );
+};
+
 const addFileToPlaylist = async ({
   playlistPath,
   glob,
@@ -71,60 +108,22 @@ const addFileToPlaylist = async ({
   readonly emptyMsg: string;
   readonly explorer: ExplorerAdapter;
 }): Promise<void> => {
-  const files = await vscode.workspace.findFiles(glob);
-  if (files.length === 0) {
-    await vscode.window.showInformationMessage(emptyMsg);
-    return;
-  }
-  const root = workspaceRoot();
-  if (root === undefined) { return; }
-  const picked = await vscode.window.showQuickPick(
-    toPickItems(files, root),
-    { placeHolder: prompt }
-  );
+  const picked = await pickFileFromGlob(glob, prompt, emptyMsg);
   if (picked === undefined) { return; }
-  const playlistDir = path.dirname(playlistPath);
-  const relStep = path.relative(playlistDir, picked.uri.fsPath);
-  const content = fs.readFileSync(playlistPath, ENCODING_UTF8);
-  const updated = appendStepToPlaylist(content, relStep);
-  await vscode.workspace.fs.writeFile(
-    vscode.Uri.file(playlistPath),
-    Buffer.from(updated, ENCODING_UTF8)
-  );
-  await vscode.window.showInformationMessage(
-    `${MSG_ADDED_TO_PLAYLIST}${path.basename(playlistPath)}`
-  );
-  explorer.refresh();
+  await writeStepToPlaylist(playlistPath, picked.uri.fsPath, explorer);
 };
 
 export const addToPlaylist = async (
   filePath: string,
   explorer: ExplorerAdapter
 ): Promise<void> => {
-  const playlists = await vscode.workspace.findFiles(NAPLIST_GLOB);
-  if (playlists.length === 0) {
-    await vscode.window.showInformationMessage(MSG_NO_PLAYLISTS);
-    return;
-  }
-  const root = workspaceRoot();
-  if (root === undefined) { return; }
-  const picked = await vscode.window.showQuickPick(
-    toPickItems(playlists, root),
-    { placeHolder: PROMPT_SELECT_PLAYLIST }
+  const picked = await pickFileFromGlob(
+    NAPLIST_GLOB,
+    PROMPT_SELECT_PLAYLIST,
+    MSG_NO_PLAYLISTS
   );
   if (picked === undefined) { return; }
-  const playlistDir = path.dirname(picked.uri.fsPath);
-  const relStep = path.relative(playlistDir, filePath);
-  const content = fs.readFileSync(picked.uri.fsPath, ENCODING_UTF8);
-  const updated = appendStepToPlaylist(content, relStep);
-  await vscode.workspace.fs.writeFile(
-    picked.uri,
-    Buffer.from(updated, ENCODING_UTF8)
-  );
-  await vscode.window.showInformationMessage(
-    `${MSG_ADDED_TO_PLAYLIST}${path.basename(picked.uri.fsPath)}`
-  );
-  explorer.refresh();
+  await writeStepToPlaylist(picked.uri.fsPath, filePath, explorer);
 };
 
 export const performanceTest = async (): Promise<void> => {
@@ -159,26 +158,48 @@ export const deleteFile = async (
 export const addNapToPlaylist = async (
   playlistPath: string,
   explorer: ExplorerAdapter
-): Promise<void> =>
-  addFileToPlaylist({
+): Promise<void> => {
+  await addFileToPlaylist({
     playlistPath,
     glob: NAP_GLOB,
     prompt: PROMPT_SELECT_NAP_FILE,
     emptyMsg: MSG_NO_NAP_FILES,
     explorer,
   });
+};
 
 export const addScriptToPlaylist = async (
   playlistPath: string,
   explorer: ExplorerAdapter
-): Promise<void> =>
-  addFileToPlaylist({
+): Promise<void> => {
+  await addFileToPlaylist({
     playlistPath,
     glob: SCRIPT_GLOB,
     prompt: PROMPT_SELECT_SCRIPT_FILE,
     emptyMsg: MSG_NO_SCRIPT_FILES,
     explorer,
   });
+};
+
+interface DuplicateContext {
+  readonly newPath: string;
+  readonly content: string;
+  readonly newName: string;
+  readonly explorer: ExplorerAdapter;
+}
+
+const writeDuplicate = async (ctx: DuplicateContext): Promise<void> => {
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.file(ctx.newPath),
+    Buffer.from(ctx.content, ENCODING_UTF8)
+  );
+  const doc = await vscode.workspace.openTextDocument(ctx.newPath);
+  await vscode.window.showTextDocument(doc);
+  await vscode.window.showInformationMessage(
+    `${MSG_PLAYLIST_DUPLICATED}${ctx.newName}`
+  );
+  ctx.explorer.refresh();
+};
 
 export const duplicatePlaylist = async (
   playlistPath: string,
@@ -190,20 +211,13 @@ export const duplicatePlaylist = async (
     value: `${baseName}${DUPLICATE_SUFFIX}`,
   });
   if (newName === undefined) { return; }
-  const dir = path.dirname(playlistPath);
-  const newPath = path.join(dir, `${newName}${NAPLIST_EXTENSION}`);
+  const newPath = path.join(
+    path.dirname(playlistPath),
+    `${newName}${NAPLIST_EXTENSION}`
+  );
   const content = fs.readFileSync(playlistPath, ENCODING_UTF8);
   const updated = updatePlaylistName(content, newName);
-  await vscode.workspace.fs.writeFile(
-    vscode.Uri.file(newPath),
-    Buffer.from(updated, ENCODING_UTF8)
-  );
-  const doc = await vscode.workspace.openTextDocument(newPath);
-  await vscode.window.showTextDocument(doc);
-  await vscode.window.showInformationMessage(
-    `${MSG_PLAYLIST_DUPLICATED}${newName}`
-  );
-  explorer.refresh();
+  await writeDuplicate({ newPath, content: updated, newName, explorer });
 };
 
 export const copyPath = async (filePath: string): Promise<void> => {
@@ -223,7 +237,7 @@ const withFilePath = (
     if (fp !== undefined) { await handler(fp); }
   };
 
-export const registerContextMenuCommands = (
+const registerScriptCommands = (
   context: vscode.ExtensionContext,
   explorer: ExplorerAdapter
 ): void => {
@@ -236,7 +250,15 @@ export const registerContextMenuCommands = (
     vscode.commands.registerCommand(
       CMD_DELETE_FILE,
       withFilePath(async (fp) => { await deleteFile(fp, explorer); })
-    ),
+    )
+  );
+};
+
+const registerPlaylistAddCommands = (
+  context: vscode.ExtensionContext,
+  explorer: ExplorerAdapter
+): void => {
+  context.subscriptions.push(
     vscode.commands.registerCommand(
       CMD_ADD_NAP_TO_PLAYLIST,
       withFilePath(async (fp) => { await addNapToPlaylist(fp, explorer); })
@@ -244,7 +266,15 @@ export const registerContextMenuCommands = (
     vscode.commands.registerCommand(
       CMD_ADD_SCRIPT_TO_PLAYLIST,
       withFilePath(async (fp) => { await addScriptToPlaylist(fp, explorer); })
-    ),
+    )
+  );
+};
+
+const registerPlaylistEditCommands = (
+  context: vscode.ExtensionContext,
+  explorer: ExplorerAdapter
+): void => {
+  context.subscriptions.push(
     vscode.commands.registerCommand(
       CMD_DUPLICATE_PLAYLIST,
       withFilePath(async (fp) => { await duplicatePlaylist(fp, explorer); })
@@ -254,4 +284,13 @@ export const registerContextMenuCommands = (
       withFilePath(async (fp) => { await copyPath(fp); })
     )
   );
+};
+
+export const registerContextMenuCommands = (
+  context: vscode.ExtensionContext,
+  explorer: ExplorerAdapter
+): void => {
+  registerScriptCommands(context, explorer);
+  registerPlaylistAddCommands(context, explorer);
+  registerPlaylistEditCommands(context, explorer);
 };
