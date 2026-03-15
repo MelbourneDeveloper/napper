@@ -41,6 +41,7 @@ You are working with many other agents. Make sure there is effective cooperation
 #### Rules
 - **Prefer e2e tests over unit tests** - only unit tests for isolating bugs
 - Separate e2e tests from unit tests by file. They should not be in the same file together.
+- **Add more assertions** - No, that's not enough. Add more!!!
 - Prefer adding assertions to existing tests rather than adding new tests
 - NEVER remove assertions
 - FAILING TEST = ✅ OK. TEST THAT DOESN'T ENFORCE BEHAVIOR = ⛔️ ILLEGAL

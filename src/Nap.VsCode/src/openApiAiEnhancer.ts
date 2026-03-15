@@ -1,8 +1,7 @@
 // AI enrichment for OpenAPI-generated .nap files
 // Pure functions — NO VS Code SDK dependency — fully testable
 
-import type { Result } from "./types";
-import { err, ok } from "./types";
+import { type Result, err, ok } from "./types";
 import {
   NAP_TRIPLE_QUOTE,
   SECTION_ASSERT,

@@ -96,6 +96,8 @@ export const SECTION_LABEL_BODY = "Body";
 export const SECTION_LABEL_ASSERTIONS = "Assertions";
 export const SECTION_LABEL_OUTPUT = "Output";
 export const SECTION_LABEL_ERROR = "Error";
+export const SECTION_LABEL_REQUEST = "Request";
+export const SECTION_LABEL_RESPONSE = "Response";
 export const NO_REQUEST_HEADERS = "No request headers";
 
 // Playlist panel

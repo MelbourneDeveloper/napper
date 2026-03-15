@@ -72,16 +72,16 @@ import {
   VIEW_EXPLORER,
 } from "./constants";
 
-let bundledCliPath: string | undefined = undefined,
- envStatusBar: EnvironmentStatusBar = undefined as unknown as EnvironmentStatusBar,
- explorerProvider: ExplorerAdapter = undefined as unknown as ExplorerAdapter,
- installedPath: string | undefined = undefined,
- lastPlaylistReport: (() => void) | undefined = undefined,
- lastResult: RunResult | undefined = undefined,
- logger: Logger = undefined as unknown as Logger,
+let bundledCliPath: string | undefined,
+ envStatusBar: EnvironmentStatusBar,
+ explorerProvider: ExplorerAdapter,
+ installedPath: string | undefined,
+ lastPlaylistReport: (() => void) | undefined,
+ lastResult: RunResult | undefined,
+ logger: Logger,
 
- playlistPanel: PlaylistPanel = undefined as unknown as PlaylistPanel,
- responsePanel: ResponsePanel = undefined as unknown as ResponsePanel;
+ playlistPanel: PlaylistPanel,
+ responsePanel: ResponsePanel;
 
 const getCliPath = (): string => {
   const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
@@ -267,7 +267,7 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     explorerProvider.updateResult(r.file, r);
     lastResult = r;
   }
-  const first = results[0];
+  const [first] = results;
   if (first !== undefined) {
     responsePanel.show(first, getResponseColumn());
   }

@@ -209,6 +209,7 @@ export default tseslint.config(
       // Forces destructuring even when a single property access
       // is clearer: `const name = obj.name` vs `const { name } = obj`.
       "prefer-destructuring": "off",
+      "@typescript-eslint/prefer-destructuring": "off",
       // Short identifiers like `i`, `r`, `f`, `k`, `v` are clear
       // in context (loop counters, map callbacks, results).
       // naming-convention already governs format.
@@ -238,6 +239,14 @@ export default tseslint.config(
       // Setter without getter is a valid pattern for write-only
       // callbacks (e.g. onSaveReport).
       "accessor-pairs": "off",
+      // Module-level variables initialized in activate() can't have
+      // initializers at declaration — they depend on the extension context.
+      "@typescript-eslint/init-declarations": "off",
+      "init-declarations": "off",
+      // JSON.parse returns `unknown` — asserting the parsed shape is
+      // the standard TS pattern. The no-unsafe-assignment/call/return
+      // rules already catch genuinely dangerous untyped access.
+      "@typescript-eslint/no-unsafe-type-assertion": "off",
     },
   },
   {
@@ -248,6 +257,20 @@ export default tseslint.config(
       "max-lines": "off",
       "no-magic-numbers": "off",
       "@typescript-eslint/no-magic-numbers": "off",
+      // Mocha uses `this.timeout()` inside anonymous callbacks
+      // passed to describe/it — these 3 rules conflict with that.
+      "@typescript-eslint/no-invalid-this": "off",
+      "no-invalid-this": "off",
+      "func-names": "off",
+      // Mocha describe/it expect sync callbacks but tests are async.
+      // This is the standard Mocha async test pattern.
+      "@typescript-eslint/strict-void-return": "off",
+      // Sequential awaits in test helpers are intentional —
+      // tests need deterministic ordering, not parallelism.
+      "no-await-in-loop": "off",
+      // Test object literals (fixtures, expected values) don't
+      // need to follow property naming conventions.
+      "@typescript-eslint/naming-convention": "off",
     },
   },
   {

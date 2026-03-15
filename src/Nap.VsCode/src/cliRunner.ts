@@ -54,8 +54,7 @@ const appendEnvArgs = (
       // validated: JSON.parse produced an array; elements typed at consumption
       return ok(parsed);
     }
-    // single result wrapped in array
-    return ok([parsed] as readonly RunResult[]);
+    return ok([parsed as RunResult]);
   } catch {
     return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
@@ -210,7 +209,7 @@ const attachDataListeners = (ctx: StreamListenerContext): void => {
 export const streamCli = (options: StreamOptions): void => {
   const cliPath = resolveCliPath(options.cliPath),
    args = buildStreamArgs(options),
-   child = spawn(cliPath, args as string[], {
+   child = spawn(cliPath, [...args], {
     cwd: options.cwd,
     env: { ...process.env },
   }),

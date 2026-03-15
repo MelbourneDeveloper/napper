@@ -7,8 +7,7 @@ import * as fs from "fs";
 import { execFile } from "child_process";
 import type { ExplorerAdapter } from "./explorerAdapter";
 import type { Logger } from "./logger";
-import type { Result } from "./types";
-import { err, ok } from "./types";
+import { type Result, err, ok } from "./types";
 import * as https from "https";
 import type { IncomingMessage } from "http";
 import {
@@ -162,8 +161,8 @@ const MAX_PREVIEW_LENGTH = 200,
   stdout: string
 ): Result<GenerateResult, string> => {
   try {
-    const parsed: unknown = JSON.parse(stdout);
-    return ok(parsed as GenerateResult);
+    const parsed = JSON.parse(stdout) as GenerateResult;
+    return ok(parsed);
   } catch {
     return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
@@ -176,7 +175,7 @@ const MAX_PREVIEW_LENGTH = 200,
   new Promise((resolve) => {
     const cliPath = resolveCliPath();
     execFile(
-      cliPath, buildGenerateArgs(specPath, outDir) as string[],
+      cliPath, [...buildGenerateArgs(specPath, outDir)],
       { timeout: 30_000, env: { ...process.env } },
       (error, stdout, stderr) => {
         if (error !== null && stdout.length === 0) {
@@ -313,7 +312,7 @@ const MAX_PREVIEW_LENGTH = 200,
   fileNames: readonly string[]
 ): Promise<void> => {
   const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION)),
-   first = naplists[0];
+   [first] = naplists;
   if (first === undefined) { return; }
   const playlistPath = path.join(outDir, first),
    response = await sendLmRequest({

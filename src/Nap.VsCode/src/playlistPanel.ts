@@ -11,70 +11,10 @@ import {
   MSG_SAVE_REPORT,
   PLAYLIST_PANEL_TITLE,
   PLAYLIST_PANEL_VIEW_TYPE,
-  SECTION_LABEL_REQUEST_HEADERS,
-  SECTION_LABEL_RESPONSE_HEADERS,
 } from "./constants";
-import { escapeHtml, formatBodyHtml } from "./htmlUtils";
+import { escapeHtml, buildResultDetailHtml, SHARED_SECTION_STYLES } from "./htmlUtils";
 
-const buildStepAssertionsHtml = (result: RunResult): string => {
-  if (result.assertions.length === 0) {return "";}
-
-  const rows = result.assertions
-    .map((a) => {
-      const icon = a.passed ? "&#x2713;" : "&#x2717;",
-       cls = a.passed ? "pass" : "fail",
-       detail = a.passed
-        ? ""
-        : `<span class="assert-detail">expected: ${escapeHtml(a.expected)} | actual: ${escapeHtml(a.actual)}</span>`;
-      return `<div class="assert-row ${cls}">${icon} ${escapeHtml(a.target)}${detail}</div>`;
-    })
-    .join("\n");
-
-  return `<div class="step-assertions">${rows}</div>`;
-},
-
- buildStepHeadersTable = (
-  headers: Readonly<Record<string, string>> | undefined
-): string => {
-  if (!headers) {return "";}
-
-  return Object.entries(headers)
-    .map(
-      ([k, v]) =>
-        `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
-    )
-    .join("\n");
-},
-
- buildStepRequestHeadersHtml = (
-  headers: Readonly<Record<string, string>> | undefined
-): string => {
-  const rows = buildStepHeadersTable(headers);
-  if (rows === "") {return "";}
-  return `<div class="step-headers"><h4>${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${rows}</table></div>`;
-},
-
- buildStepHeadersHtml = (
-  headers: Readonly<Record<string, string>> | undefined
-): string => {
-  const rows = buildStepHeadersTable(headers);
-  if (rows === "") {return "";}
-  return `<div class="step-headers"><h4>${SECTION_LABEL_RESPONSE_HEADERS}</h4><table>${rows}</table></div>`;
-},
-
- buildStepLogHtml = (
-  log: readonly string[] | undefined
-): string => {
-  if (!log || log.length === 0) {return "";}
-
-  const lines = log
-    .map((line) => escapeHtml(line))
-    .join("\n");
-
-  return `<div class="step-log"><h4>Output</h4><pre class="log-output">${lines}</pre></div>`;
-},
-
- buildStepMetadata = (result: RunResult): {
+const buildStepMetadata = (result: RunResult): {
   readonly icon: string;
   readonly statusCls: string;
   readonly fileName: string;
@@ -94,24 +34,6 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
   };
 },
 
- buildStepErrorHtml = (error: string | undefined): string =>
-  error !== undefined && error !== ""
-    ? `<div class="step-error"><pre>${escapeHtml(error)}</pre></div>`
-    : "",
-
- buildStepBodyHtml = (body: string | undefined): string =>
-  body !== undefined && body !== ""
-    ? `<div class="step-body"><h4>Body</h4><pre class="body">${formatBodyHtml(body)}</pre></div>`
-    : "",
-
- buildStepDetailSection = (result: RunResult): string =>
-  `${buildStepErrorHtml(result.error)}
-        ${buildStepLogHtml(result.log)}
-        ${buildStepAssertionsHtml(result)}
-        ${buildStepRequestHeadersHtml(result.requestHeaders)}
-        ${buildStepHeadersHtml(result.headers)}
-        ${buildStepBodyHtml(result.body)}`,
-
  buildCompletedStepRow = (result: RunResult, index: number): string => {
   const meta = buildStepMetadata(result);
 
@@ -126,7 +48,7 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
         <span class="step-chevron" id="chevron-${index}">&#x25B6;</span>
       </div>
       <div class="step-detail" id="detail-${index}" style="display:none;">
-        ${buildStepDetailSection(result)}
+        ${buildResultDetailHtml(result)}
       </div>
     </div>`;
 },
@@ -144,10 +66,10 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
       <div class="step-detail" id="detail-${index}" style="display:none;"></div>
     </div>`,
 
- STYLES = `
+ PLAYLIST_PANEL_STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
   h2 { margin: 0 0 12px 0; font-size: 16px; }
-  h3 { margin: 12px 0 6px 0; font-size: 13px; color: var(--vscode-descriptionForeground); }
+  h3 { margin: 0; font-size: 13px; color: var(--vscode-descriptionForeground); display: inline; }
   h4 { margin: 8px 0 4px 0; font-size: 12px; color: var(--vscode-descriptionForeground); }
   .playlist-summary { display: flex; gap: 16px; align-items: baseline; margin-bottom: 16px; padding: 10px 14px; background: var(--vscode-editorWidget-background); border-radius: 4px; }
   .summary-passed { color: var(--vscode-testing-iconPassed); font-weight: bold; font-size: 16px; }
@@ -174,28 +96,9 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
   .step-chevron { color: var(--vscode-descriptionForeground); font-size: 10px; transition: transform 0.15s; }
   .step-chevron.open { transform: rotate(90deg); }
   .step-detail { padding: 8px 12px 12px 30px; background: var(--vscode-editorWidget-background); }
-  .step-error pre { color: var(--vscode-testing-iconFailed); margin: 4px 0; font-size: 12px; }
-  .assert-row { padding: 2px 0; font-size: 12px; }
-  .assert-row.pass { color: var(--vscode-testing-iconPassed); }
-  .assert-row.fail { color: var(--vscode-testing-iconFailed); }
-  .assert-detail { margin-left: 8px; color: var(--vscode-descriptionForeground); font-size: 11px; }
-  .step-assertions { margin-bottom: 8px; }
-  .step-headers table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  .step-headers td { padding: 3px 6px; border-bottom: 1px solid var(--vscode-widget-border); font-size: 11px; }
-  .step-headers .header-key { font-weight: bold; white-space: nowrap; width: 1%; }
-  .step-log { margin-bottom: 8px; }
-  .log-output { background: var(--vscode-textCodeBlock-background); padding: 10px; border-radius: 4px; overflow-x: auto; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); white-space: pre-wrap; word-break: break-word; color: var(--vscode-terminal-foreground, var(--vscode-foreground)); }
-  .step-body { margin-top: 8px; }
-  .body { background: var(--vscode-textCodeBlock-background); padding: 10px; border-radius: 4px; overflow-x: auto; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); white-space: pre-wrap; word-break: break-word; }
-  .json-key { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
-  .json-string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
-  .json-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
-  .json-bool { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
-  .json-null { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
   .report-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-left: auto; font-size: 12px; font-weight: 500; color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
   .report-btn:hover { background: var(--vscode-button-hoverBackground); }
-  .report-btn svg { width: 14px; height: 14px; fill: currentColor; }
-`,
+  .report-btn svg { width: 14px; height: 14px; fill: currentColor; }`,
 
  TOGGLE_STEP_FN = `
     function toggleStep(index) {
@@ -262,7 +165,7 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<style>${STYLES}</style>
+<style>${SHARED_SECTION_STYLES}${PLAYLIST_PANEL_STYLES}</style>
 </head>
 <body>
   ${bodyContent}

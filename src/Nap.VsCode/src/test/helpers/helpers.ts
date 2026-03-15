@@ -24,7 +24,7 @@ export const activateExtension = async (): Promise<TestContext> => {
     throw new Error("No workspace folder open");
   }
 
-  const firstFolder = workspaceFolders[0];
+  const [firstFolder] = workspaceFolders;
   if (!firstFolder) {
     throw new Error("No workspace folder open");
   }
@@ -45,7 +45,7 @@ export const getFixturePath = (relativePath: string): string => {
   if (!workspaceFolders || workspaceFolders.length === 0) {
     throw new Error("No workspace folder open");
   }
-  const firstFolder = workspaceFolders[0];
+  const [firstFolder] = workspaceFolders;
   if (!firstFolder) {
     throw new Error("No workspace folder open");
   }
