@@ -7,10 +7,14 @@ import { NAPENV_EXTENSION, NAPENV_LOCAL_SUFFIX } from "./constants";
 export const extractEnvName = (fileName: string): string | undefined => {
   const base = path.basename(fileName);
 
-  if (base === NAPENV_EXTENSION.slice(1)) return undefined;
-  if (base.endsWith(NAPENV_LOCAL_SUFFIX)) return undefined;
+  if (base === NAPENV_EXTENSION.slice(1)) {
+    return undefined;
+  }
+  if (base.endsWith(NAPENV_LOCAL_SUFFIX)) {
+    return undefined;
+  }
 
-  const prefix = NAPENV_EXTENSION.slice(1) + ".";
+  const prefix = `${NAPENV_EXTENSION.slice(1)}.`;
   if (base.startsWith(prefix)) {
     return base.slice(prefix.length);
   }

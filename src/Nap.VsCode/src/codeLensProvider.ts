@@ -37,7 +37,7 @@ const makeCurlLens = (
   });
 
 const isShorthandMethod = (line: string): boolean =>
-  HTTP_METHODS.some((m) => line.startsWith(m + " "));
+  HTTP_METHODS.some((m) => line.startsWith(`${m} `));
 
 const buildRequestLenses = (
   document: vscode.TextDocument
@@ -94,8 +94,8 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
     const isNap = document.fileName.endsWith(NAP_EXTENSION);
     const isNapList = document.fileName.endsWith(NAPLIST_EXTENSION);
 
-    if (isNap) return buildRequestLenses(document);
-    if (isNapList) return buildPlaylistLenses(document);
+    if (isNap) {return buildRequestLenses(document);}
+    if (isNapList) {return buildPlaylistLenses(document);}
     return [];
   }
 }

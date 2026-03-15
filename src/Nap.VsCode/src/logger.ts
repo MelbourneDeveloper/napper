@@ -13,7 +13,14 @@ export type LogWriter = (message: string) => void;
 const formatMessage = (prefix: string, message: string): string =>
   `[${new Date().toISOString()}] [${prefix}] ${message}`;
 
-export const createLogger = (writer: LogWriter) => ({
+export interface Logger {
+  readonly info: (message: string) => void;
+  readonly warn: (message: string) => void;
+  readonly error: (message: string) => void;
+  readonly debug: (message: string) => void;
+}
+
+export const createLogger = (writer: LogWriter): Logger => ({
   info: (message: string): void => {
     writer(formatMessage(LOG_PREFIX_INFO, message));
   },
@@ -27,5 +34,3 @@ export const createLogger = (writer: LogWriter) => ({
     writer(formatMessage(LOG_PREFIX_DEBUG, message));
   },
 });
-
-export type Logger = ReturnType<typeof createLogger>;

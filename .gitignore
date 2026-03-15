@@ -1,29 +1,38 @@
-.too_many_cooks/
-.commandtree/
+# OS
+.DS_Store
 
+# .NET build output
 bin/
 obj/
 publish/
 
+# Node / TypeScript build output
+node_modules/
+dist/
+out/
+
 # VSCode extension
 src/Nap.VsCode/node_modules/
 src/Nap.VsCode/dist/
+src/Nap.VsCode/out/
 src/Nap.VsCode/*.vsix
+src/Nap.VsCode/.vscode-test/
 
-# Environment secrets
-.napenv.local
-
-# VSCode workspace settings
+# IDE settings
 .vscode/
 
-node_modules/
-dist/
-src/Nap.VsCode/.vscode-test/
-out/
-src/Nap.VsCode/out/
+# Secrets
+.napenv.local
 
-.DS_Store
+# Test output
+coverage/
+TestResults/
 
+# Tools
+.too_many_cooks/
+.commandtree/
 .playwright-mcp/
 
+# Generated files
 website/_site/
+examples/httpbin/advanced-report.html

@@ -4,26 +4,35 @@ open Nap.Core
 
 /// Parse CLI arguments into a structured form
 type CliArgs = {
-    Command : string        // "run", "check", "help"
-    File    : string option
-    Env     : string option
-    Vars    : Map<string, string>
-    Output  : string        // "pretty", "junit", "json", "ndjson"
-    Verbose : bool
+    Command    : string        // "run", "check", "generate", "help"
+    SubCommand : string option // e.g. "openapi" for "generate openapi"
+    File       : string option
+    Env        : string option
+    Vars       : Map<string, string>
+    Output     : string        // "pretty", "junit", "json", "ndjson"
+    OutputDir  : string option // --output-dir for generate command
+    Verbose    : bool
 }
 
 let parseArgs (argv: string array) : CliArgs =
     let mutable command = "help"
+    let mutable subCommand = None
     let mutable file = None
     let mutable env = None
     let mutable vars = Map.empty
     let mutable output = "pretty"
+    let mutable outputDir = None
     let mutable verbose = false
     let mutable i = 0
 
     if argv.Length > 0 then
         command <- argv[0]
         i <- 1
+
+    // For "generate openapi", consume the subcommand
+    if command = "generate" && i < argv.Length && not (argv[i].StartsWith "--") then
+        subCommand <- Some argv[i]
+        i <- i + 1
 
     while i < argv.Length do
         match argv[i] with
@@ -38,6 +47,9 @@ let parseArgs (argv: string array) : CliArgs =
         | "--output" when i + 1 < argv.Length ->
             output <- argv[i + 1]
             i <- i + 2
+        | "--output-dir" when i + 1 < argv.Length ->
+            outputDir <- Some argv[i + 1]
+            i <- i + 2
         | "--verbose" ->
             verbose <- true
             i <- i + 1
@@ -47,20 +59,23 @@ let parseArgs (argv: string array) : CliArgs =
         | _ ->
             i <- i + 1
 
-    { Command = command; File = file; Env = env; Vars = vars; Output = output; Verbose = verbose }
+    { Command = command; SubCommand = subCommand; File = file; Env = env
+      Vars = vars; Output = output; OutputDir = outputDir; Verbose = verbose }
 
 let printHelp () =
     printfn "Nap — API testing tool"
     printfn ""
     printfn "Usage:"
-    printfn "  nap run <file|folder>     Run a .nap file, .naplist playlist, or folder"
-    printfn "  nap check <file>          Validate a .nap or .naplist file"
-    printfn "  nap help                  Show this help"
+    printfn "  nap run <file|folder>                     Run a .nap file, .naplist playlist, or folder"
+    printfn "  nap check <file>                          Validate a .nap or .naplist file"
+    printfn "  nap generate openapi <spec> --output-dir <dir>  Generate .nap files from OpenAPI spec"
+    printfn "  nap help                                  Show this help"
     printfn ""
     printfn "Options:"
     printfn "  --env <name>              Environment name (loads .napenv.<name>)"
     printfn "  --var <key=value>         Variable override (repeatable)"
     printfn "  --output <format>         Output: pretty (default), junit, json, ndjson"
+    printfn "  --output-dir <dir>        Output directory for generate command"
     printfn "  --verbose                 Enable debug-level logging"
 
 let runFile (args: CliArgs) : int =
@@ -208,6 +223,53 @@ let runFile (args: CliArgs) : int =
 
             if result.Passed then 0 else 1
 
+let private writeGenerated (outDir: string) (result: OpenApiGenerator.GenerationResult) : unit =
+    let writeFile (f: OpenApiGenerator.GeneratedFile) =
+        let fullPath = Path.Combine(outDir, f.FileName)
+        let dir = Path.GetDirectoryName(fullPath)
+        if not (Directory.Exists dir) then
+            Directory.CreateDirectory(dir) |> ignore
+        File.WriteAllText(fullPath, f.Content)
+    writeFile result.Environment
+    for nap in result.NapFiles do
+        writeFile nap
+    writeFile result.Playlist
+
+let generateOpenApi (args: CliArgs) : int =
+    match args.File with
+    | None ->
+        eprintfn "Error: no spec file specified"
+        eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
+        2
+    | Some specPath ->
+        let specPath = Path.GetFullPath(specPath)
+        if not (File.Exists specPath) then
+            eprintfn "Error: %s not found" specPath
+            2
+        else
+            let outDir =
+                match args.OutputDir with
+                | Some dir -> Path.GetFullPath(dir)
+                | None -> Path.GetDirectoryName(specPath)
+            let specContent = File.ReadAllText(specPath)
+            match OpenApiGenerator.generate specContent with
+            | Error msg ->
+                eprintfn "Error: %s" msg
+                1
+            | Ok generated ->
+                if not (Directory.Exists outDir) then
+                    Directory.CreateDirectory(outDir) |> ignore
+                writeGenerated outDir generated
+                match args.Output with
+                | "json" ->
+                    printfn "{\"files\":%d,\"playlist\":\"%s\"}" generated.NapFiles.Length generated.Playlist.FileName
+                | _ ->
+                    printfn "Generated %d .nap files from OpenAPI spec" generated.NapFiles.Length
+                    printfn "  Playlist: %s" generated.Playlist.FileName
+                    printfn "  Environment: %s" generated.Environment.FileName
+                    printfn "  Output: %s" outDir
+                0
+
 let checkFile (args: CliArgs) : int =
     match args.File with
     | None ->
@@ -243,6 +305,15 @@ let main argv =
         match args.Command with
         | "run" -> runFile args
         | "check" -> checkFile args
+        | "generate" ->
+            match args.SubCommand with
+            | Some "openapi" -> generateOpenApi args
+            | Some other ->
+                eprintfn "Unknown generate target: %s" other
+                2
+            | None ->
+                eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
+                2
         | "help" | "--help" | "-h" ->
             printHelp ()
             0

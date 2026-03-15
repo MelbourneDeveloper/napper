@@ -23,7 +23,7 @@ suite("Configuration", () => {
 
   test("napper configuration section exists", () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    assert.ok(config, "napper configuration section should exist");
+    assert.notStrictEqual(config, undefined, "napper configuration section should exist");
   });
 
   test("autoRunOnSave defaults to false", () => {

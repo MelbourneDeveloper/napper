@@ -28,6 +28,8 @@ You are working with many other agents. Make sure there is effective cooperation
 
 ### F# 
 - **Idiomatic F#**
+- **Standard F# result types** - Use the standard F# built-in result types
+- **Turn on F# analyzers** - Strict rules to enforce F# best practice
 
 ## Testing
 

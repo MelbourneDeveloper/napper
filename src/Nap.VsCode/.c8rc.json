@@ -1,0 +1,6 @@
+{
+  "exclude": ["out/test/**", "dist/**"],
+  "reporter": ["text", "html", "lcov", "cobertura"],
+  "report-dir": "../../coverage/typescript/report",
+  "all": false
+}

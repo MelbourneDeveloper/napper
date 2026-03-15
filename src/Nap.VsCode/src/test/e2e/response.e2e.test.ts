@@ -40,7 +40,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -67,7 +67,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_RUN_FILE, doc.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -88,7 +88,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_OPEN_RESPONSE);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       5000
     );
 
@@ -109,7 +109,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_RUN_FILE, vscode.window.activeTextEditor?.document.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -129,7 +129,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_RUN_FILE, doc1.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 
@@ -151,7 +151,7 @@ suite("Response Panel", () => {
     await executeCommand(CMD_RUN_FILE, doc2.uri);
 
     await waitForCondition(
-      async () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+      () => findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
       10000
     );
 

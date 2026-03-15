@@ -102,20 +102,23 @@ suite("Extension Activation", () => {
     );
 
     const napLang = languages.find((l) => l.id === "nap");
+    assert.ok(napLang !== undefined, "nap language must be registered");
     assert.ok(
-      napLang?.extensions.includes(NAP_EXTENSION),
+      napLang.extensions.includes(NAP_EXTENSION),
       ".nap extension should be associated"
     );
 
     const naplistLang = languages.find((l) => l.id === "naplist");
+    assert.ok(naplistLang !== undefined, "naplist language must be registered");
     assert.ok(
-      naplistLang?.extensions.includes(NAPLIST_EXTENSION),
+      naplistLang.extensions.includes(NAPLIST_EXTENSION),
       ".naplist extension should be associated"
     );
 
     const napenvLang = languages.find((l) => l.id === "napenv");
+    assert.ok(napenvLang !== undefined, "napenv language must be registered");
     assert.ok(
-      napenvLang?.extensions.includes(NAPENV_EXTENSION),
+      napenvLang.extensions.includes(NAPENV_EXTENSION),
       ".napenv extension should be associated"
     );
   });

@@ -122,6 +122,14 @@ let formatJson (result: NapResult) : string =
     | Some err -> writer.WriteString("error", err)
     | None -> ()
 
+    // Request info
+    writer.WriteString("requestMethod", string result.Request.Method)
+    writer.WriteString("requestUrl", result.Request.Url)
+    writer.WriteStartObject("requestHeaders")
+    for kv in result.Request.Headers do
+        writer.WriteString(kv.Key, kv.Value)
+    writer.WriteEndObject()
+
     match result.Response with
     | Some resp ->
         writer.WriteNumber("statusCode", resp.StatusCode)

@@ -667,55 +667,6 @@ nap/
 
 ---
 
-## OpenAPI / Swagger Test Generation (Phase 6+)
+## OpenAPI / Swagger Test Generation
 
-Nap will support generating `.nap` files and `.naplist` playlists from OpenAPI 3.x specs.
-
-```sh
-# Generate a collection from an OpenAPI spec
-nap generate openapi ./petstore.yaml --output ./petstore/
-
-# Generate from a URL
-nap generate openapi https://api.example.com/openapi.json --output ./generated/
-
-# Generate only for specific tags or paths
-nap generate openapi ./petstore.yaml --tag users --output ./users/
-```
-
-### What gets generated
-
-For each operation in the spec:
-- A `.nap` file with the correct method, URL template, and required headers.
-- Example request bodies derived from the spec's `example` / `examples` fields or schema defaults.
-- Basic `[assert]` blocks asserting the documented success status code and response shape.
-- Placeholder `{{variables}}` for path params, query params, and auth headers.
-
-```nap
-# Generated from GET /users/{userId}
-[meta]
-name        = "Get user by ID"
-description = "Auto-generated from petstore.yaml — operation: getUserById"
-tags        = ["users", "generated"]
-
-[vars]
-userId = "REPLACE_ME"
-
-[request]
-method = GET
-url    = {{baseUrl}}/users/{{userId}}
-
-[request.headers]
-Authorization = Bearer {{token}}
-
-[assert]
-status = 200
-body.id exists
-body.name exists
-```
-
-### Design notes
-
-- Generated files are **starting points**, not final tests. The user edits and extends them.
-- Re-running `nap generate` over an existing collection offers a `--diff` mode that shows what changed in the spec without overwriting custom assertions.
-- A `[meta] generated = true` flag marks auto-generated files so tooling can identify them.
-- Generation is a separate `Nap.OpenApi` library/package, keeping the core runtime free of OpenAPI dependencies.
+See [OpenAPI Generation Specification](./OpenApiGeneration.md) for the full specification covering one-click test suite generation from OpenAPI specs, including AI-assisted enrichment via GitHub Copilot.

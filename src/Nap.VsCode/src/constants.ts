@@ -40,15 +40,19 @@ export const CLI_OUTPUT_JSON = "json";
 export const CLI_OUTPUT_NDJSON = "ndjson";
 export const CLI_CMD_RUN = "run";
 export const CLI_CMD_CHECK = "check";
+export const CLI_CMD_GENERATE = "generate";
+export const CLI_SUBCMD_OPENAPI = "openapi";
 export const CLI_FLAG_OUTPUT = "--output";
 export const CLI_FLAG_ENV = "--env";
 export const CLI_FLAG_VAR = "--var";
+export const CLI_FLAG_OUTPUT_DIR = "--output-dir";
 
 // Context values for tree items
 export const CONTEXT_REQUEST_FILE = "requestFile";
 export const CONTEXT_PLAYLIST = "playlist";
 export const CONTEXT_FOLDER = "folder";
 export const CONTEXT_PLAYLIST_SECTION = "playlistSection";
+export const CONTEXT_SCRIPT_FILE = "scriptFile";
 
 // Labels
 export const PLAYLIST_SECTION_LABEL = "Playlists";
@@ -61,6 +65,12 @@ export const ICON_RUNNING = "loading~spin";
 export const ICON_PASSED = "pass";
 export const ICON_FAILED = "error";
 export const ICON_ERROR = "warning";
+export const ICON_IMPORT_OPENAPI = "cloud-download";
+
+// Badge decorations (single-char for file decorations)
+export const BADGE_PASSED = "\u2713";
+export const BADGE_FAILED = "\u2717";
+export const BADGE_ERROR = "!";
 
 // Section headers in .nap files
 export const SECTION_REQUEST = "[request]";
@@ -80,6 +90,13 @@ export const THEME_COLOR_ERROR = "problemsWarningIcon.foreground";
 // Response panel
 export const RESPONSE_PANEL_TITLE = "Napper Response";
 export const RESPONSE_PANEL_VIEW_TYPE = "napperResponse";
+export const SECTION_LABEL_REQUEST_HEADERS = "Request Headers";
+export const SECTION_LABEL_RESPONSE_HEADERS = "Response Headers";
+export const SECTION_LABEL_BODY = "Body";
+export const SECTION_LABEL_ASSERTIONS = "Assertions";
+export const SECTION_LABEL_OUTPUT = "Output";
+export const SECTION_LABEL_ERROR = "Error";
+export const NO_REQUEST_HEADERS = "No request headers";
 
 // Playlist panel
 export const PLAYLIST_PANEL_TITLE = "Napper Playlist";
@@ -99,6 +116,24 @@ export const REPORT_SAVED_MSG = "Report saved: ";
 // CLI error messages
 export const CLI_SPAWN_FAILED_PREFIX = "Failed to run CLI: ";
 export const CLI_PARSE_FAILED_PREFIX = "Failed to parse CLI JSON: ";
+export const CLI_ERROR_PREFIX = "Napper CLI error: ";
+
+// Status bar running
+export const STATUS_RUNNING_ICON = "$(loading~spin) Running ";
+export const STATUS_RUNNING_SUFFIX = "...";
+
+// Curl
+export const CURL_CMD_PREFIX = "curl -X ";
+
+// File creation
+export const REQUEST_NAME_SUFFIX = "-request";
+
+// Nap file content formatting
+export const NAP_NAME_KEY_PREFIX = "name = \"";
+export const NAP_NAME_KEY_SUFFIX = "\"";
+
+// Property keys
+export const PROP_FILE_PATH = "filePath";
 
 // CLI installer
 export const CLI_REPO_OWNER = "MelbourneDeveloper";
@@ -192,14 +227,19 @@ export const HEADER_CONTENT_TYPE = "Content-Type";
 export const HEADER_ACCEPT = "Accept";
 export const CONTENT_TYPE_JSON = "application/json";
 export const ASSERT_STATUS_PREFIX = "status = ";
+export const ASSERT_BODY_EXISTS_SUFFIX = " exists";
+export const ASSERT_BODY_PREFIX = "body.";
 export const NAP_KEY_NAME = "name";
 export const NAP_KEY_DESCRIPTION = "description";
+export const NAP_KEY_GENERATED = "generated";
+export const NAP_VALUE_TRUE = "true";
 export const BASE_URL_VAR = "{{baseUrl}}";
 export const BASE_URL_KEY = "baseUrl";
+export const VARS_PLACEHOLDER = "REPLACE_ME";
 
-// OpenAPI generator — command
-export const CMD_IMPORT_OPENAPI = "napper.importOpenApi";
-export const OPENAPI_CMD_TITLE = "Napper: Import from OpenAPI";
+// OpenAPI generator — commands
+export const CMD_IMPORT_OPENAPI_URL = "napper.importOpenApiUrl";
+export const CMD_IMPORT_OPENAPI_FILE = "napper.importOpenApiFile";
 export const OPENAPI_PICK_FILE = "Select OpenAPI specification file";
 export const OPENAPI_PICK_FOLDER = "Select output folder";
 export const OPENAPI_SUCCESS_PREFIX = "Generated ";
@@ -207,6 +247,11 @@ export const OPENAPI_SUCCESS_SUFFIX = " test files from OpenAPI spec";
 export const OPENAPI_ERROR_PREFIX = "Failed to import OpenAPI: ";
 export const OPENAPI_FILTER_LABEL = "OpenAPI Spec";
 export const OPENAPI_FILE_EXTENSIONS = ["json", "yaml", "yml"];
+export const OPENAPI_URL_PROMPT = "Enter OpenAPI specification URL";
+export const OPENAPI_URL_PLACEHOLDER = "https://petstore3.swagger.io/api/v3/openapi.json";
+export const OPENAPI_DOWNLOAD_FAILED_PREFIX = "Failed to download spec: ";
+export const OPENAPI_DOWNLOADING = "Downloading OpenAPI spec...";
+export const ICON_IMPORT_OPENAPI_FILE = "file-symlink-file";
 
 // OpenAPI generator — validation
 export const OPENAPI_INVALID_SPEC = "Invalid OpenAPI specification: missing paths";
@@ -218,6 +263,16 @@ export const HTTPS_SCHEME = "https";
 export const DEFAULT_BASE_URL = "https://api.example.com";
 export const OPENAPI_DEFAULT_TITLE = "API Tests";
 export const PARAM_IN_BODY = "body";
+export const PARAM_IN_QUERY = "query";
+export const PARAM_IN_PATH = "path";
+export const AUTH_BEARER_PREFIX = "Authorization = Bearer ";
+export const AUTH_BASIC_PREFIX = "Authorization = Basic ";
+export const SECURITY_TYPE_HTTP = "http";
+export const SECURITY_SCHEME_BEARER = "bearer";
+export const SECURITY_SCHEME_BASIC = "basic";
+export const SECURITY_TYPE_API_KEY = "apiKey";
+export const SECURITY_LOCATION_HEADER = "header";
+export const SECURITY_LOCATION_QUERY = "query";
 
 // OpenAPI generator — HTTP methods (lowercase for spec parsing)
 export const OPENAPI_HTTP_METHODS = [
@@ -255,3 +310,60 @@ export const LOG_MSG_STREAM_RESULT = "Stream result:";
 export const LOG_MSG_STREAM_DONE = "Stream completed";
 export const LOG_MSG_TREE_REFRESH = "Explorer tree refresh";
 export const LOG_MSG_OPENAPI_IMPORT = "OpenAPI import:";
+
+// AI enrichment
+export const OPENAPI_AI_CHOICE_TITLE = "How should tests be generated?";
+export const OPENAPI_AI_CHOICE_BASIC = "Generate tests";
+export const OPENAPI_AI_CHOICE_ENHANCED = "Generate with AI enhancement";
+export const OPENAPI_AI_PROGRESS_TITLE = "Enhancing with AI...";
+export const OPENAPI_AI_NO_COPILOT = "GitHub Copilot not available for AI enhancement";
+export const OPENAPI_AI_COPILOT_FAMILY = "copilot-gpt-4o";
+export const OPENAPI_AI_ENRICHING_ASSERTIONS = "Enriching assertions";
+export const OPENAPI_AI_ENRICHING_TEST_DATA = "Enriching test data";
+export const OPENAPI_AI_REORDERING_PLAYLIST = "Reordering playlist";
+
+// Context menu command IDs
+export const CMD_ADD_TO_PLAYLIST = "napper.addToPlaylist";
+export const CMD_PERF_TEST = "napper.performanceTest";
+export const CMD_DELETE_FILE = "napper.deleteFile";
+export const CMD_ADD_NAP_TO_PLAYLIST = "napper.addNapToPlaylist";
+export const CMD_ADD_SCRIPT_TO_PLAYLIST = "napper.addScriptToPlaylist";
+export const CMD_DUPLICATE_PLAYLIST = "napper.duplicatePlaylist";
+export const CMD_COPY_PATH = "napper.copyPath";
+export const CMD_ENRICH_AI = "napper.enrichWithAi";
+
+// Context menu prompts
+export const PROMPT_SELECT_PLAYLIST = "Select a playlist to add this script to";
+export const PROMPT_SELECT_NAP_FILE = "Select a .nap file to add";
+export const PROMPT_SELECT_SCRIPT_FILE = "Select a script file to add";
+export const PROMPT_CONFIRM_DELETE_PREFIX = "Are you sure you want to delete \"";
+export const PROMPT_CONFIRM_DELETE_SUFFIX = "\"?";
+export const PROMPT_DUPLICATE_NAME = "Enter name for the duplicated playlist";
+export const CONFIRM_YES = "Yes";
+export const CONFIRM_NO = "No";
+
+// Context menu messages
+export const MSG_ADDED_TO_PLAYLIST = "Added to playlist: ";
+export const MSG_FILE_DELETED = "Deleted: ";
+export const MSG_PLAYLIST_DUPLICATED = "Duplicated playlist: ";
+export const MSG_PATH_COPIED = "Path copied to clipboard";
+export const MSG_PERF_TEST_COMING_SOON = "Performance Test: Coming soon";
+export const MSG_NO_PLAYLISTS = "No .naplist files found in workspace";
+export const MSG_NO_NAP_FILES = "No .nap files found in workspace";
+export const MSG_NO_SCRIPT_FILES = "No script files found in workspace";
+
+// Glob patterns for context menu pickers
+export const SCRIPT_GLOB = "**/*.{fsx,csx}";
+
+// Playlist duplication
+export const DUPLICATE_SUFFIX = "-copy";
+
+// Numeric thresholds
+export const PERCENTAGE_MULTIPLIER = 100;
+export const HTTP_STATUS_OK = 200;
+export const HTTP_STATUS_REDIRECT_MIN = 300;
+export const HTTP_STATUS_CLIENT_ERROR_MIN = 400;
+export const JSON_INDENT_SIZE = 2;
+export const PAD_DIGITS_DEFAULT = 2;
+export const PAD_DIGITS_LARGE = 3;
+export const PAD_LARGE_THRESHOLD = 100;
