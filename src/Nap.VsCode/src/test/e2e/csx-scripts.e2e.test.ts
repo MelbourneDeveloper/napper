@@ -4,29 +4,29 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   activateExtension,
-  sleep,
-  getFixturePath,
-  openDocument,
   closeAllEditors,
   executeCommand,
-  waitForCondition,
   extractStepLines,
+  getFixturePath,
+  openDocument,
+  sleep,
+  waitForCondition,
 } from "../helpers/helpers";
 import {
   CMD_RUN_FILE,
   CMD_SAVE_REPORT,
   PLAYLIST_PANEL_TITLE,
-  RESPONSE_PANEL_TITLE,
   REPORT_FILE_EXTENSION,
   REPORT_FILE_SUFFIX,
+  RESPONSE_PANEL_TITLE,
 } from "../../constants";
 
 const findTabByLabel = (label: string): vscode.Tab | undefined =>
   vscode.window.tabGroups.all
     .flatMap((g) => g.tabs)
-    .find((tab) => tab.label.includes(label));
+    .find((tab) => tab.label.includes(label)),
 
-const countTabsByLabel = (label: string): number =>
+ countTabsByLabel = (label: string): number =>
   vscode.window.tabGroups.all
     .flatMap((g) => g.tabs)
     .filter((t) => t.label.includes(label)).length;
@@ -86,8 +86,8 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("csx-only playlist contains no .nap steps and all scripts exist", () => {
-    const playlistPath = getFixturePath("petstore/csx-only.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/csx-only.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("[meta]"), "Must have [meta] section");
     assert.ok(content.includes("[steps]"), "Must have [steps] section");
@@ -153,8 +153,8 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("csx-fail.naplist fixture has failing script and valid steps", () => {
-    const playlistPath = getFixturePath("petstore/csx-fail.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/csx-fail.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("fail.csx"), "Must reference fail.csx");
     assert.ok(content.includes("echo.csx"), "Must reference echo.csx");
@@ -212,16 +212,16 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("csx-compile-error.naplist fixture has script with type error", () => {
-    const playlistPath = getFixturePath("petstore/csx-compile-error.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/csx-compile-error.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(
       content.includes("compile-error.csx"),
       "Must reference compile-error.csx"
     );
 
-    const scriptsDir = getFixturePath("scripts");
-    const scriptContent = fs.readFileSync(
+    const scriptsDir = getFixturePath("scripts"),
+     scriptContent = fs.readFileSync(
       path.join(scriptsDir, "compile-error.csx"),
       "utf-8"
     );
@@ -274,9 +274,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("csx-multi.naplist has 5 steps mixing scripts and requests", () => {
-    const playlistPath = getFixturePath("petstore/csx-multi.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
-    const lines = content.split("\n");
+    const playlistPath = getFixturePath("petstore/csx-multi.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8"),
+     lines = content.split("\n");
 
     let inSteps = false;
     const steps: string[] = [];
@@ -297,8 +297,8 @@ suite("CSX Script Edge Cases — Real Execution", () => {
 
     assert.strictEqual(steps.length, 5, "csx-multi must have exactly 5 steps");
 
-    const csxSteps = steps.filter((s) => s.endsWith(".csx"));
-    const napSteps = steps.filter((s) => s.endsWith(".nap"));
+    const csxSteps = steps.filter((s) => s.endsWith(".csx")),
+     napSteps = steps.filter((s) => s.endsWith(".nap"));
     assert.strictEqual(csxSteps.length, 3, "Must have 3 .csx script steps");
     assert.strictEqual(napSteps.length, 2, "Must have 2 .nap request steps");
   });
@@ -310,9 +310,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const doc = await openDocument("petstore/csx-slow.naplist");
+    const doc = await openDocument("petstore/csx-slow.naplist"),
 
-    const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
+     runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     // Panel must appear within 2s — the slow script takes 3s+
     await waitForCondition(
@@ -384,8 +384,8 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const playlistPath = getFixturePath("petstore/csx-fail.naplist");
-    const expectedReportPath = path.join(
+    const playlistPath = getFixturePath("petstore/csx-fail.naplist"),
+     expectedReportPath = path.join(
       path.dirname(playlistPath),
       `csx-fail${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`
     );
@@ -438,8 +438,8 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const playlistPath = getFixturePath("petstore/csx-only.naplist");
-    const expectedReportPath = path.join(
+    const playlistPath = getFixturePath("petstore/csx-only.naplist"),
+     expectedReportPath = path.join(
       path.dirname(playlistPath),
       `csx-only${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`
     );
@@ -487,9 +487,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   // ── All fixture scripts exist and are well-formed ────────────────────
 
   test("all csx edge-case fixture scripts exist and are non-empty", () => {
-    const scriptsDir = getFixturePath("scripts");
+    const scriptsDir = getFixturePath("scripts"),
 
-    const expectedScripts = [
+     expectedScripts = [
       "echo.csx",
       "fail.csx",
       "compile-error.csx",
@@ -513,9 +513,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("all csx edge-case naplist fixtures exist and have valid structure", () => {
-    const petstoreDir = getFixturePath("petstore");
+    const petstoreDir = getFixturePath("petstore"),
 
-    const expectedPlaylists = [
+     expectedPlaylists = [
       "csx-only.naplist",
       "csx-fail.naplist",
       "csx-compile-error.naplist",
@@ -543,9 +543,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
   });
 
   test("all naplist step file references resolve to existing files", () => {
-    const petstoreDir = getFixturePath("petstore");
+    const petstoreDir = getFixturePath("petstore"),
 
-    const playlists = [
+     playlists = [
       "csx-only.naplist",
       "csx-fail.naplist",
       "csx-compile-error.naplist",
@@ -554,9 +554,9 @@ suite("CSX Script Edge Cases — Real Execution", () => {
     ];
 
     for (const playlist of playlists) {
-      const playlistPath = path.join(petstoreDir, playlist);
-      const content = fs.readFileSync(playlistPath, "utf-8");
-      const stepLines = extractStepLines(content);
+      const playlistPath = path.join(petstoreDir, playlist),
+       content = fs.readFileSync(playlistPath, "utf-8"),
+       stepLines = extractStepLines(content);
 
       for (const step of stepLines) {
         const resolved = path.resolve(petstoreDir, step);

@@ -5,8 +5,8 @@ import * as path from "path";
 import { generatePlaylistReport } from "../../reportGenerator";
 import type { RunResult } from "../../types";
 import {
-  REPORT_FILE_SUFFIX,
   REPORT_FILE_EXTENSION,
+  REPORT_FILE_SUFFIX,
 } from "../../constants";
 
 const MOCK_PASSED_STEP: RunResult = {
@@ -19,9 +19,9 @@ const MOCK_PASSED_STEP: RunResult = {
   assertions: [
     { target: "status", passed: true, expected: "200", actual: "200" },
   ],
-};
+},
 
-const MOCK_FAILED_STEP: RunResult = {
+ MOCK_FAILED_STEP: RunResult = {
   file: "/workspace/petstore/get-pet.nap",
   passed: false,
   statusCode: 404,
@@ -32,9 +32,9 @@ const MOCK_FAILED_STEP: RunResult = {
   assertions: [
     { target: "status", passed: false, expected: "200", actual: "404" },
   ],
-};
+},
 
-const MOCK_SCRIPT_STEP: RunResult = {
+ MOCK_SCRIPT_STEP: RunResult = {
   file: "/workspace/scripts/echo.fsx",
   passed: true,
   duration: 320,
@@ -261,13 +261,13 @@ suite("Report Generator", () => {
   });
 
   test("report file can be written to and read from disk", () => {
-    const tmpDir = os.tmpdir();
-    const reportPath = path.join(
+    const tmpDir = os.tmpdir(),
+     reportPath = path.join(
       tmpDir,
       `test-playlist${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`
-    );
+    ),
 
-    const html = generatePlaylistReport("test-playlist", [MOCK_PASSED_STEP]);
+     html = generatePlaylistReport("test-playlist", [MOCK_PASSED_STEP]);
     fs.writeFileSync(reportPath, html, "utf-8");
 
     assert.ok(

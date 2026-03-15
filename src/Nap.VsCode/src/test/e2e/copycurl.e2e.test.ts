@@ -2,10 +2,10 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   activateExtension,
-  sleep,
-  openDocument,
   closeAllEditors,
   executeCommand,
+  openDocument,
+  sleep,
 } from "../helpers/helpers";
 import { CMD_COPY_CURL } from "../../constants";
 

@@ -236,14 +236,14 @@ let ``Contains fails when substring absent`` () =
 [<Fact>]
 let ``Matches with pattern`` () =
     let response = ok200 """{"email": "test@example.com"}"""
-    let assertions = [{ Target = "body.email"; Op = Matches ".+@.+\\..+" }]
+    let assertions = [{ Target = "body.email"; Op = Matches "*@*.*" }]
     let results = Runner.evaluateAssertions assertions response
     Assert.True(results[0].Passed)
 
 [<Fact>]
 let ``Matches fails when pattern does not match`` () =
     let response = ok200 """{"email": "not-an-email"}"""
-    let assertions = [{ Target = "body.email"; Op = Matches ".+@.+\\..+" }]
+    let assertions = [{ Target = "body.email"; Op = Matches "*@*.*" }]
     let results = Runner.evaluateAssertions assertions response
     Assert.False(results[0].Passed)
 

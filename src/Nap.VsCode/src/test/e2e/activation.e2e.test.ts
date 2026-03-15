@@ -2,22 +2,22 @@ import * as assert from "assert";
 import * as fs from "fs";
 import {
   activateExtension,
-  sleep,
   getExtensionPath,
   getRegisteredCommands,
+  sleep,
 } from "../helpers/helpers";
 import {
-  CMD_RUN_FILE,
-  CMD_RUN_ALL,
-  CMD_NEW_REQUEST,
-  CMD_NEW_PLAYLIST,
-  CMD_SWITCH_ENV,
   CMD_COPY_CURL,
+  CMD_NEW_PLAYLIST,
+  CMD_NEW_REQUEST,
   CMD_OPEN_RESPONSE,
-  VIEW_EXPLORER,
-  NAP_EXTENSION,
-  NAPLIST_EXTENSION,
+  CMD_RUN_ALL,
+  CMD_RUN_FILE,
+  CMD_SWITCH_ENV,
   NAPENV_EXTENSION,
+  NAPLIST_EXTENSION,
+  NAP_EXTENSION,
+  VIEW_EXPLORER,
 } from "../../constants";
 
 suite("Extension Activation", () => {
@@ -37,9 +37,9 @@ suite("Extension Activation", () => {
   });
 
   test("all commands are registered", async () => {
-    const commands = await getRegisteredCommands();
+    const commands = await getRegisteredCommands(),
 
-    const expectedCommands = [
+     expectedCommands = [
       CMD_RUN_FILE,
       CMD_RUN_ALL,
       CMD_NEW_REQUEST,
@@ -58,15 +58,15 @@ suite("Extension Activation", () => {
   });
 
   test("package.json declares all views in napper-panel container", () => {
-    const packageJsonPath = getExtensionPath("package.json");
-    const raw = fs.readFileSync(packageJsonPath, "utf-8");
-    const packageJson = JSON.parse(raw) as {
+    const packageJsonPath = getExtensionPath("package.json"),
+     raw = fs.readFileSync(packageJsonPath, "utf-8"),
+     packageJson = JSON.parse(raw) as {
       contributes: {
-        views: Record<string, Array<{ id: string }>>;
+        views: Record<string, { id: string }[]>;
       };
-    };
+    },
 
-    const napperPanelViews = packageJson.contributes.views["napper-panel"];
+     napperPanelViews = packageJson.contributes.views["napper-panel"];
     assert.ok(
       Array.isArray(napperPanelViews),
       "napper-panel view container should exist"
@@ -80,16 +80,16 @@ suite("Extension Activation", () => {
   });
 
   test("package.json registers all three languages", () => {
-    const packageJsonPath = getExtensionPath("package.json");
-    const raw = fs.readFileSync(packageJsonPath, "utf-8");
-    const packageJson = JSON.parse(raw) as {
+    const packageJsonPath = getExtensionPath("package.json"),
+     raw = fs.readFileSync(packageJsonPath, "utf-8"),
+     packageJson = JSON.parse(raw) as {
       contributes: {
-        languages: Array<{ id: string; extensions: string[] }>;
+        languages: { id: string; extensions: string[] }[];
       };
-    };
+    },
 
-    const languages = packageJson.contributes.languages;
-    const langIds = languages.map((l) => l.id);
+     {languages} = packageJson.contributes,
+     langIds = languages.map((l) => l.id);
 
     assert.ok(langIds.includes("nap"), "nap language should be registered");
     assert.ok(
@@ -124,18 +124,18 @@ suite("Extension Activation", () => {
   });
 
   test("package.json declares all configuration properties", () => {
-    const packageJsonPath = getExtensionPath("package.json");
-    const raw = fs.readFileSync(packageJsonPath, "utf-8");
-    const packageJson = JSON.parse(raw) as {
+    const packageJsonPath = getExtensionPath("package.json"),
+     raw = fs.readFileSync(packageJsonPath, "utf-8"),
+     packageJson = JSON.parse(raw) as {
       contributes: {
         configuration: {
           properties: Record<string, unknown>;
         };
       };
-    };
+    },
 
-    const props = packageJson.contributes.configuration.properties;
-    const expectedKeys = [
+     props = packageJson.contributes.configuration.properties,
+     expectedKeys = [
       "napper.defaultEnvironment",
       "napper.autoRunOnSave",
       "napper.splitEditorLayout",
@@ -152,21 +152,21 @@ suite("Extension Activation", () => {
   });
 
   test("package.json declares context menu for napperExplorer", () => {
-    const packageJsonPath = getExtensionPath("package.json");
-    const raw = fs.readFileSync(packageJsonPath, "utf-8");
-    const packageJson = JSON.parse(raw) as {
+    const packageJsonPath = getExtensionPath("package.json"),
+     raw = fs.readFileSync(packageJsonPath, "utf-8"),
+     packageJson = JSON.parse(raw) as {
       contributes: {
         menus: {
-          "view/item/context": Array<{
+          "view/item/context": {
             command: string;
             when: string;
-          }>;
+          }[];
         };
       };
-    };
+    },
 
-    const contextMenus = packageJson.contributes.menus["view/item/context"];
-    const runFileMenu = contextMenus.find(
+     contextMenus = packageJson.contributes.menus["view/item/context"],
+     runFileMenu = contextMenus.find(
       (m) => m.command === CMD_RUN_FILE
     );
     assert.ok(

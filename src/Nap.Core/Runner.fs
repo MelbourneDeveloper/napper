@@ -49,97 +49,117 @@ let executeRequest (request: NapRequest) : Async<NapResponse> = async {
     }
 }
 
-/// Evaluate assertions against a response
-let evaluateAssertions (assertions: Assertion list) (response: NapResponse) : AssertionResult list =
-    let tryGetJsonPath (path: string) (body: string) : string option =
-        try
-            let doc = JsonDocument.Parse(body)
-            let parts = path.Split('.')
-            let mutable current = doc.RootElement
-            let mutable found = true
-            for part in parts do
-                if found then
-                    match current.ValueKind with
-                    | JsonValueKind.Object ->
-                        match current.TryGetProperty(part) with
-                        | true, prop -> current <- prop
-                        | false, _ -> found <- false
-                    | _ -> found <- false
+/// Walk a dot-delimited path into a JSON body and return the leaf value as a string.
+/// e.g. tryGetJsonPath "user.name" body → Some "Alice"
+/// Returns None if the path doesn't exist or the body isn't valid JSON.
+let private tryGetJsonPath (path: string) (body: string) : string option =
+    try
+        let doc = JsonDocument.Parse(body)
+        let parts = path.Split('.')
+        let mutable current = doc.RootElement
+        let mutable found = true
+        for part in parts do
             if found then
                 match current.ValueKind with
-                | JsonValueKind.String -> Some (current.GetString())
-                | JsonValueKind.Number -> Some (current.GetRawText())
-                | JsonValueKind.True -> Some "true"
-                | JsonValueKind.False -> Some "false"
-                | JsonValueKind.Null -> Some "null"
-                | _ -> Some (current.GetRawText())
-            else None
-        with _ -> None
+                | JsonValueKind.Object ->
+                    match current.TryGetProperty(part) with
+                    | true, prop -> current <- prop
+                    | false, _ -> found <- false
+                | _ -> found <- false
+        if found then
+            match current.ValueKind with
+            | JsonValueKind.String -> Some (current.GetString())
+            | JsonValueKind.Number -> Some (current.GetRawText())
+            | JsonValueKind.True -> Some "true"
+            | JsonValueKind.False -> Some "false"
+            | JsonValueKind.Null -> Some "null"
+            | _ -> Some (current.GetRawText())
+        else None
+    with _ -> None
 
+/// Resolve an assertion target (e.g. "status", "body.id", "headers.Content-Type")
+/// to the actual string value from the HTTP response.
+/// Returns None when the target doesn't exist in the response.
+let private resolveTarget (response: NapResponse) (target: string) : string option =
+    if target = "status" then
+        Some (string response.StatusCode)
+    elif target = "duration" then
+        Some (sprintf "%.0fms" response.Duration.TotalMilliseconds)
+    elif target.StartsWith "headers." then
+        let headerName = target.Substring(8)
+        response.Headers
+        |> Map.tryFind headerName
+        |> Option.orElseWith (fun () ->
+            response.Headers |> Map.tryPick (fun k v ->
+                if k.Equals(headerName, StringComparison.OrdinalIgnoreCase)
+                then Some v else None))
+    elif target.StartsWith "body." then
+        tryGetJsonPath (target.Substring(5)) response.Body
+    elif target = "body" then
+        Some response.Body
+    else None
+
+/// Parse a numeric value from a string, stripping a trailing "ms" duration suffix.
+/// e.g. "500ms" → Some 500.0, "42" → Some 42.0, "abc" → None
+let private parseNum (s: string) : float option =
+    let s = s.TrimEnd('m', 's')
+    match Double.TryParse(s) with
+    | true, v -> Some v
+    | _ -> None
+
+/// Compare two numeric values (actual vs expected) using the given comparator.
+/// Returns false if either value is missing or non-numeric.
+let private compareNumeric (cmp: float -> float -> bool) (actual: string option) (expected: string) : bool =
+    match actual with
+    | Some a ->
+        match parseNum a, parseNum expected with
+        | Some av, Some ev -> cmp av ev
+        | _ -> false
+    | None -> false
+
+/// Convert a glob pattern (using * and ? wildcards) to a regex and test a value against it.
+let private globMatch (pattern: string) (value: string) : bool =
+    let regexPattern =
+        pattern.ToCharArray()
+        |> Array.map (fun c ->
+            match c with
+            | '*' -> ".*"
+            | '?' -> "."
+            | c when ".+^${}()|[]\\".Contains(c) -> $"\\{c}"
+            | c -> string c)
+        |> String.concat ""
+    Regex.IsMatch(value, $"^{regexPattern}$")
+
+/// Build an AssertionResult from an assertion, its pass/fail state, and display strings.
+let private makeResult (assertion: Assertion) (passed: bool) (expected: string) (actual: string option) : AssertionResult =
+    { Assertion = assertion; Passed = passed; Expected = expected; Actual = actual |> Option.defaultValue "<missing>" }
+
+/// Evaluate a single assertion operator against the resolved actual value.
+let private evaluateOp (assertion: Assertion) (actual: string option) : AssertionResult =
+    match assertion.Op with
+    | Equals expected ->
+        let passed = actual |> Option.map (fun a -> a = expected) |> Option.defaultValue false
+        makeResult assertion passed expected actual
+    | Exists ->
+        let passed = actual.IsSome
+        { Assertion = assertion; Passed = passed; Expected = "exists"; Actual = if actual.IsSome then "exists" else "<missing>" }
+    | Contains expected ->
+        let passed = actual |> Option.map (fun a -> a.Contains(expected, StringComparison.OrdinalIgnoreCase)) |> Option.defaultValue false
+        makeResult assertion passed $"contains \"{expected}\"" actual
+    | Matches pattern ->
+        let passed = actual |> Option.map (fun a -> globMatch pattern a) |> Option.defaultValue false
+        { Assertion = assertion; Passed = passed; Expected = $"matches \"{pattern}\""; Actual = actual |> Option.defaultValue "<missing>" }
+    | LessThan expected ->
+        makeResult assertion (compareNumeric (<) actual expected) $"< {expected}" actual
+    | GreaterThan expected ->
+        makeResult assertion (compareNumeric (>) actual expected) $"> {expected}" actual
+
+/// Evaluate all assertions against an HTTP response.
+/// Each assertion's target is resolved to the actual response value,
+/// then the operator (=, exists, contains, matches, <, >) is applied.
+let evaluateAssertions (assertions: Assertion list) (response: NapResponse) : AssertionResult list =
     assertions |> List.map (fun assertion ->
-        let target = assertion.Target
-        let actual =
-            if target = "status" then
-                Some (string response.StatusCode)
-            elif target = "duration" then
-                Some (sprintf "%.0fms" response.Duration.TotalMilliseconds)
-            elif target.StartsWith "headers." then
-                let headerName = target.Substring(8)
-                response.Headers
-                |> Map.tryFind headerName
-                |> Option.orElseWith (fun () ->
-                    response.Headers |> Map.tryPick (fun k v ->
-                        if k.Equals(headerName, StringComparison.OrdinalIgnoreCase)
-                        then Some v else None))
-            elif target.StartsWith "body." then
-                let path = target.Substring(5)
-                tryGetJsonPath path response.Body
-            elif target = "body" then
-                Some response.Body
-            else None
-
-        match assertion.Op with
-        | Equals expected ->
-            let passed = actual |> Option.map (fun a -> a = expected) |> Option.defaultValue false
-            { Assertion = assertion; Passed = passed; Expected = expected; Actual = actual |> Option.defaultValue "<missing>" }
-        | Exists ->
-            let passed = actual.IsSome
-            { Assertion = assertion; Passed = passed; Expected = "exists"; Actual = if actual.IsSome then "exists" else "<missing>" }
-        | Contains expected ->
-            let passed = actual |> Option.map (fun a -> a.Contains(expected, StringComparison.OrdinalIgnoreCase)) |> Option.defaultValue false
-            { Assertion = assertion; Passed = passed; Expected = $"contains \"{expected}\""; Actual = actual |> Option.defaultValue "<missing>" }
-        | Matches pattern ->
-            let passed = actual |> Option.map (fun a -> Regex.IsMatch(a, pattern)) |> Option.defaultValue false
-            { Assertion = assertion; Passed = passed; Expected = $"matches \"{pattern}\""; Actual = actual |> Option.defaultValue "<missing>" }
-        | LessThan expected ->
-            let passed =
-                match actual with
-                | Some a ->
-                    // Try numeric, then duration (e.g. 500ms)
-                    let parseNum (s: string) =
-                        let s = s.TrimEnd('m', 's')
-                        match Double.TryParse(s) with
-                        | true, v -> Some v
-                        | _ -> None
-                    match parseNum a, parseNum expected with
-                    | Some av, Some ev -> av < ev
-                    | _ -> false
-                | None -> false
-            { Assertion = assertion; Passed = passed; Expected = $"< {expected}"; Actual = actual |> Option.defaultValue "<missing>" }
-        | GreaterThan expected ->
-            let passed =
-                match actual with
-                | Some a ->
-                    let parseNum (s: string) =
-                        let s = s.TrimEnd('m', 's')
-                        match Double.TryParse(s) with
-                        | true, v -> Some v
-                        | _ -> None
-                    match parseNum a, parseNum expected with
-                    | Some av, Some ev -> av > ev
-                    | _ -> false
-                | None -> false
-            { Assertion = assertion; Passed = passed; Expected = $"> {expected}"; Actual = actual |> Option.defaultValue "<missing>" }
+        resolveTarget response assertion.Target |> evaluateOp assertion
     )
 
 /// Determine the dotnet CLI arguments for a script file

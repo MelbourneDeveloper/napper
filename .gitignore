@@ -36,3 +36,6 @@ TestResults/
 # Generated files
 website/_site/
 examples/httpbin/advanced-report.html
+
+# Cached test specs
+tests/Nap.Core.Tests/.spec-cache/

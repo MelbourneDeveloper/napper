@@ -3,23 +3,23 @@
 
 import * as path from "path";
 import {
-  NAP_EXTENSION,
-  NAPLIST_EXTENSION,
-  FSX_EXTENSION,
-  CSX_EXTENSION,
-  CONTEXT_REQUEST_FILE,
-  CONTEXT_PLAYLIST,
   CONTEXT_FOLDER,
+  CONTEXT_PLAYLIST,
   CONTEXT_PLAYLIST_SECTION,
+  CONTEXT_REQUEST_FILE,
   CONTEXT_SCRIPT_FILE,
-  PLAYLIST_SECTION_LABEL,
-  SECTION_STEPS,
+  CSX_EXTENSION,
+  FSX_EXTENSION,
   HTTP_METHODS,
+  NAPLIST_EXTENSION,
+  NAP_EXTENSION,
   NAP_KEY_METHOD,
   NAP_NAME_KEY_PREFIX,
   NAP_NAME_KEY_SUFFIX,
+  PLAYLIST_SECTION_LABEL,
+  SECTION_STEPS,
 } from "./constants";
-import { RunState, type RunResult } from "./types";
+import { type RunResult, RunState } from "./types";
 
 // Decoupled node type — no vscode dependency
 export interface TreeNode {
@@ -33,9 +33,9 @@ export interface TreeNode {
 }
 
 const isScriptFile = (filePath: string): boolean =>
-  filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION);
+  filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION),
 
-const getContextValue = (filePath: string, isDirectory: boolean): string => {
+ getContextValue = (filePath: string, isDirectory: boolean): string => {
   if (isDirectory) {
     return CONTEXT_FOLDER;
   }
@@ -46,14 +46,14 @@ const getContextValue = (filePath: string, isDirectory: boolean): string => {
     return CONTEXT_SCRIPT_FILE;
   }
   return CONTEXT_REQUEST_FILE;
-};
+},
 
-const isMethodLine = (trimmed: string, method: string): boolean =>
+ isMethodLine = (trimmed: string, method: string): boolean =>
   trimmed.startsWith(`${method} `) ||
   trimmed === `${NAP_KEY_METHOD}  = ${method}` ||
-  trimmed === `${NAP_KEY_METHOD} = ${method}`;
+  trimmed === `${NAP_KEY_METHOD} = ${method}`,
 
-const extractHttpMethod = (fileContent: string): string | undefined => {
+ extractHttpMethod = (fileContent: string): string | undefined => {
   const lines = fileContent.split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
@@ -67,9 +67,9 @@ const extractHttpMethod = (fileContent: string): string | undefined => {
     }
   }
   return undefined;
-};
+},
 
-const getRunState = (
+ getRunState = (
   filePath: string,
   results: ReadonlyMap<string, RunResult>
 ): RunState => {
@@ -90,8 +90,8 @@ export const createFileNode = (
 ): TreeNode => {
   const method = filePath.endsWith(NAP_EXTENSION)
     ? extractHttpMethod(fileContent)
-    : undefined;
-  const base = {
+    : undefined,
+   base = {
     label: path.basename(filePath, path.extname(filePath)),
     filePath,
     isDirectory: false as const,
@@ -184,8 +184,8 @@ export const appendStepToPlaylist = (
   content: string,
   stepPath: string
 ): string => {
-  const lines = content.split("\n");
-  const result = findStepsInsertIndex(lines);
+  const lines = content.split("\n"),
+   result = findStepsInsertIndex(lines);
   if (!result.inSteps) {
     return `${content}\n${SECTION_STEPS}\n${stepPath}\n`;
   }
@@ -197,8 +197,8 @@ export const updatePlaylistName = (
   content: string,
   newName: string
 ): string => {
-  const lines = content.split("\n");
-  const updated = lines.map((line) =>
+  const lines = content.split("\n"),
+   updated = lines.map((line) =>
     line.trim().startsWith(NAP_NAME_KEY_PREFIX)
       ? `${NAP_NAME_KEY_PREFIX}${newName}${NAP_NAME_KEY_SUFFIX}`
       : line

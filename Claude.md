@@ -11,10 +11,13 @@ You are working with many other agents. Make sure there is effective cooperation
 - **No string literals** - Named constants only, and it ONE location
 - DO NOT USE GIT
 - **Functional style** - Prefer pure functions, avoid classes where possible
+- **Centralise global state** - Generally avoid global state, but put it in one file where necessary
+- **Heavy logging at all levels** - Logs are critical, even in tests
 - **No suppressing warnings** - Fix them properly
-- **No REGEX** It is absolutely ⛔️ illegal, and no text matching in general
+- **Use a robust library for CLI arg parsing** - Don't use Regex
+- **No REGEX matching on structured data like JSON, YAML, TOML** - Regex is only for extreme corner cases
 - **Expressions over assignments** - Prefer const and immutable patterns
-- **Named parameters** - Use object params for functions with 3+ args
+- **Named parameters** - Use object params for functions with 1+ args
 - **Keep files under 450 LOC and functions under 20 LOC**
 - **No commented-out code** - Delete it
 - **No placeholders** - If incomplete, leave LOUD compilation error with TODO
@@ -39,19 +42,22 @@ You are working with many other agents. Make sure there is effective cooperation
 - **Prefer e2e tests over unit tests** - only unit tests for isolating bugs
 - Separate e2e tests from unit tests by file. They should not be in the same file together.
 - Prefer adding assertions to existing tests rather than adding new tests
-- Test files in `src/test/suite/*.test.ts`
-- Run tests: `npm test`
 - NEVER remove assertions
 - FAILING TEST = ✅ OK. TEST THAT DOESN'T ENFORCE BEHAVIOR = ⛔️ ILLEGAL
-- Unit test = No VSCODE instance needed = isolation only test
+- Unit tests are for isolating issues
 
 ### Automated (E2E) Testing
 
 **AUTOMATED TESTING IS BLACK BOX TESTING ONLY**
-Only test the UI **THROUGH the UI**. Do not run command etc. to coerce the state. You are testing the UI, not the code.
+- Only test the UI **THROUGH the UI**. 
+- Do not run command etc. to coerce the state. 
+- You are testing the UI, not the code. 
+- Make assertions about the UI - not the internal state
+- This is true for both the CLI and the VSIX. 
+- The test VSIX must call the actual, real CLI. 
+- VSIX tests run in actual VS Code window
 
-- Tests run in actual VS Code window via `@vscode/test-electron`
-- Automated tests must not modify internal state or call functions that do. They must only use the extension through the UI. 
+**Illegal VSIX testing patterns**
  * - ❌ Calling internal methods like provider.updateTasks()
  * - ❌ Calling provider.refresh() directly
  * - ❌ Manipulating internal state directly

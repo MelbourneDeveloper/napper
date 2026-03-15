@@ -3,5 +3,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 echo "==> Compiling VSCode extension..."
 cd src/Nap.VsCode
+npm ci
 npx webpack --mode production
 echo "==> Extension compiled"

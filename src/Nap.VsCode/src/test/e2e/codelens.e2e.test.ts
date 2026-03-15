@@ -2,13 +2,13 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   activateExtension,
-  sleep,
-  openDocument,
   closeAllEditors,
+  openDocument,
+  sleep,
 } from "../helpers/helpers";
 import {
-  CMD_RUN_FILE,
   CMD_COPY_CURL,
+  CMD_RUN_FILE,
 } from "../../constants";
 
 suite("CodeLens", () => {
@@ -123,9 +123,9 @@ suite("CodeLens", () => {
     const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>(
       "vscode.executeCodeLensProvider",
       doc.uri
-    );
+    ),
 
-    const runLens = lenses.find(
+     runLens = lenses.find(
       (l) => l.command?.command === CMD_RUN_FILE
     );
     assert.ok(runLens, "Run lens should exist");

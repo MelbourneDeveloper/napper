@@ -2,15 +2,15 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   activateExtension,
-  sleep,
   closeAllEditors,
   executeCommand,
+  sleep,
   waitForCondition,
 } from "../helpers/helpers";
 import {
   CMD_RUN_ALL,
-  RESPONSE_PANEL_TITLE,
   PLAYLIST_PANEL_TITLE,
+  RESPONSE_PANEL_TITLE,
 } from "../../constants";
 
 const findTabByLabel = (label: string): vscode.Tab | undefined =>
@@ -51,8 +51,8 @@ suite("Run All — Real API Calls", () => {
       30000
     );
 
-    const hasResponse = findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined;
-    const hasPlaylist = findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined;
+    const hasResponse = findTabByLabel(RESPONSE_PANEL_TITLE) !== undefined,
+     hasPlaylist = findTabByLabel(PLAYLIST_PANEL_TITLE) !== undefined;
 
     assert.ok(
       hasResponse || hasPlaylist,

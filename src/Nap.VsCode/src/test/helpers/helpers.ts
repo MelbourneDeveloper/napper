@@ -19,7 +19,7 @@ export const activateExtension = async (): Promise<TestContext> => {
     await extension.activate();
   }
 
-  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const {workspaceFolders} = vscode.workspace;
   if (!workspaceFolders || workspaceFolders.length === 0) {
     throw new Error("No workspace folder open");
   }
@@ -41,7 +41,7 @@ export const sleep = async (ms: number): Promise<void> =>
   }); };
 
 export const getFixturePath = (relativePath: string): string => {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const {workspaceFolders} = vscode.workspace;
   if (!workspaceFolders || workspaceFolders.length === 0) {
     throw new Error("No workspace folder open");
   }
@@ -70,8 +70,8 @@ export const writeFixtureFile = (
   relativePath: string,
   content: string
 ): void => {
-  const fullPath = getFixturePath(relativePath);
-  const dir = path.dirname(fullPath);
+  const fullPath = getFixturePath(relativePath),
+   dir = path.dirname(fullPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -103,16 +103,16 @@ export const waitForCondition = async (
 export const executeCommand = async <T>(
   command: string,
   ...args: unknown[]
-): Promise<T> => await vscode.commands.executeCommand<T>(command, ...args);
+): Promise<T> => vscode.commands.executeCommand<T>(command, ...args);
 
 export const getRegisteredCommands = async (): Promise<string[]> =>
-  await vscode.commands.getCommands(true);
+  vscode.commands.getCommands(true);
 
 export const openDocument = async (
   relativePath: string
 ): Promise<vscode.TextDocument> => {
-  const fullPath = getFixturePath(relativePath);
-  const doc = await vscode.workspace.openTextDocument(fullPath);
+  const fullPath = getFixturePath(relativePath),
+   doc = await vscode.workspace.openTextDocument(fullPath);
   await vscode.window.showTextDocument(doc);
   return doc;
 };
@@ -122,8 +122,8 @@ export const closeAllEditors = async (): Promise<void> => {
 };
 
 export const extractStepLines = (content: string): string[] => {
-  const lines = content.split("\n");
-  const steps: string[] = [];
+  const lines = content.split("\n"),
+   steps: string[] = [];
   let inSteps = false;
   for (const line of lines) {
     const trimmed = line.trim();

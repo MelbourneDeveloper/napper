@@ -2,10 +2,10 @@
 // Accepts a write function; the adapter provides the OutputChannel binding
 
 import {
+  LOG_PREFIX_DEBUG,
+  LOG_PREFIX_ERROR,
   LOG_PREFIX_INFO,
   LOG_PREFIX_WARN,
-  LOG_PREFIX_ERROR,
-  LOG_PREFIX_DEBUG,
 } from "./constants";
 
 export type LogWriter = (message: string) => void;

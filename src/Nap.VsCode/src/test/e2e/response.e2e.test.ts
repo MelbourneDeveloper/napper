@@ -2,17 +2,17 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   activateExtension,
-  sleep,
-  openDocument,
   closeAllEditors,
   executeCommand,
+  openDocument,
+  sleep,
   waitForCondition,
 } from "../helpers/helpers";
 import {
-  CMD_RUN_FILE,
   CMD_OPEN_RESPONSE,
-  RESPONSE_PANEL_TITLE,
+  CMD_RUN_FILE,
   PLAYLIST_PANEL_TITLE,
+  RESPONSE_PANEL_TITLE,
 } from "../../constants";
 
 const findTabByLabel = (label: string): vscode.Tab | undefined =>

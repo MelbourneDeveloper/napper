@@ -5,12 +5,12 @@ import * as vscode from "vscode";
 import * as path from "path";
 import type { RunResult } from "./types";
 import {
-  PLAYLIST_PANEL_TITLE,
-  PLAYLIST_PANEL_VIEW_TYPE,
   MSG_ADD_RESULT,
   MSG_RUN_COMPLETE,
   MSG_RUN_ERROR,
   MSG_SAVE_REPORT,
+  PLAYLIST_PANEL_TITLE,
+  PLAYLIST_PANEL_VIEW_TYPE,
   SECTION_LABEL_REQUEST_HEADERS,
   SECTION_LABEL_RESPONSE_HEADERS,
 } from "./constants";
@@ -21,9 +21,9 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
 
   const rows = result.assertions
     .map((a) => {
-      const icon = a.passed ? "&#x2713;" : "&#x2717;";
-      const cls = a.passed ? "pass" : "fail";
-      const detail = a.passed
+      const icon = a.passed ? "&#x2713;" : "&#x2717;",
+       cls = a.passed ? "pass" : "fail",
+       detail = a.passed
         ? ""
         : `<span class="assert-detail">expected: ${escapeHtml(a.expected)} | actual: ${escapeHtml(a.actual)}</span>`;
       return `<div class="assert-row ${cls}">${icon} ${escapeHtml(a.target)}${detail}</div>`;
@@ -31,9 +31,9 @@ const buildStepAssertionsHtml = (result: RunResult): string => {
     .join("\n");
 
   return `<div class="step-assertions">${rows}</div>`;
-};
+},
 
-const buildStepHeadersTable = (
+ buildStepHeadersTable = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   if (!headers) {return "";}
@@ -44,25 +44,25 @@ const buildStepHeadersTable = (
         `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
     )
     .join("\n");
-};
+},
 
-const buildStepRequestHeadersHtml = (
+ buildStepRequestHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   const rows = buildStepHeadersTable(headers);
   if (rows === "") {return "";}
   return `<div class="step-headers"><h4>${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${rows}</table></div>`;
-};
+},
 
-const buildStepHeadersHtml = (
+ buildStepHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   const rows = buildStepHeadersTable(headers);
   if (rows === "") {return "";}
   return `<div class="step-headers"><h4>${SECTION_LABEL_RESPONSE_HEADERS}</h4><table>${rows}</table></div>`;
-};
+},
 
-const buildStepLogHtml = (
+ buildStepLogHtml = (
   log: readonly string[] | undefined
 ): string => {
   if (!log || log.length === 0) {return "";}
@@ -72,9 +72,9 @@ const buildStepLogHtml = (
     .join("\n");
 
   return `<div class="step-log"><h4>Output</h4><pre class="log-output">${lines}</pre></div>`;
-};
+},
 
-const buildStepMetadata = (result: RunResult): {
+ buildStepMetadata = (result: RunResult): {
   readonly icon: string;
   readonly statusCls: string;
   readonly fileName: string;
@@ -82,8 +82,8 @@ const buildStepMetadata = (result: RunResult): {
   readonly duration: string;
   readonly assertionSummary: string;
 } => {
-  const assertionCount = result.assertions.length;
-  const passedCount = result.assertions.filter((a) => a.passed).length;
+  const assertionCount = result.assertions.length,
+   passedCount = result.assertions.filter((a) => a.passed).length;
   return {
     icon: result.passed ? "&#x2713;" : "&#x2717;",
     statusCls: result.passed ? "pass" : "fail",
@@ -92,27 +92,27 @@ const buildStepMetadata = (result: RunResult): {
     duration: result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "",
     assertionSummary: assertionCount > 0 ? `${passedCount}/${assertionCount}` : "",
   };
-};
+},
 
-const buildStepErrorHtml = (error: string | undefined): string =>
+ buildStepErrorHtml = (error: string | undefined): string =>
   error !== undefined && error !== ""
     ? `<div class="step-error"><pre>${escapeHtml(error)}</pre></div>`
-    : "";
+    : "",
 
-const buildStepBodyHtml = (body: string | undefined): string =>
+ buildStepBodyHtml = (body: string | undefined): string =>
   body !== undefined && body !== ""
     ? `<div class="step-body"><h4>Body</h4><pre class="body">${formatBodyHtml(body)}</pre></div>`
-    : "";
+    : "",
 
-const buildStepDetailSection = (result: RunResult): string =>
+ buildStepDetailSection = (result: RunResult): string =>
   `${buildStepErrorHtml(result.error)}
         ${buildStepLogHtml(result.log)}
         ${buildStepAssertionsHtml(result)}
         ${buildStepRequestHeadersHtml(result.requestHeaders)}
         ${buildStepHeadersHtml(result.headers)}
-        ${buildStepBodyHtml(result.body)}`;
+        ${buildStepBodyHtml(result.body)}`,
 
-const buildCompletedStepRow = (result: RunResult, index: number): string => {
+ buildCompletedStepRow = (result: RunResult, index: number): string => {
   const meta = buildStepMetadata(result);
 
   return `
@@ -129,9 +129,9 @@ const buildCompletedStepRow = (result: RunResult, index: number): string => {
         ${buildStepDetailSection(result)}
       </div>
     </div>`;
-};
+},
 
-const buildPendingStepRow = (stepFileName: string, index: number): string => `
+ buildPendingStepRow = (stepFileName: string, index: number): string => `
     <div class="step" data-index="${index}" id="step-${index}">
       <div class="step-summary pending">
         <span class="step-icon spinner">&#x25CB;</span>
@@ -142,9 +142,9 @@ const buildPendingStepRow = (stepFileName: string, index: number): string => `
         <span class="step-chevron" id="chevron-${index}">&#x25B6;</span>
       </div>
       <div class="step-detail" id="detail-${index}" style="display:none;"></div>
-    </div>`;
+    </div>`,
 
-const STYLES = `
+ STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
   h2 { margin: 0 0 12px 0; font-size: 16px; }
   h3 { margin: 12px 0 6px 0; font-size: 13px; color: var(--vscode-descriptionForeground); }
@@ -195,9 +195,9 @@ const STYLES = `
   .report-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-left: auto; font-size: 12px; font-weight: 500; color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
   .report-btn:hover { background: var(--vscode-button-hoverBackground); }
   .report-btn svg { width: 14px; height: 14px; fill: currentColor; }
-`;
+`,
 
-const TOGGLE_STEP_FN = `
+ TOGGLE_STEP_FN = `
     function toggleStep(index) {
       const detail = document.getElementById('detail-' + index);
       const chevron = document.getElementById('chevron-' + index);
@@ -206,9 +206,9 @@ const TOGGLE_STEP_FN = `
       detail.style.display = isHidden ? 'block' : 'none';
       if (isHidden) { chevron.classList.add('open'); }
       else { chevron.classList.remove('open'); }
-    }`;
+    }`,
 
-const buildMessageHandler = (): string => `
+ buildMessageHandler = (): string => `
     window.addEventListener('message', function(event) {
       const msg = event.data;
       if (msg.type === '${MSG_ADD_RESULT}') {
@@ -218,9 +218,9 @@ const buildMessageHandler = (): string => `
       } else if (msg.type === '${MSG_RUN_ERROR}') {
         updateSummary(msg.summaryHtml);
       }
-    });`;
+    });`,
 
-const HELPER_FNS = `
+ HELPER_FNS = `
     function updateStepRow(index, html) {
       const stepEl = document.getElementById('step-' + index);
       if (stepEl) { stepEl.outerHTML = html; }
@@ -231,17 +231,17 @@ const HELPER_FNS = `
     }
     function saveReport() {
       vscodeApi.postMessage({ type: '${MSG_SAVE_REPORT}' });
-    }`;
+    }`,
 
-const buildStreamingScript = (): string => `
+ buildStreamingScript = (): string => `
   <script>
     const vscodeApi = acquireVsCodeApi();
     ${TOGGLE_STEP_FN}
     ${buildMessageHandler()}
     ${HELPER_FNS}
-  </script>`;
+  </script>`,
 
-const buildStreamingBody = (
+ buildStreamingBody = (
   playlistName: string,
   stepsHtml: string,
   stepCount: number
@@ -254,9 +254,9 @@ const buildStreamingBody = (
   </div>
   <div class="steps-list" id="steps-list">
     ${stepsHtml}
-  </div>`;
+  </div>`,
 
-const wrapInHtmlShell = (bodyContent: string, scriptContent: string): string =>
+ wrapInHtmlShell = (bodyContent: string, scriptContent: string): string =>
   `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -268,27 +268,27 @@ const wrapInHtmlShell = (bodyContent: string, scriptContent: string): string =>
   ${bodyContent}
   ${scriptContent}
 </body>
-</html>`;
+</html>`,
 
-const buildStreamingHtml = (
+ buildStreamingHtml = (
   playlistFile: string,
   stepFileNames: readonly string[]
 ): string => {
-  const playlistName = path.basename(playlistFile, path.extname(playlistFile));
-  const stepsHtml = stepFileNames.map((name, i) => buildPendingStepRow(name, i)).join("\n");
-  const body = buildStreamingBody(playlistName, stepsHtml, stepFileNames.length);
+  const playlistName = path.basename(playlistFile, path.extname(playlistFile)),
+   stepsHtml = stepFileNames.map((name, i) => buildPendingStepRow(name, i)).join("\n"),
+   body = buildStreamingBody(playlistName, stepsHtml, stepFileNames.length);
   return wrapInHtmlShell(body, buildStreamingScript());
-};
+},
 
-const buildSummaryHtml = (results: readonly RunResult[]): string => {
-  const totalCount = results.length;
-  const passedCount = results.filter((r) => r.passed).length;
-  const failedCount = totalCount - passedCount;
-  const totalDuration = results.reduce(
+ buildSummaryHtml = (results: readonly RunResult[]): string => {
+  const totalCount = results.length,
+   passedCount = results.filter((r) => r.passed).length,
+   failedCount = totalCount - passedCount,
+   totalDuration = results.reduce(
     (acc, r) => acc + (r.duration ?? 0),
     0
-  );
-  const allPassed = totalCount > 0 && failedCount === 0;
+  ),
+   allPassed = totalCount > 0 && failedCount === 0;
 
   return `<div class="playlist-summary" id="summary">
     <span class="summary-badge ${allPassed ? "all-passed" : "has-failures"}">${allPassed ? "PASSED" : "FAILED"}</span>
@@ -298,9 +298,9 @@ const buildSummaryHtml = (results: readonly RunResult[]): string => {
     <span class="summary-duration">${totalDuration.toFixed(0)}ms</span>
     <button class="report-btn" onclick="saveReport()"><svg viewBox="0 0 16 16"><path d="M4 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zm1 2v2h6V3H5zm0 4v1h6V7H5zm0 3v1h4v-1H5z"/></svg>Save Report</button>
   </div>`;
-};
+},
 
-const buildErrorSummaryHtml = (error: string): string =>
+ buildErrorSummaryHtml = (error: string): string =>
   `<div class="playlist-summary" id="summary">
     <span class="summary-badge has-failures">ERROR</span>
     <span class="summary-failed">${escapeHtml(error)}</span>

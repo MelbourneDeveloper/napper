@@ -4,16 +4,16 @@
 import * as vscode from "vscode";
 import type { RunResult } from "./types";
 import {
+  HTTP_STATUS_CLIENT_ERROR_MIN,
+  NO_REQUEST_HEADERS,
   RESPONSE_PANEL_TITLE,
   RESPONSE_PANEL_VIEW_TYPE,
-  HTTP_STATUS_CLIENT_ERROR_MIN,
+  SECTION_LABEL_ASSERTIONS,
+  SECTION_LABEL_BODY,
+  SECTION_LABEL_ERROR,
+  SECTION_LABEL_OUTPUT,
   SECTION_LABEL_REQUEST_HEADERS,
   SECTION_LABEL_RESPONSE_HEADERS,
-  SECTION_LABEL_BODY,
-  SECTION_LABEL_ASSERTIONS,
-  SECTION_LABEL_OUTPUT,
-  SECTION_LABEL_ERROR,
-  NO_REQUEST_HEADERS,
 } from "./constants";
 import { escapeHtml, formatBodyHtml } from "./htmlUtils";
 
@@ -21,9 +21,9 @@ const buildCollapsibleSection = (title: string, content: string, open: boolean):
   `<details class="section"${open ? " open" : ""}>
     <summary><h3>${title}</h3><span class="chevron">&#x25B6;</span></summary>
     <div class="section-content">${content}</div>
-  </details>`;
+  </details>`,
 
-const buildHeadersTable = (
+ buildHeadersTable = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   if (!headers) {return "";}
@@ -34,16 +34,16 @@ const buildHeadersTable = (
         `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
     )
     .join("\n");
-};
+},
 
-const buildAssertionsHtml = (result: RunResult): string => {
+ buildAssertionsHtml = (result: RunResult): string => {
   if (result.assertions.length === 0) {return "";}
 
   const rows = result.assertions
     .map((a) => {
-      const icon = a.passed ? "&#x2713;" : "&#x2717;";
-      const cls = a.passed ? "pass" : "fail";
-      const detail = a.passed
+      const icon = a.passed ? "&#x2713;" : "&#x2717;",
+       cls = a.passed ? "pass" : "fail",
+       detail = a.passed
         ? ""
         : `<div class="assert-detail">expected: ${escapeHtml(a.expected)}<br/>actual: ${escapeHtml(a.actual)}</div>`;
       return `<div class="assert-row ${cls}">${icon} ${escapeHtml(a.target)}${detail}</div>`;
@@ -51,27 +51,27 @@ const buildAssertionsHtml = (result: RunResult): string => {
     .join("\n");
 
   return buildCollapsibleSection(SECTION_LABEL_ASSERTIONS, rows, true);
-};
+},
 
-const buildRequestHeadersHtml = (
+ buildRequestHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
-  const rows = buildHeadersTable(headers);
-  const content = rows === ""
+  const rows = buildHeadersTable(headers),
+   content = rows === ""
     ? `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`
     : `<table>${rows}</table>`;
   return buildCollapsibleSection(SECTION_LABEL_REQUEST_HEADERS, content, false);
-};
+},
 
-const buildHeadersHtml = (
+ buildHeadersHtml = (
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   const rows = buildHeadersTable(headers);
   if (rows === "") {return "";}
   return buildCollapsibleSection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${rows}</table>`, false);
-};
+},
 
-const buildLogHtml = (
+ buildLogHtml = (
   log: readonly string[] | undefined
 ): string => {
   if (!log || log.length === 0) {return "";}
@@ -81,9 +81,9 @@ const buildLogHtml = (
     .join("\n");
 
   return buildCollapsibleSection(SECTION_LABEL_OUTPUT, `<pre class="log-output">${lines}</pre>`, true);
-};
+},
 
-const buildStatusLine = (result: RunResult): string => {
+ buildStatusLine = (result: RunResult): string => {
   if (result.statusCode === undefined) {return "";}
 
   const statusClass =
@@ -92,22 +92,22 @@ const buildStatusLine = (result: RunResult): string => {
       : "status-error";
 
   return `<span class="${statusClass}">${result.statusCode}</span>`;
-};
+},
 
-const buildBodyHtml = (body: string | undefined): string =>
+ buildBodyHtml = (body: string | undefined): string =>
   body !== undefined && body !== ""
     ? buildCollapsibleSection(SECTION_LABEL_BODY, `<pre class="body">${formatBodyHtml(body)}</pre>`, true)
-    : "";
+    : "",
 
-const buildErrorHtml = (error: string | undefined): string =>
+ buildErrorHtml = (error: string | undefined): string =>
   error !== undefined && error !== ""
     ? `<details class="section error" open>
     <summary><h3>${SECTION_LABEL_ERROR}</h3><span class="chevron">&#x25B6;</span></summary>
     <div class="section-content"><pre>${escapeHtml(error)}</pre></div>
   </details>`
-    : "";
+    : "",
 
-const RESPONSE_STYLES = `
+ RESPONSE_STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
   h2 { margin: 0 0 12px 0; font-size: 14px; }
   h3 { margin: 0; font-size: 13px; color: var(--vscode-descriptionForeground); display: inline; }
@@ -141,14 +141,14 @@ const RESPONSE_STYLES = `
   .empty-hint { color: var(--vscode-descriptionForeground); font-size: 12px; font-style: italic; }
   .request-url { font-size: 12px; color: var(--vscode-textLink-foreground); word-break: break-all; margin-bottom: 16px; }
   .request-method { font-weight: bold; color: var(--vscode-foreground); }
-`;
+`,
 
-const buildRequestUrlHtml = (result: RunResult): string =>
+ buildRequestUrlHtml = (result: RunResult): string =>
   result.requestUrl !== undefined && result.requestUrl !== ""
     ? `<div class="request-url"><span class="request-method">${escapeHtml(result.requestMethod ?? "")}</span> ${escapeHtml(result.requestUrl)}</div>`
-    : "";
+    : "",
 
-const buildResponseBody = (result: RunResult): string => {
+ buildResponseBody = (result: RunResult): string => {
   const durationLine =
     result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "";
 
@@ -166,9 +166,9 @@ const buildResponseBody = (result: RunResult): string => {
   ${buildRequestHeadersHtml(result.requestHeaders)}
   ${buildHeadersHtml(result.headers)}
   ${buildBodyHtml(result.body)}`;
-};
+},
 
-const buildHtml = (result: RunResult): string => `<!DOCTYPE html>
+ buildHtml = (result: RunResult): string => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>

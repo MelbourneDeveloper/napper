@@ -11,9 +11,9 @@ export const escapeHtml = (text: string): string =>
     .split('"').join("&quot;");
 
 const jsonSpan = (cls: string, content: string): string =>
-  `<span class="json-${cls}">${escapeHtml(content)}</span>`;
+  `<span class="json-${cls}">${escapeHtml(content)}</span>`,
 
-const highlightJsonPrimitive = (value: unknown): string | undefined => {
+ highlightJsonPrimitive = (value: unknown): string | undefined => {
   if (value === null) {
     return jsonSpan("null", "null");
   }
@@ -27,24 +27,24 @@ const highlightJsonPrimitive = (value: unknown): string | undefined => {
     return jsonSpan("string", `"${escapeHtml(value)}"`);
   }
   return undefined;
-};
+},
 
-const highlightJsonArray = (
+ highlightJsonArray = (
   items: readonly unknown[],
   indent: number
 ): string => {
   if (items.length === 0) {
     return "[]";
   }
-  const pad = " ".repeat(indent);
-  const innerPad = " ".repeat(indent + JSON_INDENT_SIZE);
-  const rendered = items
+  const pad = " ".repeat(indent),
+   innerPad = " ".repeat(indent + JSON_INDENT_SIZE),
+   rendered = items
     .map((item) => `${innerPad}${highlightJson(item, indent + JSON_INDENT_SIZE)}`)
     .join(",\n");
   return `[\n${rendered}\n${pad}]`;
-};
+},
 
-const highlightJsonObject = (
+ highlightJsonObject = (
   value: Record<string, unknown>,
   indent: number
 ): string => {
@@ -52,9 +52,9 @@ const highlightJsonObject = (
   if (entries.length === 0) {
     return "{}";
   }
-  const pad = " ".repeat(indent);
-  const innerPad = " ".repeat(indent + JSON_INDENT_SIZE);
-  const props = entries
+  const pad = " ".repeat(indent),
+   innerPad = " ".repeat(indent + JSON_INDENT_SIZE),
+   props = entries
     .map(
       ([k, v]) =>
         `${innerPad}${jsonSpan("key", `"${escapeHtml(k)}"`)}: ${highlightJson(v, indent + JSON_INDENT_SIZE)}`

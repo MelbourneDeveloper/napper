@@ -3,20 +3,20 @@
 
 import * as vscode from "vscode";
 import {
-  SECTION_REQUEST,
-  SECTION_META,
-  CMD_RUN_FILE,
   CMD_COPY_CURL,
-  NAP_EXTENSION,
-  NAPLIST_EXTENSION,
+  CMD_RUN_FILE,
   HTTP_METHODS,
+  NAPLIST_EXTENSION,
+  NAP_EXTENSION,
+  SECTION_META,
+  SECTION_REQUEST,
 } from "./constants";
 
-const RUN_LENS_TITLE = "$(play) Run";
-const COPY_CURL_TITLE = "$(clippy) Copy as curl";
-const RUN_PLAYLIST_TITLE = "$(play) Run Playlist";
+const RUN_LENS_TITLE = "$(play) Run",
+ COPY_CURL_TITLE = "$(clippy) Copy as curl",
+ RUN_PLAYLIST_TITLE = "$(play) Run Playlist",
 
-const makeRunLens = (
+ makeRunLens = (
   range: vscode.Range,
   uri: vscode.Uri
 ): vscode.CodeLens =>
@@ -24,9 +24,9 @@ const makeRunLens = (
     title: RUN_LENS_TITLE,
     command: CMD_RUN_FILE,
     arguments: [uri],
-  });
+  }),
 
-const makeCurlLens = (
+ makeCurlLens = (
   range: vscode.Range,
   uri: vscode.Uri
 ): vscode.CodeLens =>
@@ -34,16 +34,16 @@ const makeCurlLens = (
     title: COPY_CURL_TITLE,
     command: CMD_COPY_CURL,
     arguments: [uri],
-  });
+  }),
 
-const isShorthandMethod = (line: string): boolean =>
-  HTTP_METHODS.some((m) => line.startsWith(`${m} `));
+ isShorthandMethod = (line: string): boolean =>
+  HTTP_METHODS.some((m) => line.startsWith(`${m} `)),
 
-const buildRequestLenses = (
+ buildRequestLenses = (
   document: vscode.TextDocument
 ): vscode.CodeLens[] => {
-  const lenses: vscode.CodeLens[] = [];
-  const firstLine = document.lineAt(0).text.trim();
+  const lenses: vscode.CodeLens[] = [],
+   firstLine = document.lineAt(0).text.trim();
 
   if (isShorthandMethod(firstLine)) {
     const range = new vscode.Range(0, 0, 0, firstLine.length);
@@ -61,9 +61,9 @@ const buildRequestLenses = (
   }
 
   return lenses;
-};
+},
 
-const buildPlaylistLenses = (
+ buildPlaylistLenses = (
   document: vscode.TextDocument
 ): vscode.CodeLens[] => {
   const lenses: vscode.CodeLens[] = [];
@@ -91,8 +91,8 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
   readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
 
   provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
-    const isNap = document.fileName.endsWith(NAP_EXTENSION);
-    const isNapList = document.fileName.endsWith(NAPLIST_EXTENSION);
+    const isNap = document.fileName.endsWith(NAP_EXTENSION),
+     isNapList = document.fileName.endsWith(NAPLIST_EXTENSION);
 
     if (isNap) {return buildRequestLenses(document);}
     if (isNapList) {return buildPlaylistLenses(document);}
