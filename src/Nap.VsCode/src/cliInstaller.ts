@@ -5,6 +5,7 @@ import type * as http from "http";
 import * as https from "https";
 import * as fs from "fs";
 import * as path from "path";
+import { execFile } from "child_process";
 import { type Result, err, ok } from "./types";
 import {
   CLI_ARCH_ARM64,
@@ -27,6 +28,9 @@ import {
   CLI_RID_WIN_X64,
   CLI_TOO_MANY_REDIRECTS,
   CLI_UNSUPPORTED_PLATFORM_MSG,
+  CLI_VERSION_CHECK_ERROR,
+  CLI_VERSION_CHECK_TIMEOUT,
+  CLI_VERSION_FLAG,
   CLI_WIN_EXE_SUFFIX,
   HTTP_STATUS_CLIENT_ERROR_MIN,
   HTTP_STATUS_OK,
@@ -69,6 +73,24 @@ export const installedCliPath = (
 
 export const isCliInstalled = (cliPath: string): boolean =>
   fs.existsSync(cliPath);
+
+export const getCliVersion = (
+  cliPath: string
+): Promise<Result<string, string>> =>
+  new Promise((resolve) => {
+    execFile(
+      cliPath,
+      [CLI_VERSION_FLAG],
+      { timeout: CLI_VERSION_CHECK_TIMEOUT },
+      (error: Error | null, stdout: string) => {
+        if (error !== null) {
+          resolve(err(`${CLI_VERSION_CHECK_ERROR}${error.message}`));
+          return;
+        }
+        resolve(ok(stdout.trim()));
+      }
+    );
+  });
 
 interface RedirectContext {
   readonly dest: string;

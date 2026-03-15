@@ -99,6 +99,7 @@ export const SECTION_LABEL_ERROR = "Error";
 export const SECTION_LABEL_REQUEST = "Request";
 export const SECTION_LABEL_RESPONSE = "Response";
 export const NO_REQUEST_HEADERS = "No request headers";
+export const SECTION_LABEL_REQUEST_BODY = "Request Body";
 
 // Playlist panel
 export const PLAYLIST_PANEL_TITLE = "Napper Playlist";
@@ -143,7 +144,8 @@ export const CLI_REPO_NAME = "napper";
 export const CLI_BINARY_NAME = "napper";
 export const CLI_BIN_DIR = "bin";
 export const CLI_DOWNLOAD_HOST = "github.com";
-export const CLI_DOWNLOAD_PATH_PREFIX = "/MelbourneDeveloper/napper/releases/latest/download/";
+export const CLI_REQUIRED_VERSION = "0.1.0";
+export const CLI_DOWNLOAD_PATH_PREFIX = `/MelbourneDeveloper/napper/releases/download/v${CLI_REQUIRED_VERSION}/`;
 export const CLI_ASSET_PREFIX = "napper-";
 export const CLI_WIN_EXE_SUFFIX = ".exe";
 export const CLI_MAX_REDIRECTS = 5;
@@ -164,6 +166,10 @@ export const CLI_DOWNLOAD_ERROR_PREFIX = "Download failed: HTTP ";
 export const CLI_REDIRECT_ERROR = "Redirect with no location header";
 export const CLI_TOO_MANY_REDIRECTS = "Too many redirects";
 export const CLI_FILE_MODE_EXECUTABLE = 0o755;
+export const CLI_VERSION_FLAG = "--version";
+export const CLI_VERSION_CHECK_TIMEOUT = 5000;
+export const CLI_VERSION_CHECK_ERROR = "Failed to check CLI version: ";
+export const CLI_VERSION_MISMATCH_MSG = "CLI version mismatch — re-installing";
 
 // VSCode built-in commands
 export const CMD_VSCODE_OPEN = "vscode.open";

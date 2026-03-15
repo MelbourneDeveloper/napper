@@ -1,49 +1,26 @@
 #!/usr/bin/env bash
-# Build platform-specific VSIX — EXACT same process as the build-vsix job in release.yml
+# Build CLI + universal VSIX (no binary bundled — VSIX downloads CLI at runtime)
 #
-# Detects current platform if NAP_RID / VSCE_TARGET are not set.
-# Output: src/Nap.VsCode/napper-<target>-<version>.vsix
+# 1. Builds the CLI and installs to PATH + extension bin/ (for local testing)
+# 2. Verifies CLI version matches the extension's expected version
+# 3. Packages a universal VSIX (bin/ excluded by .vscodeignore)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# --- Detect RID + VSCE target ---
-if [ -z "${NAP_RID:-}" ] || [ -z "${VSCE_TARGET:-}" ]; then
-  ARCH=$(uname -m)
-  OS=$(uname -s)
-  case "$OS" in
-    Darwin)
-      case "$ARCH" in
-        arm64) NAP_RID="osx-arm64"; VSCE_TARGET="darwin-arm64" ;;
-        x86_64) NAP_RID="osx-x64"; VSCE_TARGET="darwin-x64" ;;
-      esac ;;
-    Linux) NAP_RID="linux-x64"; VSCE_TARGET="linux-x64" ;;
-  esac
-fi
+# --- Build CLI first (installs to PATH + bin/) ---
+bash scripts/build-cli.sh
 
-if [ -z "${NAP_RID:-}" ] || [ -z "${VSCE_TARGET:-}" ]; then
-  echo "ERROR: Could not detect platform. Set NAP_RID and VSCE_TARGET manually."
-  exit 1
-fi
-
-echo "==> Building VSIX for $VSCE_TARGET (CLI: $NAP_RID)..."
-
-# EXACT same as release.yml build-vsix job step: "Build CLI"
-dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
-  -r "$NAP_RID" \
-  --self-contained \
-  -p:PublishTrimmed=true \
-  -p:PublishSingleFile=true \
-  -o src/Nap.VsCode/bin \
-  --nologo
-
-# EXACT same as release.yml build-vsix job step: "Install extension dependencies"
+# --- Build extension + package VSIX ---
+echo "==> Building VS Code extension..."
 cd src/Nap.VsCode
 npm ci
-
-# EXACT same as release.yml build-vsix job step: "Compile extension"
 npx webpack --mode production
+npx @vscode/vsce package --no-dependencies --skip-license
 
-# EXACT same as release.yml build-vsix job step: "Package VSIX"
-npx @vscode/vsce package --target "$VSCE_TARGET" --no-dependencies --skip-license
+VSIX_FILE=$(ls -1 *.vsix 2>/dev/null | head -1)
+cd ../..
 
-echo "==> VSIX packaged for $VSCE_TARGET"
+echo ""
+echo "==> VSIX packaged (universal — no CLI bundled)"
+[ -n "${VSIX_FILE:-}" ] && echo "    VSIX: src/Nap.VsCode/$VSIX_FILE"
+echo "    CLI installed at: ~/.local/bin/napper (for local use)"

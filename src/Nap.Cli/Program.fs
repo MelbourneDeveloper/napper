@@ -290,6 +290,10 @@ let main argv =
             | None ->
                 eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
                 2
+        | "version" | "--version" ->
+            let v = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+            printfn "%d.%d.%d" v.Major v.Minor v.Build
+            0
         | "help" | "--help" | "-h" ->
             printHelp ()
             0

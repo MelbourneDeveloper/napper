@@ -15,6 +15,7 @@ import { parsePlaylistStepPaths } from "./explorerProvider";
 import { generatePlaylistReport } from "./reportGenerator";
 import { type Logger, createLogger } from "./logger";
 import {
+  getCliVersion,
   installCli,
   installedCliPath,
   isCliInstalled,
@@ -31,6 +32,8 @@ import {
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_INSTALL_MSG,
+  CLI_REQUIRED_VERSION,
+  CLI_VERSION_MISMATCH_MSG,
   CMD_COPY_CURL,
   CMD_ENRICH_AI,
   CMD_IMPORT_OPENAPI_FILE,
@@ -115,8 +118,12 @@ const getCliPath = (): string => {
   const storagePath = storageUri.fsPath,
    candidate = installedCliPath(storagePath, process.platform);
   if (isCliInstalled(candidate)) {
-    installedPath = candidate;
-    return;
+    const versionResult = await getCliVersion(candidate);
+    if (versionResult.ok && versionResult.value === CLI_REQUIRED_VERSION) {
+      installedPath = candidate;
+      return;
+    }
+    logger.info(CLI_VERSION_MISMATCH_MSG);
   }
   await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },

@@ -21,40 +21,37 @@ doesn't. Same for `build-all.sh` which copies to `bin/` then packages.
 
 ## 2. Must check binary version
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED**
 
-- The CLI has no `--version` flag — `Program.fs` handles `run`, `check`, `generate`,
-  `help` but not `version`
-- No `<Version>` property in `Nap.Cli.fsproj`
-- `cliInstaller.ts` only calls `fs.existsSync()` via `isCliInstalled()` — never
-  checks what version the binary is
-- No `CLI_VERSION` or `CLI_REQUIRED_VERSION` in `constants.ts`
+- CLI has `--version` flag in `Program.fs` that prints the assembly version
+- `<Version>0.1.0</Version>` set in `Nap.Cli.fsproj`
+- `getCliVersion()` in `cliInstaller.ts` runs `napper --version` and returns the result
+- `CLI_REQUIRED_VERSION` in `constants.ts` pins the expected version
 
 ## 3. If not installed, download from GH release
 
-**Status: PARTIALLY IMPLEMENTED**
+**Status: IMPLEMENTED**
 
-- `ensureCliInstalled()` in `extension.ts:111-128` downloads if the binary doesn't
-  exist
-- Downloads from `releases/latest/download/` — no version pinning. If the VSIX is
-  v0.2.0 but "latest" release is v0.3.0, you get a mismatched CLI
+- `ensureCliInstalled()` in `extension.ts` downloads if the binary doesn't exist
+- Download URL pinned to version: `/releases/download/v{CLI_REQUIRED_VERSION}/`
 
 ## 4. If version is wrong, must overwrite
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED**
 
-- Once a binary exists, `isCliInstalled()` returns `true` and no download occurs,
-  even if it's the wrong version
-- No mechanism to detect or replace stale binaries
+- `ensureCliInstalled()` checks version via `getCliVersion()` after existence check
+- If version doesn't match `CLI_REQUIRED_VERSION`, logs mismatch and re-downloads
 
 ## 5. Scripts honor local binary
 
-**Status: PARTIALLY OK**
+**Status: IMPLEMENTED**
 
 - `build-cli.sh` installs to `~/.local/bin/napper` and `src/Nap.VsCode/bin/napper`
 - `getCliPath()` checks the bundled path first, so VSIX finds the local binary
-  during tests
-- No version verification in scripts after build
+  during tests (no version check on bundled path — accepts any local build)
+- Build scripts verify CLI version matches `<Version>` in fsproj after build
+- `build-vsix.sh` packages a universal VSIX (no CLI bundled) and relies on
+  `build-cli.sh` for local CLI installation
 
 ---
 
