@@ -12,6 +12,7 @@ type GenerationResult = OpenApiTypes.GenerationResult
 
 // --- Internal types ---
 
+[<NoComparison; NoEquality>]
 type private EndpointInfo = {
     Method: string
     UrlPath: string
@@ -20,6 +21,7 @@ type private EndpointInfo = {
     AuthHeaders: AuthHeader list
 }
 
+[<NoComparison; NoEquality>]
 type private TagGroup = {
     Tag: string option
     Endpoints: EndpointInfo list
@@ -248,7 +250,7 @@ let private methodHasBody (m: string) : bool =
 
 let private padIndex (idx: int) (total: int) : string =
     let digits = if total >= PadLargeThreshold then PadDigitsLarge else PadDigitsDefault
-    (idx + 1).ToString().PadLeft(digits, '0')
+    (string (idx + 1)).PadLeft(digits, '0')
 
 // --- .nap content builders ---
 

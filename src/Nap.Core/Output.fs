@@ -9,7 +9,6 @@ open Nap.Core
 let formatPretty (result: NapResult) : string =
     let sb = StringBuilder()
     let appendLine (s: string) = sb.AppendLine(s) |> ignore
-    let append (s: string) = sb.Append(s) |> ignore
 
     // File name
     let fileName = System.IO.Path.GetFileName(result.File)
