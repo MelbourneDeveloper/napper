@@ -17,6 +17,7 @@ import {
   SECTION_LABEL_ERROR,
   SECTION_LABEL_OUTPUT,
   SECTION_LABEL_REQUEST,
+  SECTION_LABEL_REQUEST_BODY,
   SECTION_LABEL_REQUEST_HEADERS,
   SECTION_LABEL_RESPONSE,
   SECTION_LABEL_RESPONSE_HEADERS,
@@ -116,6 +117,58 @@ const MOCK_FULL_RESULT: RunResult = {
   statusCode: 200,
   body: "this is not json {{{",
   headers: { "content-type": "text/plain" },
+  assertions: [],
+},
+
+ MOCK_POST_WITH_BODY: RunResult = {
+  file: "/workspace/api/create-user.nap",
+  passed: true,
+  statusCode: 201,
+  duration: 200,
+  requestMethod: "POST",
+  requestUrl: "https://api.example.com/users",
+  requestHeaders: { "Content-Type": "application/json", "Authorization": "Bearer abc" },
+  requestBody: '{"name":"Alice","email":"alice@example.com"}',
+  requestBodyContentType: "application/json",
+  headers: { "content-type": "application/json" },
+  body: '{"id":42,"name":"Alice"}',
+  assertions: [
+    { target: "status", passed: true, expected: "201", actual: "201" },
+  ],
+},
+
+ MOCK_POST_PLAIN_TEXT_BODY: RunResult = {
+  file: "/workspace/api/submit-text.nap",
+  passed: true,
+  statusCode: 200,
+  requestMethod: "POST",
+  requestUrl: "https://api.example.com/text",
+  requestBody: "Hello, this is plain text content",
+  requestBodyContentType: "text/plain",
+  headers: {},
+  assertions: [],
+},
+
+ MOCK_POST_NO_BODY: RunResult = {
+  file: "/workspace/api/trigger-action.nap",
+  passed: true,
+  statusCode: 200,
+  requestMethod: "POST",
+  requestUrl: "https://api.example.com/trigger",
+  requestHeaders: { "X-Action": "go" },
+  headers: {},
+  assertions: [],
+},
+
+ MOCK_XSS_REQUEST_BODY: RunResult = {
+  file: "/workspace/api/xss-body.nap",
+  passed: true,
+  statusCode: 200,
+  requestMethod: "POST",
+  requestUrl: "https://api.example.com/data",
+  requestBody: '<script>alert("xss")</script>',
+  requestBodyContentType: '<img onerror="alert(1)">',
+  headers: {},
   assertions: [],
 };
 
@@ -670,6 +723,156 @@ suite("Result Detail HTML — Headers table rows", () => {
     assert.ok(
       html.includes("a&lt;b&gt;&amp;c&quot;d"),
       "Special characters in header values must be HTML-escaped"
+    );
+  });
+});
+
+suite("Result Detail HTML — Request body", () => {
+  test("POST with JSON body shows Request Body subsection with formatted JSON", () => {
+    const html = buildRequestGroupHtml(MOCK_POST_WITH_BODY);
+
+    assert.ok(
+      html.includes(SECTION_LABEL_REQUEST_BODY),
+      "Request section must have a Request Body subsection when body is present"
+    );
+    assert.ok(
+      html.includes("Alice"),
+      "Request body must show JSON content (name value)"
+    );
+    assert.ok(
+      html.includes("alice@example.com"),
+      "Request body must show JSON content (email value)"
+    );
+    assert.ok(
+      html.includes("json-key"),
+      "JSON request body must have syntax highlighting"
+    );
+  });
+
+  test("Request body shows content type hint", () => {
+    const html = buildRequestGroupHtml(MOCK_POST_WITH_BODY);
+
+    assert.ok(
+      html.includes("content-type-hint"),
+      "Request body must show content type hint CSS class"
+    );
+    assert.ok(
+      html.includes("application/json"),
+      "Request body must show the content type value"
+    );
+  });
+
+  test("Plain text request body is shown without JSON highlighting", () => {
+    const html = buildRequestGroupHtml(MOCK_POST_PLAIN_TEXT_BODY);
+
+    assert.ok(
+      html.includes(SECTION_LABEL_REQUEST_BODY),
+      "Plain text body must still show Request Body subsection"
+    );
+    assert.ok(
+      html.includes("Hello, this is plain text content"),
+      "Plain text body content must appear in the output"
+    );
+    assert.ok(
+      !html.includes("json-key"),
+      "Plain text body must NOT have JSON syntax highlighting"
+    );
+    assert.ok(
+      html.includes("text/plain"),
+      "Plain text body must show content type hint"
+    );
+  });
+
+  test("POST without request body does NOT show Request Body subsection", () => {
+    const html = buildRequestGroupHtml(MOCK_POST_NO_BODY);
+
+    assert.ok(
+      !html.includes(SECTION_LABEL_REQUEST_BODY),
+      "Request section must NOT have Request Body when requestBody is undefined"
+    );
+  });
+
+  test("Request body with no requestBody shows no body subsection", () => {
+    const html = buildRequestGroupHtml(MOCK_FULL_RESULT);
+
+    assert.ok(
+      !html.includes(SECTION_LABEL_REQUEST_BODY),
+      "GET request must NOT have Request Body subsection"
+    );
+  });
+
+  test("full detail HTML includes request body in Request group", () => {
+    const html = buildResultDetailHtml(MOCK_POST_WITH_BODY);
+
+    assert.ok(
+      html.includes(SECTION_LABEL_REQUEST_BODY),
+      "Full detail HTML must include Request Body within the Request group"
+    );
+    assert.ok(
+      html.includes(SECTION_LABEL_REQUEST),
+      "Full detail HTML must have the Request group"
+    );
+
+    const requestBodyIdx = html.indexOf(SECTION_LABEL_REQUEST_BODY),
+     responseIdx = html.indexOf(SECTION_LABEL_RESPONSE);
+    assert.ok(
+      requestBodyIdx < responseIdx,
+      "Request Body must appear before the Response section"
+    );
+  });
+
+  test("full detail HTML for POST shows URL, method, headers, AND body", () => {
+    const html = buildResultDetailHtml(MOCK_POST_WITH_BODY);
+
+    assert.ok(
+      html.includes("https://api.example.com/users"),
+      "Must show request URL"
+    );
+    assert.ok(
+      html.includes("POST"),
+      "Must show request method"
+    );
+    assert.ok(
+      html.includes("Authorization"),
+      "Must show request header key"
+    );
+    assert.ok(
+      html.includes("Bearer abc"),
+      "Must show request header value"
+    );
+    assert.ok(
+      html.includes(SECTION_LABEL_REQUEST_BODY),
+      "Must show request body subsection"
+    );
+    assert.ok(
+      html.includes("Alice"),
+      "Must show request body content"
+    );
+  });
+
+  test("HTML in request body is escaped", () => {
+    const html = buildRequestGroupHtml(MOCK_XSS_REQUEST_BODY);
+
+    assert.ok(
+      !html.includes('<script>alert("xss")</script>'),
+      "Raw script tags in request body must be escaped"
+    );
+    assert.ok(
+      html.includes("&lt;script&gt;"),
+      "Script tags in request body must be HTML-escaped"
+    );
+  });
+
+  test("HTML in request body content type is escaped", () => {
+    const html = buildRequestGroupHtml(MOCK_XSS_REQUEST_BODY);
+
+    assert.ok(
+      !html.includes('<img onerror="alert(1)">'),
+      "Raw HTML in content type hint must be escaped"
+    );
+    assert.ok(
+      html.includes("&lt;img"),
+      "HTML in content type hint must be escaped"
     );
   });
 });

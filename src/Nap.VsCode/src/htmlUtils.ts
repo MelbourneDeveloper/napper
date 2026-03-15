@@ -171,16 +171,26 @@ export const buildLogHtml = (
   });
 };
 
+const buildRequestBodyHtml = (result: RunResult): string => {
+  if (result.requestBody === undefined || result.requestBody === "") {return "";}
+  const formatted = formatBodyHtml(result.requestBody),
+   contentTypeHint = result.requestBodyContentType !== undefined && result.requestBodyContentType !== ""
+    ? `<div class="content-type-hint">${escapeHtml(result.requestBodyContentType)}</div>`
+    : "";
+  return `<div class="subsection"><h4 class="subsection-title">${SECTION_LABEL_REQUEST_BODY}</h4>${contentTypeHint}<pre class="body">${formatted}</pre></div>`;
+};
+
 export const buildRequestGroupHtml = (result: RunResult): string => {
   const urlHtml = buildRequestUrlHtml(result),
    headersRows = buildHeadersTableRows(result.requestHeaders),
    headersHtml = headersRows !== ""
     ? `<div class="subsection"><h4 class="subsection-title">${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${headersRows}</table></div>`
-    : `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`;
+    : `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`,
+   bodyHtml = buildRequestBodyHtml(result);
 
   return buildCollapsibleSection({
     title: SECTION_LABEL_REQUEST,
-    content: `${urlHtml}${headersHtml}`,
+    content: `${urlHtml}${headersHtml}${bodyHtml}`,
     open: false,
   });
 };
@@ -249,6 +259,7 @@ export const SHARED_SECTION_STYLES = `
   .request-url { font-size: 12px; color: var(--vscode-textLink-foreground); word-break: break-all; margin-bottom: 8px; }
   .request-method { font-weight: bold; color: var(--vscode-foreground); }
   .empty-hint { color: var(--vscode-descriptionForeground); font-size: 12px; font-style: italic; }
+  .content-type-hint { color: var(--vscode-descriptionForeground); font-size: 11px; font-style: italic; margin-bottom: 4px; }
   .json-key { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
   .json-string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
   .json-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }

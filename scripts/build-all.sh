@@ -9,17 +9,17 @@ OS=$(uname -s)
 case "$OS" in
   Darwin)
     case "$ARCH" in
-      arm64) NAP_RID="osx-arm64"; VSCE_TARGET="darwin-arm64" ;;
-      x86_64) NAP_RID="osx-x64"; VSCE_TARGET="darwin-x64" ;;
+      arm64) NAP_RID="osx-arm64" ;;
+      x86_64) NAP_RID="osx-x64" ;;
       *) echo "ERROR: Unsupported arch: $ARCH"; exit 1 ;;
     esac ;;
   Linux)
-    NAP_RID="linux-x64"; VSCE_TARGET="linux-x64" ;;
+    NAP_RID="linux-x64" ;;
   *)
     echo "ERROR: Unsupported OS: $OS"; exit 1 ;;
 esac
 
-echo "==> Platform: $NAP_RID / $VSCE_TARGET"
+echo "==> Platform: $NAP_RID"
 
 # ============================================================
 # 1. CLEAN — nuke every build artifact
@@ -86,9 +86,9 @@ echo "==> Extension compiled"
 # ============================================================
 # 4. PACKAGE VSIX
 # ============================================================
-echo "==> Packaging VSIX ($VSCE_TARGET)..."
+echo "==> Packaging VSIX (universal)..."
 
-npx @vscode/vsce package --target "$VSCE_TARGET" --no-dependencies --skip-license
+npx @vscode/vsce package --no-dependencies --skip-license
 
 VSIX_FILE=$(ls -1 *.vsix 2>/dev/null | head -1)
 cd ../..

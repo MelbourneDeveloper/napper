@@ -72,11 +72,11 @@ doesn't. Same for `build-all.sh` which copies to `bin/` then packages.
 
 ## TODO
 
-- [ ] Add `<Version>` property to `Nap.Cli.fsproj`
-- [ ] Add `--version` command to `Program.fs` that prints the assembly version
-- [ ] Add `CLI_REQUIRED_VERSION` constant to `constants.ts` matching the VSIX package version
-- [ ] Add `getCliVersion()` to `cliInstaller.ts` that runs `napper --version` and returns the version string
-- [ ] Update `ensureCliInstalled` in `extension.ts` to check version, re-download if mismatched
-- [ ] Pin download URL to version (`/releases/download/v{ver}/`) instead of `latest`
-- [ ] Fix `build-vsix.sh` — either remove it or fix `.vscodeignore` to include `bin/` when building platform-specific VSIX
-- [ ] Add version verification to `build-cli.sh` and `build-all.sh` after build
+- [x] Add `<Version>` property to `Nap.Cli.fsproj`
+- [x] Add `--version` command to `Program.fs` that prints the assembly version
+- [x] Add `CLI_REQUIRED_VERSION` constant to `constants.ts` matching the VSIX package version
+- [x] Add `getCliVersion()` to `cliInstaller.ts` that runs `napper --version` and returns the version string
+- [x] Update `ensureCliInstalled` in `extension.ts` to check version, re-download if mismatched
+- [x] Pin download URL to version (`/releases/download/v{ver}/`) instead of `latest`
+- [x] Fix `build-vsix.sh` — builds universal VSIX, delegates CLI build to `build-cli.sh`
+- [x] Add version verification to `build-cli.sh` and `build-all.sh` after build
