@@ -198,7 +198,7 @@ const handleSuccess = async (
   ctx.explorer.refresh();
   const doc = await vscode.workspace.openTextDocument(path.join(outDir, generated.playlist));
   await vscode.window.showTextDocument(doc);
-  await vscode.window.showInformationMessage(
+  void vscode.window.showInformationMessage(
     `${OPENAPI_SUCCESS_PREFIX}${generated.files}${OPENAPI_SUCCESS_SUFFIX}`
   );
 };

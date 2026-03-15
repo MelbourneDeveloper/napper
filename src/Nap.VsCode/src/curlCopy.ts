@@ -77,5 +77,5 @@ export const copyAsCurl = async (
 
   const curl = `${CURL_CMD_PREFIX}${method} '${url}'`;
   await vscode.env.clipboard.writeText(curl);
-  await vscode.window.showInformationMessage(MSG_COPIED);
+  void vscode.window.showInformationMessage(MSG_COPIED);
 };

@@ -81,7 +81,7 @@ let envStatusBar: EnvironmentStatusBar;
 let responsePanel: ResponsePanel;
 let playlistPanel: PlaylistPanel;
 let lastResult: RunResult | undefined;
-let lastPlaylistReport: (() => Promise<void>) | undefined;
+let lastPlaylistReport: (() => void) | undefined;
 let logger: Logger;
 
 let installedPath: string | undefined;
@@ -97,17 +97,17 @@ const getCliPath = (): string => {
   return installedPath ?? DEFAULT_CLI_PATH;
 };
 
-const handleInstallResult = async (
+const handleInstallResult = (
   result: { readonly ok: true; readonly value: { readonly cliPath: string } }
     | { readonly ok: false; readonly error: string }
-): Promise<void> => {
+): void => {
   if (result.ok) {
     installedPath = result.value.cliPath;
     logger.info(CLI_INSTALL_COMPLETE_MSG);
     return;
   }
   logger.error(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
-  await vscode.window.showErrorMessage(
+  void vscode.window.showErrorMessage(
     `${CLI_INSTALL_FAILED_MSG}${result.error}`
   );
 };
@@ -126,7 +126,7 @@ const ensureCliInstalled = async (
     { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },
     async () => {
       const result = await installCli(storagePath, process.platform, process.arch);
-      await handleInstallResult(result);
+      handleInstallResult(result);
     }
   );
 };
@@ -163,10 +163,10 @@ const handleStreamResult = (result: RunResult, index: number): void => {
   playlistPanel.addResult(index, result);
 };
 
-const savePlaylistReport = async (
+const savePlaylistReport = (
   playlistFile: string,
   results: readonly RunResult[]
-): Promise<void> => {
+): void => {
   const dir = path.dirname(playlistFile);
   const baseName = path.basename(playlistFile, path.extname(playlistFile));
   const reportPath = path.join(
@@ -175,8 +175,8 @@ const savePlaylistReport = async (
   );
   const html = generatePlaylistReport(baseName, results);
   fs.writeFileSync(reportPath, html, ENCODING_UTF8);
-  await vscode.env.openExternal(vscode.Uri.file(reportPath));
-  await vscode.window.showInformationMessage(
+  void vscode.env.openExternal(vscode.Uri.file(reportPath));
+  void vscode.window.showInformationMessage(
     `${REPORT_SAVED_MSG}${path.basename(reportPath)}`
   );
 };
@@ -224,12 +224,12 @@ const awaitStream = async (
   });
 };
 
-const handleStreamError = async (
+const handleStreamError = (
   state: StreamState
-): Promise<void> => {
+): void => {
   logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${state.streamError}`);
   playlistPanel.showError(state.streamError ?? "");
-  await vscode.window.showErrorMessage(
+  void vscode.window.showErrorMessage(
     `${CLI_ERROR_PREFIX}${state.streamError}`
   );
 };
@@ -241,12 +241,11 @@ const handleStreamSuccess = (
   logger.info(LOG_MSG_STREAM_DONE);
   playlistPanel.showComplete(state.collectedResults);
   const doSave = (): void => {
-    savePlaylistReport(fileUri.fsPath, state.collectedResults)
-      .catch(() => undefined);
+    savePlaylistReport(fileUri.fsPath, state.collectedResults);
   };
   playlistPanel.onSaveReport = doSave;
-  lastPlaylistReport = async (): Promise<void> => {
-    await savePlaylistReport(fileUri.fsPath, state.collectedResults);
+  lastPlaylistReport = (): void => {
+    savePlaylistReport(fileUri.fsPath, state.collectedResults);
   };
 };
 
@@ -260,7 +259,7 @@ const runPlaylistStreaming = async (
   await awaitStream(fileUri, cwd, state);
   statusMsg.dispose();
   if (state.streamError !== undefined && state.collectedResults.length === 0) {
-    await handleStreamError(state);
+    handleStreamError(state);
   } else {
     handleStreamSuccess(state, fileUri);
   }
@@ -293,7 +292,7 @@ const runSingleFile = async (
   statusMsg.dispose();
   if (!result.ok) {
     logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${result.error}`);
-    await vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${result.error}`);
+    void vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${result.error}`);
     return;
   }
   handleCliResults(result.value);
@@ -304,7 +303,7 @@ const runFile = async (
 ): Promise<void> => {
   const fileUri = resolveFileUri(arg);
   if (fileUri === undefined) {
-    await vscode.window.showWarningMessage(MSG_NO_FILE_SELECTED);
+    void vscode.window.showWarningMessage(MSG_NO_FILE_SELECTED);
     return;
   }
   const cwd = getWorkspacePath();
@@ -322,11 +321,11 @@ const runAll = async (): Promise<void> => {
   await runFile(vscode.Uri.file(cwd));
 };
 
-const openResponse = async (): Promise<void> => {
+const openResponse = (): void => {
   if (lastResult !== undefined) {
     responsePanel.show(lastResult, getResponseColumn());
   } else {
-    await vscode.window.showInformationMessage(MSG_NO_RESPONSE);
+    void vscode.window.showInformationMessage(MSG_NO_RESPONSE);
   }
 };
 
@@ -367,9 +366,9 @@ const registerRunCommands = (context: vscode.ExtensionContext): void => {
     vscode.commands.registerCommand(CMD_RUN_ALL, runAll),
     vscode.commands.registerCommand(CMD_COPY_CURL, copyAsCurl),
     vscode.commands.registerCommand(CMD_OPEN_RESPONSE, openResponse),
-    vscode.commands.registerCommand(CMD_SAVE_REPORT, async () => {
+    vscode.commands.registerCommand(CMD_SAVE_REPORT, () => {
       if (lastPlaylistReport !== undefined) {
-        await lastPlaylistReport();
+        lastPlaylistReport();
       }
     })
   );

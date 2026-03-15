@@ -139,7 +139,7 @@ export default tseslint.config(
       "no-implied-eval": "error",
       "no-new-func": "error",
       "no-script-url": "error",
-      "no-void": "error",
+      "no-void": ["error", { "allowAsStatement": true }],
       "no-with": "error",
       "no-labels": "error",
       "no-label-var": "error",
