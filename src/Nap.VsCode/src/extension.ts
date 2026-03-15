@@ -111,19 +111,24 @@ const getCliPath = (): string => {
   );
 },
 
+ isVersionMatch = async (candidate: string): Promise<boolean> => {
+  const versionResult = await getCliVersion(candidate);
+  if (versionResult.ok && versionResult.value === CLI_REQUIRED_VERSION) {
+    installedPath = candidate;
+    return true;
+  }
+  logger.info(CLI_VERSION_MISMATCH_MSG);
+  return false;
+},
+
  ensureCliInstalled = async (
   storageUri: vscode.Uri | undefined
 ): Promise<void> => {
   if (storageUri === undefined) { return; }
   const storagePath = storageUri.fsPath,
    candidate = installedCliPath(storagePath, process.platform);
-  if (isCliInstalled(candidate)) {
-    const versionResult = await getCliVersion(candidate);
-    if (versionResult.ok && versionResult.value === CLI_REQUIRED_VERSION) {
-      installedPath = candidate;
-      return;
-    }
-    logger.info(CLI_VERSION_MISMATCH_MSG);
+  if (isCliInstalled(candidate) && await isVersionMatch(candidate)) {
+    return;
   }
   await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },

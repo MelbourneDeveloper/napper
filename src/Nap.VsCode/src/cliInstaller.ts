@@ -74,7 +74,7 @@ export const installedCliPath = (
 export const isCliInstalled = (cliPath: string): boolean =>
   fs.existsSync(cliPath);
 
-export const getCliVersion = (
+export const getCliVersion = async (
   cliPath: string
 ): Promise<Result<string, string>> =>
   new Promise((resolve) => {
