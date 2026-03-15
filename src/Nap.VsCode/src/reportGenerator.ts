@@ -4,7 +4,7 @@
 
 import * as path from "path";
 import type { RunResult } from "./types";
-import { escapeHtml, highlightJson } from "./htmlUtils";
+import { escapeHtml, formatBodyHtml } from "./htmlUtils";
 import { REPORT_STYLES } from "./reportStyles";
 import {
   NAPPER_URL,
@@ -12,7 +12,10 @@ import {
   PERCENTAGE_MULTIPLIER,
   REPORT_FOOTER_GENERATED_BY,
   REPORT_FOOTER_MADE_BY,
+  SECTION_LABEL_REQUEST,
+  SECTION_LABEL_REQUEST_BODY,
   SECTION_LABEL_REQUEST_HEADERS,
+  SECTION_LABEL_RESPONSE,
   SECTION_LABEL_RESPONSE_HEADERS,
 } from "./constants";
 
@@ -60,29 +63,15 @@ const buildReportAssertionRow = (a: {
     .join("\n");
 },
 
- buildReportRequestHeaders = (
+ buildReportHeadersSection = (
+  title: string,
   headers: Readonly<Record<string, string>> | undefined
 ): string => {
   const rows = buildReportHeadersTable(headers);
   if (!rows) {return "";}
 
   return `<div class="detail-section">
-    <div class="detail-section-title">${SECTION_LABEL_REQUEST_HEADERS}</div>
-    <table class="headers-table">
-      <thead><tr><th>Header</th><th>Value</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
-},
-
- buildReportHeaders = (
-  headers: Readonly<Record<string, string>> | undefined
-): string => {
-  const rows = buildReportHeadersTable(headers);
-  if (!rows) {return "";}
-
-  return `<div class="detail-section">
-    <div class="detail-section-title">${SECTION_LABEL_RESPONSE_HEADERS}</div>
+    <div class="detail-section-title">${title}</div>
     <table class="headers-table">
       <thead><tr><th>Header</th><th>Value</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -101,22 +90,84 @@ const buildReportAssertionRow = (a: {
   </div>`;
 },
 
- formatBodyForReport = (body: string): string => {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    return highlightJson(parsed, 0);
-  } catch {
-    return escapeHtml(body);
-  }
-},
-
  buildReportBody = (body: string | undefined): string => {
   if (body === undefined || body === "") {return "";}
 
   return `<div class="detail-section">
     <div class="detail-section-title">Response Body</div>
-    <pre class="code-block">${formatBodyForReport(body)}</pre>
+    <pre class="code-block">${formatBodyHtml(body)}</pre>
   </div>`;
+},
+
+ buildReportRequestUrl = (result: RunResult): string =>
+  result.requestUrl !== undefined && result.requestUrl !== ""
+    ? `<div class="request-url-line"><span class="request-method-tag">${escapeHtml(result.requestMethod ?? "")}</span> ${escapeHtml(result.requestUrl)}</div>`
+    : "",
+
+ buildReportRequestBody = (result: RunResult): string => {
+  if (result.requestBody === undefined || result.requestBody === "") {return "";}
+  const formatted = formatBodyHtml(result.requestBody),
+   contentTypeHint = result.requestBodyContentType !== undefined && result.requestBodyContentType !== ""
+    ? `<div class="content-type-hint">${escapeHtml(result.requestBodyContentType)}</div>`
+    : "";
+  return `<div class="detail-section">
+    <div class="detail-section-title">${SECTION_LABEL_REQUEST_BODY}</div>
+    ${contentTypeHint}
+    <pre class="code-block">${formatted}</pre>
+  </div>`;
+},
+
+ buildReportCollapsibleGroup = ({
+  title,
+  content,
+  open,
+}: {
+  readonly title: string;
+  readonly content: string;
+  readonly open: boolean;
+}): string =>
+  `<details class="report-group"${open ? " open" : ""}>
+    <summary class="report-group-summary"><span class="report-group-title">${title}</span><span class="report-group-chevron">&#x25B6;</span></summary>
+    <div class="report-group-content">${content}</div>
+  </details>`,
+
+ buildReportRequestGroup = (result: RunResult): string => {
+  const urlHtml = buildReportRequestUrl(result),
+   headersHtml = buildReportHeadersSection(SECTION_LABEL_REQUEST_HEADERS, result.requestHeaders),
+   bodyHtml = buildReportRequestBody(result),
+   content = `${urlHtml}${headersHtml}${bodyHtml}`;
+
+  return buildReportCollapsibleGroup({
+    title: SECTION_LABEL_REQUEST,
+    content: content !== "" ? content : '<span class="empty-hint">No request details</span>',
+    open: false,
+  });
+},
+
+ buildReportResponseGroup = (result: RunResult): string => {
+  const parts: string[] = [];
+
+  if (result.assertions.length > 0) {
+    parts.push(buildReportAssertions(result));
+  }
+
+  const headersHtml = buildReportHeadersSection(SECTION_LABEL_RESPONSE_HEADERS, result.headers);
+  if (headersHtml !== "") {
+    parts.push(headersHtml);
+  }
+
+  const bodyHtml = buildReportBody(result.body);
+  if (bodyHtml !== "") {
+    parts.push(bodyHtml);
+  }
+
+  if (parts.length === 0) {return "";}
+
+  return buildReportCollapsibleGroup({
+    title: SECTION_LABEL_RESPONSE,
+    content: parts.join("\n"),
+    open: true,
+  });
 },
 
  buildStepCardBadges = (result: RunResult, cls: string, duration: string): string => {
@@ -186,10 +237,8 @@ const buildReportAssertionRow = (a: {
  buildStepCardDetail = (result: RunResult): string =>
   `${buildStepCardErrorHtml(result.error)}
       ${buildReportLog(result.log)}
-      ${buildReportAssertions(result)}
-      ${buildReportRequestHeaders(result.requestHeaders)}
-      ${buildReportHeaders(result.headers)}
-      ${buildReportBody(result.body)}`,
+      ${buildReportRequestGroup(result)}
+      ${buildReportResponseGroup(result)}`,
 
  buildStepCard = (result: RunResult, index: number): string => {
   const props = buildStepCardProps(result),

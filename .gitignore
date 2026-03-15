@@ -39,3 +39,5 @@ examples/httpbin/advanced-report.html
 
 # Cached test specs
 tests/Nap.Core.Tests/.spec-cache/
+
+examples/httpbin/all-methods-report.html
