@@ -1,39 +1,39 @@
 import * as assert from "assert";
 import { createFileNode, createFolderNode } from "../../explorerProvider";
-import { RunState, type RunResult } from "../../types";
+import { type RunResult, RunState } from "../../types";
 import {
-  CONTEXT_REQUEST_FILE,
-  CONTEXT_PLAYLIST,
   CONTEXT_FOLDER,
+  CONTEXT_PLAYLIST,
+  CONTEXT_REQUEST_FILE,
 } from "../../constants";
 
-const FAKE_NAP_PATH = "/workspace/test.nap";
-const FAKE_NAPLIST_PATH = "/workspace/smoke.naplist";
-const FAKE_FOLDER_PATH = "/workspace/petstore";
+const FAKE_NAP_PATH = "/workspace/test.nap",
+ FAKE_NAPLIST_PATH = "/workspace/smoke.naplist",
+ FAKE_FOLDER_PATH = "/workspace/petstore",
 
-const GET_CONTENT = "[request]\nmethod = GET\nurl = https://example.com\n";
-const POST_CONTENT = "[request]\nmethod = POST\nurl = https://example.com\n";
-const SHORTHAND_GET_CONTENT = "GET https://example.com\n";
-const SHORTHAND_DELETE_CONTENT = "DELETE https://example.com/1\n";
-const NO_METHOD_CONTENT = "[request]\nurl = https://example.com\n";
+ GET_CONTENT = "[request]\nmethod = GET\nurl = https://example.com\n",
+ POST_CONTENT = "[request]\nmethod = POST\nurl = https://example.com\n",
+ SHORTHAND_GET_CONTENT = "GET https://example.com\n",
+ SHORTHAND_DELETE_CONTENT = "DELETE https://example.com/1\n",
+ NO_METHOD_CONTENT = "[request]\nurl = https://example.com\n",
 
-const makePassedResult = (file: string): RunResult => ({
+ makePassedResult = (file: string): RunResult => ({
   file,
   passed: true,
   statusCode: 200,
   duration: 42,
   assertions: [{ target: "status", passed: true, expected: "200", actual: "200" }],
-});
+}),
 
-const makeFailedResult = (file: string): RunResult => ({
+ makeFailedResult = (file: string): RunResult => ({
   file,
   passed: false,
   statusCode: 404,
   duration: 31,
   assertions: [{ target: "status", passed: false, expected: "200", actual: "404" }],
-});
+}),
 
-const makeErrorResult = (file: string): RunResult => ({
+ makeErrorResult = (file: string): RunResult => ({
   file,
   passed: false,
   error: "Connection refused",
@@ -42,8 +42,8 @@ const makeErrorResult = (file: string): RunResult => ({
 
 suite("explorerProvider — createFileNode", () => {
   test("idle state when no results exist", () => {
-    const emptyResults = new Map<string, RunResult>();
-    const node = createFileNode(FAKE_NAP_PATH, GET_CONTENT, emptyResults);
+    const emptyResults = new Map<string, RunResult>(),
+     node = createFileNode(FAKE_NAP_PATH, GET_CONTENT, emptyResults);
 
     assert.strictEqual(node.runState, RunState.Idle, "should be Idle with no results");
     assert.strictEqual(node.isDirectory, false);
@@ -75,8 +75,8 @@ suite("explorerProvider — createFileNode", () => {
   });
 
   test("result for different file does not affect this node", () => {
-    const otherPath = "/workspace/other.nap";
-    const results = new Map<string, RunResult>();
+    const otherPath = "/workspace/other.nap",
+     results = new Map<string, RunResult>();
     results.set(otherPath, makePassedResult(otherPath));
     const node = createFileNode(FAKE_NAP_PATH, GET_CONTENT, results);
 
@@ -174,8 +174,8 @@ suite("explorerProvider — createFileNode", () => {
 
 suite("explorerProvider — createFolderNode", () => {
   test("folder node is always idle", () => {
-    const child = createFileNode(FAKE_NAP_PATH, GET_CONTENT, new Map());
-    const folder = createFolderNode(FAKE_FOLDER_PATH, [child]);
+    const child = createFileNode(FAKE_NAP_PATH, GET_CONTENT, new Map()),
+     folder = createFolderNode(FAKE_FOLDER_PATH, [child]);
 
     assert.strictEqual(folder.runState, RunState.Idle);
     assert.strictEqual(folder.isDirectory, true);
@@ -188,9 +188,9 @@ suite("explorerProvider — createFolderNode", () => {
   });
 
   test("folder children are preserved", () => {
-    const child1 = createFileNode(FAKE_NAP_PATH, GET_CONTENT, new Map());
-    const child2 = createFileNode("/workspace/other.nap", POST_CONTENT, new Map());
-    const folder = createFolderNode(FAKE_FOLDER_PATH, [child1, child2]);
+    const child1 = createFileNode(FAKE_NAP_PATH, GET_CONTENT, new Map()),
+     child2 = createFileNode("/workspace/other.nap", POST_CONTENT, new Map()),
+     folder = createFolderNode(FAKE_FOLDER_PATH, [child1, child2]);
 
     assert.strictEqual(folder.children?.length, 2);
   });

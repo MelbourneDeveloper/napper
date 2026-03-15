@@ -7,62 +7,61 @@ import * as fs from "fs";
 import { execFile } from "child_process";
 import type { ExplorerAdapter } from "./explorerAdapter";
 import type { Logger } from "./logger";
-import type { Result } from "./types";
-import { ok, err } from "./types";
+import { type Result, err, ok } from "./types";
 import * as https from "https";
 import type { IncomingMessage } from "http";
 import {
-  OPENAPI_PICK_FILE,
-  OPENAPI_PICK_FOLDER,
-  OPENAPI_FILTER_LABEL,
-  OPENAPI_FILE_EXTENSIONS,
-  OPENAPI_SUCCESS_PREFIX,
-  OPENAPI_SUCCESS_SUFFIX,
-  OPENAPI_ERROR_PREFIX,
-  OPENAPI_URL_PROMPT,
-  OPENAPI_URL_PLACEHOLDER,
-  OPENAPI_DOWNLOAD_FAILED_PREFIX,
-  OPENAPI_DOWNLOADING,
-  HTTP_STATUS_REDIRECT_MIN,
-  HTTP_STATUS_CLIENT_ERROR_MIN,
-  LOG_MSG_OPENAPI_IMPORT,
-  DEFAULT_CLI_PATH,
-  CONFIG_SECTION,
-  CONFIG_CLI_PATH,
   CLI_CMD_GENERATE,
-  CLI_SUBCMD_OPENAPI,
   CLI_FLAG_OUTPUT,
-  CLI_OUTPUT_JSON,
   CLI_FLAG_OUTPUT_DIR,
-  CLI_SPAWN_FAILED_PREFIX,
+  CLI_OUTPUT_JSON,
   CLI_PARSE_FAILED_PREFIX,
-  OPENAPI_AI_CHOICE_TITLE,
+  CLI_SPAWN_FAILED_PREFIX,
+  CLI_SUBCMD_OPENAPI,
+  CONFIG_CLI_PATH,
+  CONFIG_SECTION,
+  DEFAULT_CLI_PATH,
+  HTTP_STATUS_CLIENT_ERROR_MIN,
+  HTTP_STATUS_REDIRECT_MIN,
+  LOG_MSG_OPENAPI_IMPORT,
+  NAPLIST_EXTENSION,
+  NAP_EXTENSION,
   OPENAPI_AI_CHOICE_BASIC,
   OPENAPI_AI_CHOICE_ENHANCED,
-  OPENAPI_AI_PROGRESS_TITLE,
-  OPENAPI_AI_NO_COPILOT,
+  OPENAPI_AI_CHOICE_TITLE,
   OPENAPI_AI_COPILOT_FAMILY,
   OPENAPI_AI_ENRICHING_ASSERTIONS,
   OPENAPI_AI_ENRICHING_TEST_DATA,
+  OPENAPI_AI_NO_COPILOT,
+  OPENAPI_AI_PROGRESS_TITLE,
   OPENAPI_AI_REORDERING_PLAYLIST,
-  NAP_EXTENSION,
-  NAPLIST_EXTENSION,
+  OPENAPI_DOWNLOADING,
+  OPENAPI_DOWNLOAD_FAILED_PREFIX,
+  OPENAPI_ERROR_PREFIX,
+  OPENAPI_FILE_EXTENSIONS,
+  OPENAPI_FILTER_LABEL,
+  OPENAPI_PICK_FILE,
+  OPENAPI_PICK_FOLDER,
+  OPENAPI_SUCCESS_PREFIX,
+  OPENAPI_SUCCESS_SUFFIX,
+  OPENAPI_URL_PLACEHOLDER,
+  OPENAPI_URL_PROMPT,
   SECTION_REQUEST_BODY,
 } from "./constants";
 import {
   type GeneratedFile,
   type OperationSummary,
-  buildAssertionPrompt,
-  buildTestDataPrompt,
-  buildPlaylistOrderPrompt,
-  getAssertionSystemPrompt,
-  getTestDataSystemPrompt,
-  getPlaylistSystemPrompt,
-  parseAssertionResponse,
-  parseTestDataResponse,
-  parsePlaylistOrderResponse,
   applyAssertionEnrichments,
   applyTestDataEnrichments,
+  buildAssertionPrompt,
+  buildPlaylistOrderPrompt,
+  buildTestDataPrompt,
+  getAssertionSystemPrompt,
+  getPlaylistSystemPrompt,
+  getTestDataSystemPrompt,
+  parseAssertionResponse,
+  parsePlaylistOrderResponse,
+  parseTestDataResponse,
   reorderPlaylistSteps,
 } from "./openApiAiEnhancer";
 
@@ -103,80 +102,80 @@ interface EnrichmentContext {
   readonly logger: Logger;
 }
 
-const MAX_PREVIEW_LENGTH = 200;
-const NAME_PREFIX = "name = ";
-const BODY_PREFIX = "body.";
-const EXISTS_SUFFIX = " exists";
+const MAX_PREVIEW_LENGTH = 200,
+ NAME_PREFIX = "name = ",
+ BODY_PREFIX = "body.",
+ EXISTS_SUFFIX = " exists",
 
 // ─── CLI integration ────────────────────────────────────────
 
-const resolveCliPath = (): string => {
+ resolveCliPath = (): string => {
   const configured = vscode.workspace
     .getConfiguration(CONFIG_SECTION)
     .get<string>(CONFIG_CLI_PATH, "");
   return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
-};
+},
 
-const pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
+ pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
   vscode.window.showOpenDialog({
     canSelectFiles: true,
     canSelectFolders: false,
     canSelectMany: false,
     filters: { [OPENAPI_FILTER_LABEL]: [...OPENAPI_FILE_EXTENSIONS] },
     title: OPENAPI_PICK_FILE,
-  });
+  }),
 
-const defaultWorkspaceUri = (): { readonly defaultUri: vscode.Uri } | Record<string, never> => {
+ defaultWorkspaceUri = (): { readonly defaultUri: vscode.Uri } | Record<string, never> => {
   const uri = vscode.workspace.workspaceFolders?.[0]?.uri;
   return uri !== undefined ? { defaultUri: uri } : {};
-};
+},
 
-const pickOutputFolder = (): Thenable<readonly vscode.Uri[] | undefined> =>
+ pickOutputFolder = (): Thenable<readonly vscode.Uri[] | undefined> =>
   vscode.window.showOpenDialog({
     canSelectFiles: false,
     canSelectFolders: true,
     canSelectMany: false,
     title: OPENAPI_PICK_FOLDER,
     ...defaultWorkspaceUri(),
-  });
+  }),
 
-const pickPaths = async (): Promise<PickedPaths | undefined> => {
-  const specFiles = await pickSpecFile();
-  const specFile = specFiles?.[0];
+ pickPaths = async (): Promise<PickedPaths | undefined> => {
+  const specFiles = await pickSpecFile(),
+   specFile = specFiles?.[0];
   if (specFile === undefined) { return undefined; }
-  const outputFolder = await pickOutputFolder();
-  const outFolder = outputFolder?.[0];
+  const outputFolder = await pickOutputFolder(),
+   outFolder = outputFolder?.[0];
   if (outFolder === undefined) { return undefined; }
   return { specFile, outFolder };
-};
+},
 
-const buildGenerateArgs = (
+ buildGenerateArgs = (
   specPath: string,
   outDir: string
 ): readonly string[] => [
   CLI_CMD_GENERATE, CLI_SUBCMD_OPENAPI, specPath,
   CLI_FLAG_OUTPUT_DIR, outDir, CLI_FLAG_OUTPUT, CLI_OUTPUT_JSON,
-];
+],
 
-const parseGenerateOutput = (
+ parseGenerateOutput = (
   stdout: string
 ): Result<GenerateResult, string> => {
   try {
-    const parsed: unknown = JSON.parse(stdout);
-    return ok(parsed as GenerateResult);
+    const parsed = JSON.parse(stdout) as GenerateResult;
+    return ok(parsed);
   } catch {
     return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
-};
+},
 
-const callCliGenerate = async (
+ callCliGenerate = async (
   specPath: string,
   outDir: string
 ): Promise<Result<GenerateResult, string>> =>
-  await new Promise((resolve) => {
+  new Promise((resolve) => {
     const cliPath = resolveCliPath();
     execFile(
-      cliPath, buildGenerateArgs(specPath, outDir) as string[],
+      cliPath, [...buildGenerateArgs(specPath, outDir)],
       { timeout: 30_000, env: { ...process.env } },
       (error, stdout, stderr) => {
         if (error !== null && stdout.length === 0) {
@@ -187,9 +186,9 @@ const callCliGenerate = async (
         resolve(parseGenerateOutput(stdout));
       }
     );
-  });
+  }),
 
-const handleSuccess = async (
+ handleSuccess = async (
   outDir: string,
   generated: GenerateResult,
   ctx: ImportContext
@@ -201,40 +200,40 @@ const handleSuccess = async (
   void vscode.window.showInformationMessage(
     `${OPENAPI_SUCCESS_PREFIX}${generated.files}${OPENAPI_SUCCESS_SUFFIX}`
   );
-};
+},
 
 // ─── AI choice ──────────────────────────────────────────────
 
-const askAiChoice = async (): Promise<string | undefined> => {
+ askAiChoice = async (): Promise<string | undefined> => {
   const picked = await vscode.window.showQuickPick(
     [{ label: OPENAPI_AI_CHOICE_BASIC }, { label: OPENAPI_AI_CHOICE_ENHANCED }],
     { title: OPENAPI_AI_CHOICE_TITLE, placeHolder: OPENAPI_AI_CHOICE_TITLE }
   );
   return picked?.label;
-};
+},
 
 // ─── Language model helpers ─────────────────────────────────
 
-const selectCopilotModel = async (): Promise<vscode.LanguageModelChat | undefined> => {
+ selectCopilotModel = async (): Promise<vscode.LanguageModelChat | undefined> => {
   const models = await vscode.lm.selectChatModels({ family: OPENAPI_AI_COPILOT_FAMILY });
   return models[0];
-};
+},
 
-const sendLmRequest = async (
+ sendLmRequest = async (
   params: LmRequestParams
 ): Promise<string> => {
   const messages = [
     vscode.LanguageModelChatMessage.User(`${params.systemPrompt}\n\n${params.userPrompt}`),
-  ];
-  const response = await params.model.sendRequest(messages, {}, params.token);
-  const parts: string[] = [];
+  ],
+   response = await params.model.sendRequest(messages, {}, params.token),
+   parts: string[] = [];
   for await (const chunk of response.text) { parts.push(chunk); }
   return parts.join("");
-};
+},
 
 // ─── File reading helpers ───────────────────────────────────
 
-const collectNapFiles = (
+ collectNapFiles = (
   dir: string,
   baseDir: string,
   out: GeneratedFile[]
@@ -246,26 +245,26 @@ const collectNapFiles = (
       out.push({ fileName: path.relative(baseDir, full), content: fs.readFileSync(full, "utf-8") });
     }
   }
-};
+},
 
-const readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
+ readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
   const files: GeneratedFile[] = [];
   collectNapFiles(outDir, outDir, files);
   return files;
-};
+},
 
 // ─── Operation extraction ───────────────────────────────────
 
-const HTTP_METHOD_PREFIXES = ["GET ", "POST ", "PUT ", "PATCH ", "DELETE ", "HEAD ", "OPTIONS "] as const;
+ HTTP_METHOD_PREFIXES = ["GET ", "POST ", "PUT ", "PATCH ", "DELETE ", "HEAD ", "OPTIONS "] as const,
 
-const isRequestLine = (line: string): boolean =>
-  HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix));
+ isRequestLine = (line: string): boolean =>
+  HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix)),
 
-const extractSummary = (file: GeneratedFile): OperationSummary => {
-  const lines = file.content.split("\n");
-  const nameLine = lines.find((l) => l.startsWith(NAME_PREFIX));
-  const requestLine = lines.find(isRequestLine);
-  const name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
+ extractSummary = (file: GeneratedFile): OperationSummary => {
+  const lines = file.content.split("\n"),
+   nameLine = lines.find((l) => l.startsWith(NAME_PREFIX)),
+   requestLine = lines.find(isRequestLine),
+   name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
   return {
     operationId: name,
     method: requestLine?.split(" ")[0] ?? "GET",
@@ -276,24 +275,24 @@ const extractSummary = (file: GeneratedFile): OperationSummary => {
       .map((l) => l.slice(BODY_PREFIX.length, l.indexOf(EXISTS_SUFFIX))),
     hasRequestBody: file.content.includes(SECTION_REQUEST_BODY),
   };
-};
+},
 
 // ─── Enrichment steps ───────────────────────────────────────
 
-const enrichAssertionStep = async (
+ enrichAssertionStep = async (
   step: EnrichStepParams,
   logger: Logger
 ): Promise<readonly GeneratedFile[]> => {
   const response = await sendLmRequest({
     ...step.lm, systemPrompt: getAssertionSystemPrompt(),
     userPrompt: buildAssertionPrompt(step.operations),
-  });
-  const result = parseAssertionResponse(response);
+  }),
+   result = parseAssertionResponse(response);
   if (!result.ok) { logger.info(result.error); return step.files; }
   return applyAssertionEnrichments(step.files, result.value);
-};
+},
 
-const enrichTestDataStep = async (
+ enrichTestDataStep = async (
   step: EnrichStepParams,
   logger: Logger
 ): Promise<readonly GeneratedFile[]> => {
@@ -301,48 +300,48 @@ const enrichTestDataStep = async (
   if (prompt.length === 0) { return step.files; }
   const response = await sendLmRequest({
     ...step.lm, systemPrompt: getTestDataSystemPrompt(), userPrompt: prompt,
-  });
-  const result = parseTestDataResponse(response);
+  }),
+   result = parseTestDataResponse(response);
   if (!result.ok) { logger.info(result.error); return step.files; }
   return applyTestDataEnrichments(step.files, result.value);
-};
+},
 
-const reorderPlaylistStep = async (
+ reorderPlaylistStep = async (
   params: LmRequestParams,
   outDir: string,
   fileNames: readonly string[]
 ): Promise<void> => {
-  const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION));
-  const first = naplists[0];
+  const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION)),
+   [first] = naplists;
   if (first === undefined) { return; }
-  const playlistPath = path.join(outDir, first);
-  const response = await sendLmRequest({
+  const playlistPath = path.join(outDir, first),
+   response = await sendLmRequest({
     ...params, systemPrompt: getPlaylistSystemPrompt(),
     userPrompt: buildPlaylistOrderPrompt(fileNames),
-  });
-  const result = parsePlaylistOrderResponse(response);
+  }),
+   result = parsePlaylistOrderResponse(response);
   if (!result.ok) { return; }
   fs.writeFileSync(playlistPath, reorderPlaylistSteps(
     fs.readFileSync(playlistPath, "utf-8"), result.value
   ), "utf-8");
-};
+},
 
-const writeEnrichedFiles = (
+ writeEnrichedFiles = (
   outDir: string,
   files: readonly GeneratedFile[]
 ): void => {
   for (const file of files) {
     fs.writeFileSync(path.join(outDir, file.fileName), file.content, "utf-8");
   }
-};
+},
 
 // ─── AI enrichment orchestrator ─────────────────────────────
 
-const executeEnrichmentSteps = async (
+ executeEnrichmentSteps = async (
   ctx: EnrichmentContext
 ): Promise<void> => {
-  const files = readGeneratedFiles(ctx.outDir);
-  const operations = files.map(extractSummary);
+  const files = readGeneratedFiles(ctx.outDir),
+   operations = files.map(extractSummary);
 
   ctx.progress.report({ message: OPENAPI_AI_ENRICHING_ASSERTIONS });
   let enriched = await enrichAssertionStep({ lm: ctx.baseParams, operations, files }, ctx.logger);
@@ -377,12 +376,12 @@ export const runAiEnrichment = async (
 // ─── URL download ───────────────────────────────────────────
 
 const isRedirect = (code: number): boolean =>
-  code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN;
+  code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN,
 
-const isClientError = (code: number): boolean =>
-  code >= HTTP_STATUS_CLIENT_ERROR_MIN;
+ isClientError = (code: number): boolean =>
+  code >= HTTP_STATUS_CLIENT_ERROR_MIN,
 
-const collectBody = (
+ collectBody = (
   res: IncomingMessage,
   resolve: (r: Result<string, string>) => void
 ): void => {
@@ -394,7 +393,7 @@ const collectBody = (
 
 // Use function declaration for hoisting (recursive redirect)
 export async function downloadSpec(url: string): Promise<Result<string, string>> {
-  return await new Promise((resolve) => {
+  return new Promise((resolve) => {
     https.get(url, (res) => {
       const status = res.statusCode ?? 0;
       if (isRedirect(status) && res.headers.location !== undefined) {
@@ -410,7 +409,7 @@ export async function downloadSpec(url: string): Promise<Result<string, string>>
 }
 
 const askForUrl = async (): Promise<string | undefined> =>
-  await vscode.window.showInputBox({
+  vscode.window.showInputBox({
     prompt: OPENAPI_URL_PROMPT,
     placeHolder: OPENAPI_URL_PLACEHOLDER,
     ignoreFocusOut: true,
@@ -450,12 +449,12 @@ export const importOpenApiFromUrl = async (
 ): Promise<void> => {
   const url = await askForUrl();
   if (url === undefined || url.length === 0) { return; }
-  const outFolder = await pickOutputFolder();
-  const outDir = outFolder?.[0]?.fsPath;
+  const outFolder = await pickOutputFolder(),
+   outDir = outFolder?.[0]?.fsPath;
   if (outDir === undefined) { return; }
   const specResult = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: OPENAPI_DOWNLOADING, cancellable: false },
-    async () => await downloadSpec(url)
+    async () => downloadSpec(url)
   );
   if (!specResult.ok) {
     await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${specResult.error}`);

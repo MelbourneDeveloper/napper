@@ -3,14 +3,14 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import {
   activateExtension,
-  sleep,
-  getFixturePath,
   getExtensionPath,
+  getFixturePath,
+  sleep,
 } from "../helpers/helpers";
 import {
-  CONFIG_SECTION,
-  CONFIG_DEFAULT_ENV,
   CMD_SWITCH_ENV,
+  CONFIG_DEFAULT_ENV,
+  CONFIG_SECTION,
   NAPENV_EXTENSION,
 } from "../../constants";
 
@@ -38,8 +38,8 @@ suite("Environment Switching", () => {
   });
 
   test(".napenv file contains environment variables", () => {
-    const envPath = getFixturePath(`petstore/${NAPENV_EXTENSION}`);
-    const content = fs.readFileSync(envPath, "utf-8");
+    const envPath = getFixturePath(`petstore/${NAPENV_EXTENSION}`),
+     content = fs.readFileSync(envPath, "utf-8");
     assert.ok(
       content.includes("baseUrl"),
       ".napenv should define baseUrl variable"
@@ -51,8 +51,8 @@ suite("Environment Switching", () => {
   });
 
   test("configuration property for defaultEnvironment is readable", () => {
-    const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    const envValue = config.get<string>(CONFIG_DEFAULT_ENV);
+    const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
+     envValue = config.get<string>(CONFIG_DEFAULT_ENV);
     assert.ok(
       envValue !== undefined,
       "defaultEnvironment config should be readable (may be empty string)"
@@ -68,17 +68,17 @@ suite("Environment Switching", () => {
   });
 
   test("package.json declares defaultEnvironment configuration", () => {
-    const packageJsonPath = getExtensionPath("package.json");
-    const raw = fs.readFileSync(packageJsonPath, "utf-8");
-    const packageJson = JSON.parse(raw) as {
+    const packageJsonPath = getExtensionPath("package.json"),
+     raw = fs.readFileSync(packageJsonPath, "utf-8"),
+     packageJson = JSON.parse(raw) as {
       contributes: {
         configuration: {
           properties: Record<string, { type: string; default: string }>;
         };
       };
-    };
+    },
 
-    const envProp =
+     envProp =
       packageJson.contributes.configuration.properties["napper.defaultEnvironment"];
     assert.ok(envProp, "defaultEnvironment property should exist");
     assert.strictEqual(

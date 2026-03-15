@@ -4,14 +4,14 @@
 import * as vscode from "vscode";
 import { detectEnvironments } from "./environmentSwitcher";
 import {
-  NAPENV_GLOB,
-  CONFIG_SECTION,
-  CONFIG_DEFAULT_ENV,
-  STATUS_BAR_PREFIX,
-  STATUS_BAR_NO_ENV,
-  STATUS_BAR_PRIORITY,
   CMD_SWITCH_ENV,
+  CONFIG_DEFAULT_ENV,
+  CONFIG_SECTION,
+  NAPENV_GLOB,
   PROMPT_SELECT_ENV,
+  STATUS_BAR_NO_ENV,
+  STATUS_BAR_PREFIX,
+  STATUS_BAR_PRIORITY,
 } from "./constants";
 
 export class EnvironmentStatusBar implements vscode.Disposable {
@@ -51,15 +51,15 @@ export class EnvironmentStatusBar implements vscode.Disposable {
     const files = await vscode.workspace.findFiles(
       NAPENV_GLOB,
       "**/node_modules/**"
-    );
+    ),
 
-    const envNames = detectEnvironments(files.map((f) => f.fsPath));
-    const items = envNames.map((name) => ({
+     envNames = detectEnvironments(files.map((f) => f.fsPath)),
+     items = envNames.map((name) => ({
       label: name,
       picked: name === this._currentEnv,
-    }));
+    })),
 
-    const selected = await vscode.window.showQuickPick(items, {
+     selected = await vscode.window.showQuickPick(items, {
       placeHolder: PROMPT_SELECT_ENV,
     });
 

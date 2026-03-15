@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Build CLI binary — EXACT same process as the build-cli job in release.yml
-#
-# Detects current platform if NAP_RID is not set.
-# Output: out/<rid>/napper (or napper.exe on Windows)
+# Build CLI binary and install to PATH + extension bin/
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -27,7 +24,6 @@ fi
 
 echo "==> Building CLI for $NAP_RID..."
 
-# EXACT same command as release.yml build-cli job
 dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
   -r "$NAP_RID" \
   --self-contained \
@@ -41,8 +37,20 @@ echo "==> CLI built → out/$NAP_RID/"
 # --- Copy into extension bin/ so tests can find it ---
 EXT_BIN="src/Nap.VsCode/bin"
 mkdir -p "$EXT_BIN"
-case "$NAP_RID" in
-  win-*) cp "out/$NAP_RID/napper.exe" "$EXT_BIN/napper.exe" ;;
-  *)     cp "out/$NAP_RID/napper" "$EXT_BIN/napper" ;;
-esac
+cp "out/$NAP_RID/napper" "$EXT_BIN/napper"
 echo "==> Copied CLI → $EXT_BIN/"
+
+# --- Install to PATH so it overrides any stale released binary ---
+mkdir -p "$HOME/.local/bin"
+cp "out/$NAP_RID/napper" "$HOME/.local/bin/napper"
+chmod +x "$HOME/.local/bin/napper"
+echo "==> Installed CLI → ~/.local/bin/napper"
+
+# --- Verify CLI version matches fsproj ---
+EXPECTED_VERSION=$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' src/Nap.Cli/Nap.Cli.fsproj)
+ACTUAL_VERSION=$("out/$NAP_RID/napper" --version)
+if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
+  echo "ERROR: Version mismatch — expected $EXPECTED_VERSION, got $ACTUAL_VERSION"
+  exit 1
+fi
+echo "==> CLI version verified: $ACTUAL_VERSION"

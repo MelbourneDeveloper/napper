@@ -5,44 +5,44 @@ import * as vscode from "vscode";
 import * as path from "path";
 import type { ExplorerAdapter } from "./explorerAdapter";
 import {
-  HTTP_METHODS,
-  NAP_EXTENSION,
-  NAPLIST_EXTENSION,
-  SECTION_META,
-  SECTION_STEPS,
-  ENCODING_UTF8,
-  PROMPT_SELECT_METHOD,
-  PROMPT_ENTER_URL,
-  PROMPT_REQUEST_NAME,
-  PROMPT_PLAYLIST_NAME,
-  PLACEHOLDER_URL,
   DEFAULT_PLAYLIST_NAME,
-  REQUEST_NAME_SUFFIX,
+  ENCODING_UTF8,
+  HTTP_METHODS,
+  NAPLIST_EXTENSION,
+  NAP_EXTENSION,
   NAP_NAME_KEY_PREFIX,
   NAP_NAME_KEY_SUFFIX,
+  PLACEHOLDER_URL,
+  PROMPT_ENTER_URL,
+  PROMPT_PLAYLIST_NAME,
+  PROMPT_REQUEST_NAME,
+  PROMPT_SELECT_METHOD,
+  REQUEST_NAME_SUFFIX,
+  SECTION_META,
+  SECTION_STEPS,
 } from "./constants";
 
 const promptMethod = (): Thenable<string | undefined> =>
   vscode.window.showQuickPick(
     HTTP_METHODS.map((m) => m),
     { placeHolder: PROMPT_SELECT_METHOD }
-  );
+  ),
 
-const promptUrl = (): Thenable<string | undefined> =>
+ promptUrl = (): Thenable<string | undefined> =>
   vscode.window.showInputBox({
     prompt: PROMPT_ENTER_URL,
     placeHolder: PLACEHOLDER_URL,
-  });
+  }),
 
-const promptFileName = (
+ promptFileName = (
   defaultValue: string
 ): Thenable<string | undefined> =>
   vscode.window.showInputBox({
     prompt: PROMPT_REQUEST_NAME,
     value: defaultValue,
-  });
+  }),
 
-const writeAndOpen = async (
+ writeAndOpen = async (
   filePath: string,
   content: string,
   explorer: ExplorerAdapter
@@ -54,9 +54,9 @@ const writeAndOpen = async (
   const doc = await vscode.workspace.openTextDocument(filePath);
   await vscode.window.showTextDocument(doc);
   explorer.refresh();
-};
+},
 
-const getWorkspacePath = (): string | undefined =>
+ getWorkspacePath = (): string | undefined =>
   vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
 export const newRequest = async (
@@ -68,8 +68,8 @@ export const newRequest = async (
   if (url === undefined) { return; }
   const cwd = getWorkspacePath();
   if (cwd === undefined) { return; }
-  const defaultName = `${method.toLowerCase()}${REQUEST_NAME_SUFFIX}`;
-  const name = await promptFileName(defaultName);
+  const defaultName = `${method.toLowerCase()}${REQUEST_NAME_SUFFIX}`,
+   name = await promptFileName(defaultName);
   if (name === undefined) { return; }
 
   const filePath = path.join(cwd, `${name}${NAP_EXTENSION}`);
@@ -88,8 +88,8 @@ export const newPlaylist = async (
   });
   if (name === undefined) { return; }
 
-  const filePath = path.join(cwd, `${name}${NAPLIST_EXTENSION}`);
-  const content =
+  const filePath = path.join(cwd, `${name}${NAPLIST_EXTENSION}`),
+   content =
     `${SECTION_META}\n${NAP_NAME_KEY_PREFIX}${name}${NAP_NAME_KEY_SUFFIX}\n\n${SECTION_STEPS}\n`;
   await writeAndOpen(filePath, content, explorer);
 };

@@ -9,7 +9,6 @@ open Nap.Core
 let formatPretty (result: NapResult) : string =
     let sb = StringBuilder()
     let appendLine (s: string) = sb.AppendLine(s) |> ignore
-    let append (s: string) = sb.Append(s) |> ignore
 
     // File name
     let fileName = System.IO.Path.GetFileName(result.File)
@@ -129,6 +128,12 @@ let formatJson (result: NapResult) : string =
     for kv in result.Request.Headers do
         writer.WriteString(kv.Key, kv.Value)
     writer.WriteEndObject()
+
+    match result.Request.Body with
+    | Some body ->
+        writer.WriteString("requestBodyContentType", body.ContentType)
+        writer.WriteString("requestBody", body.Content)
+    | None -> ()
 
     match result.Response with
     | Some resp ->

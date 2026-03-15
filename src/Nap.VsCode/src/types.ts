@@ -18,6 +18,8 @@ export interface RunResult {
   readonly requestMethod?: string;
   readonly requestUrl?: string;
   readonly requestHeaders?: Readonly<Record<string, string>>;
+  readonly requestBody?: string;
+  readonly requestBodyContentType?: string;
   readonly headers?: Readonly<Record<string, string>>;
   readonly assertions: readonly AssertionResult[];
   readonly log?: readonly string[];

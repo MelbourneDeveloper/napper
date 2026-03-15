@@ -1,13 +1,12 @@
 // AI enrichment for OpenAPI-generated .nap files
 // Pure functions — NO VS Code SDK dependency — fully testable
 
-import type { Result } from "./types";
-import { ok, err } from "./types";
+import { type Result, err, ok } from "./types";
 import {
+  NAP_TRIPLE_QUOTE,
   SECTION_ASSERT,
   SECTION_REQUEST_BODY,
   SECTION_STEPS,
-  NAP_TRIPLE_QUOTE,
 } from "./constants";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -52,9 +51,9 @@ const ASSERTION_SYSTEM = [
   "Assertions use napper syntax: body.field > 0, body.email contains @,",
   "body.name != \"\", headers.Content-Type contains json.",
   "Do NOT repeat status assertions. Only add value/format checks.",
-].join(" ");
+].join(" "),
 
-const TEST_DATA_SYSTEM = [
+ TEST_DATA_SYSTEM = [
   "You are an API test data generator.",
   "Given API operations that accept request bodies,",
   "generate realistic JSON request body examples.",
@@ -62,9 +61,9 @@ const TEST_DATA_SYSTEM = [
   "Each element: { operationId: string, requestBody: string }.",
   "requestBody must be a valid JSON string with realistic values.",
   "Use real-looking names, emails, dates, IDs — not placeholders.",
-].join(" ");
+].join(" "),
 
-const PLAYLIST_SYSTEM = [
+ PLAYLIST_SYSTEM = [
   "You are an API test orchestrator.",
   "Given a list of test file paths, reorder them for logical flow:",
   "auth/login first, then creates, then reads, then updates, then deletes.",
@@ -85,8 +84,8 @@ export const buildAssertionPrompt = (
 export const buildTestDataPrompt = (
   operations: readonly OperationSummary[]
 ): string => {
-  const withBody = operations.filter((op) => op.hasRequestBody);
-  const lines = withBody.map(
+  const withBody = operations.filter((op) => op.hasRequestBody),
+   lines = withBody.map(
     (op) =>
       `- ${op.method.toUpperCase()} ${op.path} (${op.operationId}): ${op.summary}`
   );
@@ -148,18 +147,18 @@ export const parsePlaylistOrderResponse = (
 // ─── Content enrichment (line-based, no regex) ──────────────
 
 const isSectionHeader = (line: string): boolean =>
-  line.startsWith("[") && line.endsWith("]");
+  line.startsWith("[") && line.endsWith("]"),
 
-const skipToNextSection = (
+ skipToNextSection = (
   lines: readonly string[],
   startIdx: number
 ): number => {
   let idx = startIdx;
   while (idx < lines.length && !isSectionHeader(lines[idx] ?? "")) { idx++; }
   return idx;
-};
+},
 
-const trimTrailingBlanks = (
+ trimTrailingBlanks = (
   lines: readonly string[],
   endIdx: number,
   minIdx: number
@@ -167,9 +166,9 @@ const trimTrailingBlanks = (
   let idx = endIdx;
   while (idx > minIdx && (lines[idx - 1] ?? "").trim().length === 0) { idx--; }
   return idx;
-};
+},
 
-const findSectionEnd = (
+ findSectionEnd = (
   lines: readonly string[],
   sectionHeader: string
 ): number => {
@@ -184,11 +183,11 @@ export const enrichAssertions = (
   newAssertions: readonly string[]
 ): string => {
   if (newAssertions.length === 0) { return napContent; }
-  const lines = napContent.split("\n");
-  const insertAt = findSectionEnd(lines, SECTION_ASSERT);
+  const lines = napContent.split("\n"),
+   insertAt = findSectionEnd(lines, SECTION_ASSERT);
   if (insertAt < 0) { return napContent; }
-  const before = lines.slice(0, insertAt);
-  const after = lines.slice(insertAt);
+  const before = lines.slice(0, insertAt),
+   after = lines.slice(insertAt);
   return [...before, ...newAssertions, ...after].join("\n");
 };
 
@@ -196,12 +195,12 @@ export const enrichRequestBody = (
   napContent: string,
   newBody: string
 ): string => {
-  const lines = napContent.split("\n");
-  const bodyIdx = lines.indexOf(SECTION_REQUEST_BODY);
+  const lines = napContent.split("\n"),
+   bodyIdx = lines.indexOf(SECTION_REQUEST_BODY);
   if (bodyIdx < 0) { return napContent; }
   // Find the triple-quote delimited body and replace it
-  let startQuote = -1;
-  let endQuote = -1;
+  let startQuote = -1,
+   endQuote = -1;
   for (let i = bodyIdx + 1; i < lines.length; i++) {
     if ((lines[i] ?? "").trim() === NAP_TRIPLE_QUOTE) {
       if (startQuote < 0) { startQuote = i; }
@@ -209,8 +208,8 @@ export const enrichRequestBody = (
     }
   }
   if (startQuote < 0 || endQuote < 0) { return napContent; }
-  const before = lines.slice(0, startQuote + 1);
-  const after = lines.slice(endQuote);
+  const before = lines.slice(0, startQuote + 1),
+   after = lines.slice(endQuote);
   return [...before, newBody, ...after].join("\n");
 };
 
@@ -219,11 +218,11 @@ export const reorderPlaylistSteps = (
   orderedFiles: readonly string[]
 ): string => {
   if (orderedFiles.length === 0) { return playlistContent; }
-  const lines = playlistContent.split("\n");
-  const stepsIdx = lines.indexOf(SECTION_STEPS);
+  const lines = playlistContent.split("\n"),
+   stepsIdx = lines.indexOf(SECTION_STEPS);
   if (stepsIdx < 0) { return playlistContent; }
-  const before = lines.slice(0, stepsIdx + 1);
-  const newSteps = orderedFiles.map((f) =>
+  const before = lines.slice(0, stepsIdx + 1),
+   newSteps = orderedFiles.map((f) =>
     f.startsWith("./") ? f : `./${f}`
   );
   return [...before, ...newSteps, ""].join("\n");

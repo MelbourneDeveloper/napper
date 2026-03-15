@@ -3,20 +3,20 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import {
   activateExtension,
-  sleep,
-  getFixturePath,
-  openDocument,
   closeAllEditors,
   executeCommand,
-  waitForCondition,
   extractStepLines,
+  getFixturePath,
+  openDocument,
+  sleep,
+  waitForCondition,
 } from "../helpers/helpers";
 import * as path from "path";
 import {
   CMD_RUN_FILE,
   CMD_SAVE_REPORT,
-  CONFIG_SECTION,
   CONFIG_CLI_PATH,
+  CONFIG_SECTION,
   PLAYLIST_PANEL_TITLE,
   REPORT_FILE_EXTENSION,
   REPORT_FILE_SUFFIX,
@@ -44,11 +44,11 @@ suite("Playlist Panel — Real API Calls", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const doc = await openDocument("petstore/smoke.naplist");
+    const doc = await openDocument("petstore/smoke.naplist"),
 
     // Fire the command but do NOT await — we want to check the panel
-    // appears while API calls are still in flight
-    const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
+    // Appears while API calls are still in flight
+     runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
     // Panel must appear within 2 seconds — API calls take much longer
     await waitForCondition(
@@ -91,10 +91,10 @@ suite("Playlist Panel — Real API Calls", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const playlistPath = getFixturePath("petstore/smoke.naplist");
+    const playlistPath = getFixturePath("petstore/smoke.naplist"),
 
     // Fire without await to test immediate opening
-    const runPromise = executeCommand(CMD_RUN_FILE, { filePath: playlistPath });
+     runPromise = executeCommand(CMD_RUN_FILE, { filePath: playlistPath });
 
     // Panel must appear within 2 seconds — proves immediate opening
     await waitForCondition(
@@ -170,8 +170,8 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("playlist file has correct structure", () => {
-    const playlistPath = getFixturePath("petstore/smoke.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/smoke.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("[meta]"), "Should have [meta] section");
     assert.ok(content.includes("[steps]"), "Should have [steps] section");
@@ -186,9 +186,9 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("playlist steps reference files that exist", () => {
-    const playlistPath = getFixturePath("petstore/smoke.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
-    const stepPaths = extractStepLines(content);
+    const playlistPath = getFixturePath("petstore/smoke.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8"),
+     stepPaths = extractStepLines(content);
 
     assert.ok(
       stepPaths.length > 0,
@@ -254,8 +254,8 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("with-script.naplist fixture references existing files", () => {
-    const playlistPath = getFixturePath("petstore/with-script.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/with-script.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("[meta]"), "Should have [meta] section");
     assert.ok(content.includes("[steps]"), "Should have [steps] section");
@@ -361,8 +361,8 @@ suite("Playlist Panel — Real API Calls", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const playlistPath = getFixturePath("petstore/smoke.naplist");
-    const expectedReportPath = path.join(
+    const playlistPath = getFixturePath("petstore/smoke.naplist"),
+     expectedReportPath = path.join(
       path.dirname(playlistPath),
       `smoke${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`
     );
@@ -461,8 +461,8 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("with-csx-script.naplist fixture references existing files", () => {
-    const playlistPath = getFixturePath("petstore/with-csx-script.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/with-csx-script.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("[meta]"), "Should have [meta] section");
     assert.ok(content.includes("[steps]"), "Should have [steps] section");
@@ -537,8 +537,8 @@ suite("Playlist Panel — Real API Calls", () => {
   });
 
   test("with-mixed-scripts.naplist fixture references both FSX and CSX files", () => {
-    const playlistPath = getFixturePath("petstore/with-mixed-scripts.naplist");
-    const content = fs.readFileSync(playlistPath, "utf-8");
+    const playlistPath = getFixturePath("petstore/with-mixed-scripts.naplist"),
+     content = fs.readFileSync(playlistPath, "utf-8");
 
     assert.ok(content.includes("[meta]"), "Should have [meta] section");
     assert.ok(content.includes("[steps]"), "Should have [steps] section");
@@ -575,8 +575,8 @@ suite("Playlist Panel — Real API Calls", () => {
     await closeAllEditors();
     await sleep(500);
 
-    const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    const originalPath = config.get<string>(CONFIG_CLI_PATH);
+    const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
+     originalPath = config.get<string>(CONFIG_CLI_PATH);
 
     // Point to a nonexistent CLI binary
     await config.update(
@@ -586,10 +586,10 @@ suite("Playlist Panel — Real API Calls", () => {
     );
 
     try {
-      const doc = await openDocument("petstore/smoke.naplist");
+      const doc = await openDocument("petstore/smoke.naplist"),
 
       // Fire command — don't await since it may resolve quickly
-      const runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
+       runPromise = executeCommand(CMD_RUN_FILE, doc.uri);
 
       // Panel must open even when CLI fails (showRunning fires before CLI)
       await waitForCondition(

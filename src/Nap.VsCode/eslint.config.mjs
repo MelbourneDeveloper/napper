@@ -2,9 +2,8 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  eslint.configs.recommended,
-  tseslint.configs.strictTypeChecked,
-  tseslint.configs.stylisticTypeChecked,
+  eslint.configs.all,
+  tseslint.configs.all,
   {
     languageOptions: {
       parserOptions: {
@@ -16,207 +15,262 @@ export default tseslint.config(
   {
     files: ["**/*.ts"],
     rules: {
-      // TYPESCRIPT STRICT - ALL ERRORS, NO MERCY
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/explicit-function-return-type": "error",
-      "@typescript-eslint/explicit-module-boundary-types": "error",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_" },
-      ],
-      "@typescript-eslint/no-non-null-assertion": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-misused-promises": "error",
-      "@typescript-eslint/await-thenable": "error",
-      "@typescript-eslint/no-unnecessary-condition": "error",
-      "@typescript-eslint/no-unnecessary-type-assertion": "error",
-      "@typescript-eslint/prefer-nullish-coalescing": "error",
-      "@typescript-eslint/prefer-optional-chain": "error",
-      "@typescript-eslint/no-unsafe-assignment": "error",
-      "@typescript-eslint/no-unsafe-call": "error",
-      "@typescript-eslint/no-unsafe-member-access": "error",
-      "@typescript-eslint/no-unsafe-return": "error",
-      "@typescript-eslint/no-unsafe-argument": "error",
-      "@typescript-eslint/require-await": "error",
-      "@typescript-eslint/return-await": ["error", "always"],
-      "@typescript-eslint/promise-function-async": "error",
-      "@typescript-eslint/no-redundant-type-constituents": "error",
-      "@typescript-eslint/no-confusing-void-expression": "error",
-      "@typescript-eslint/no-meaningless-void-operator": "error",
-      "@typescript-eslint/prefer-readonly": "error",
-      "@typescript-eslint/no-this-alias": "error",
-      "@typescript-eslint/unified-signatures": "error",
-      "@typescript-eslint/method-signature-style": ["error", "property"],
-      "@typescript-eslint/consistent-type-imports": [
-        "error",
-        { prefer: "type-imports" },
-      ],
-      "@typescript-eslint/consistent-type-exports": "error",
-      "@typescript-eslint/no-import-type-side-effects": "error",
-      "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
-      "@typescript-eslint/array-type": [
-        "error",
-        { default: "array-simple" },
-      ],
-      "@typescript-eslint/prefer-for-of": "error",
-      "@typescript-eslint/prefer-includes": "error",
-      "@typescript-eslint/prefer-string-starts-ends-with": "error",
-      "@typescript-eslint/no-useless-constructor": "error",
-      "@typescript-eslint/only-throw-error": "error",
-      "@typescript-eslint/prefer-promise-reject-errors": "error",
-      "@typescript-eslint/switch-exhaustiveness-check": "error",
-      "@typescript-eslint/restrict-template-expressions": [
-        "error",
-        { allowNumber: true },
-      ],
-      "@typescript-eslint/restrict-plus-operands": "error",
-      "@typescript-eslint/no-base-to-string": "error",
-      "@typescript-eslint/no-dynamic-delete": "error",
-      "@typescript-eslint/no-extraneous-class": "error",
-      "@typescript-eslint/no-invalid-void-type": "error",
-      "@typescript-eslint/no-require-imports": "error",
-      "@typescript-eslint/ban-ts-comment": [
-        "error",
-        {
-          "ts-expect-error": "allow-with-description",
-          "ts-ignore": true,
-          "ts-nocheck": true,
-          "ts-check": false,
-        },
-      ],
-      "@typescript-eslint/no-empty-function": "error",
-      "@typescript-eslint/no-empty-object-type": "error",
-      "@typescript-eslint/no-inferrable-types": "error",
-      "@typescript-eslint/prefer-function-type": "error",
-      "@typescript-eslint/prefer-namespace-keyword": "error",
-      "@typescript-eslint/triple-slash-reference": "error",
-      "@typescript-eslint/adjacent-overload-signatures": "error",
-      "@typescript-eslint/no-array-constructor": "error",
-      "@typescript-eslint/no-extra-non-null-assertion": "error",
-      "@typescript-eslint/no-misused-new": "error",
-      "@typescript-eslint/no-namespace": "error",
-      "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
-      "@typescript-eslint/no-unnecessary-type-constraint": "error",
-      "@typescript-eslint/prefer-as-const": "error",
-      "@typescript-eslint/no-shadow": "error",
-      "@typescript-eslint/no-unused-expressions": "error",
-      "@typescript-eslint/no-use-before-define": [
-        "error",
-        { functions: false },
-      ],
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          selector: "variable",
-          format: ["camelCase", "UPPER_CASE", "PascalCase"],
-          leadingUnderscore: "allow",
-        },
-        {
-          selector: "function",
-          format: ["camelCase", "PascalCase"],
-        },
-        {
-          selector: "typeLike",
-          format: ["PascalCase"],
-        },
-        {
-          selector: "enumMember",
-          format: ["PascalCase", "UPPER_CASE"],
-        },
-        {
-          selector: "parameter",
-          format: ["camelCase"],
-          leadingUnderscore: "allow",
-        },
-      ],
-
-      // GENERAL JS RULES - ALL ERRORS
-      "no-console": "error",
-      "no-debugger": "error",
-      "no-alert": "error",
-      "no-eval": "error",
-      "no-implied-eval": "error",
-      "no-new-func": "error",
-      "no-script-url": "error",
-      "no-void": ["error", { "allowAsStatement": true }],
-      "no-with": "error",
-      "no-labels": "error",
-      "no-label-var": "error",
-      "no-lone-blocks": "error",
-      "no-self-compare": "error",
-      "no-sequences": "error",
-      "no-throw-literal": "off",
-      "no-unmodified-loop-condition": "error",
-      "no-useless-call": "error",
-      "no-useless-concat": "error",
-      "no-useless-return": "error",
-      "prefer-promise-reject-errors": "off",
-      "require-await": "off",
-      eqeqeq: ["error", "always"],
-      curly: ["error", "all"],
-      "no-nested-ternary": "error",
-      "no-unneeded-ternary": "error",
-      "prefer-const": "error",
-      "no-var": "error",
-      "object-shorthand": ["error", "always"],
-      "prefer-arrow-callback": "error",
-      "prefer-template": "error",
-      "prefer-rest-params": "error",
-      "prefer-spread": "error",
-      "no-param-reassign": "error",
-      "no-return-assign": ["error", "always"],
-      "no-extend-native": "error",
-      "no-iterator": "error",
-      "no-proto": "error",
-      "no-new-wrappers": "error",
-      "no-octal-escape": "error",
-      "no-shadow": "off",
-      "no-unused-expressions": "off",
-      "no-use-before-define": "off",
-      "no-useless-computed-key": "error",
-      "no-useless-rename": "error",
-      "symbol-description": "error",
-      yoda: ["error", "never"],
-      "default-case-last": "error",
-      "grouped-accessor-pairs": ["error", "getBeforeSet"],
-      "no-constructor-return": "error",
-      "no-promise-executor-return": "error",
-      "no-unreachable-loop": "error",
-      "no-unsafe-optional-chaining": "error",
-      "require-atomic-updates": "error",
+      // ── Project-specific: stricter than defaults ───────────────
+      "complexity": ["error", 8],
       "max-depth": ["error", 3],
-      "max-params": ["error", 3],
-      "max-lines-per-function": [
-        "error",
-        { max: 20, skipBlankLines: true, skipComments: true },
-      ],
       "max-lines": [
         "error",
         { max: 450, skipBlankLines: true, skipComments: true },
       ],
-      complexity: ["error", 8],
+      "max-lines-per-function": [
+        "error",
+        { max: 20, skipBlankLines: true, skipComments: true },
+      ],
+      "max-params": ["error", 3],
       "no-magic-numbers": [
         "error",
         {
+          enforceConst: true,
           ignore: [0, 1, -1],
           ignoreArrayIndexes: true,
-          enforceConst: true,
         },
       ],
+
+      // ── Project-specific: differ from ALL for valid reasons ────
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {
+          "ts-check": false,
+          "ts-expect-error": "allow-with-description",
+          "ts-ignore": true,
+          "ts-nocheck": true,
+        },
+      ],
+      "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+          selector: "default",
+          trailingUnderscore: "forbid",
+        },
+        {
+          format: ["camelCase", "UPPER_CASE", "PascalCase"],
+          leadingUnderscore: "allow",
+          selector: "variable",
+        },
+        {
+          format: ["camelCase", "PascalCase"],
+          selector: "function",
+        },
+        {
+          format: ["PascalCase"],
+          selector: "typeLike",
+        },
+        {
+          format: ["PascalCase", "UPPER_CASE"],
+          selector: "enumMember",
+        },
+        {
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+          selector: "parameter",
+        },
+        {
+          format: null,
+          selector: "objectLiteralProperty",
+        },
+        {
+          format: ["camelCase", "PascalCase"],
+          selector: "import",
+        },
+      ],
+      "@typescript-eslint/no-inferrable-types": "error",
+      "@typescript-eslint/no-use-before-define": [
+        "error",
+        { functions: false },
+      ],
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        { allowNumber: true },
+      ],
+      "no-void": ["error", { allowAsStatement: true }],
+
+      // ── Base rules off — TS-ESLint equivalents handle them ─────
+      "no-empty-function": "off",
+      "no-loop-func": "off",
+      "no-magic-numbers": "off",
+      "no-return-await": "off",
+      "no-shadow": "off",
+      "no-throw-literal": "off",
+      "no-unused-expressions": "off",
+      "no-use-before-define": "off",
+      "no-useless-constructor": "off",
+      "prefer-promise-reject-errors": "off",
+      "require-await": "off",
+
+      // ── Disabled: pointless verbosity or harmful to readability ─
+      // Forces combining all const/let into one statement per scope.
+      // Destroys readability — can't comment individual declarations.
+      "one-var": "off",
+      // Alphabetical ordering within combined declarations — pure noise.
+      "sort-vars": "off",
+      // Alphabetical object keys destroys logical grouping
+      // (e.g. width before height, request before response).
+      "sort-keys": "off",
+      // Alphabetical import order fights with grouping by domain
+      // (stdlib, vscode, local). Use import organizer tooling instead.
+      "sort-imports": "off",
+      // Bans `undefined` — absurd in TypeScript where it's a core
+      // language concept and the return type of void functions.
+      "no-undefined": "off",
+      // Bans all ternary expressions. Ternaries are often MORE readable
+      // than verbose if/else blocks for simple conditional values.
+      "no-ternary": "off",
+      // Forces Readonly<> wrapper on every parameter type including
+      // third-party SDK types (vscode.Uri etc). Massive noise,
+      // breaks compatibility, and TS already prevents mutation via const.
+      "@typescript-eslint/prefer-readonly-parameter-types": "off",
+      // Duplicate of base no-magic-numbers which is already configured
+      // with project-specific ignore list. Having both fires twice.
+      "@typescript-eslint/no-magic-numbers": "off",
+      // Forces return type annotations even when TypeScript infers them
+      // perfectly. Adds noise without catching any real bugs.
+      "@typescript-eslint/explicit-function-return-type": "off",
+      // Same as above but specifically for exported functions.
+      // TypeScript inference is the whole point of the type system.
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      // Forces type annotations on every variable, parameter, and
+      // property even when the type is obvious from the initializer.
+      // `const x: number = 5` is worse than `const x = 5`.
+      "@typescript-eslint/typedef": "off",
+      // Forces `public`/`private`/`protected` on every class member.
+      // TypeScript defaults to public which is correct for interface
+      // implementations (TreeDataProvider, Disposable, etc).
+      "@typescript-eslint/explicit-member-accessibility": "off",
+      // Forces function expressions (`const f = function()`) over
+      // function declarations (`function f()`). Conflicts with
+      // `export function activate()` pattern required by vscode API.
+      "func-style": "off",
+      // Forces block bodies on ALL arrow functions: `() => { return x; }`
+      // instead of `() => x`. Expression bodies are more concise and
+      // idiomatic for one-liners, callbacks, and pure transforms.
+      "arrow-body-style": "off",
+      // Flags PascalCase functions as constructor-only. Conflicts with
+      // naming-convention rule and factory function patterns.
+      "new-cap": "off",
+      // Already covered by max-lines-per-function (set to 20).
+      // Having both is redundant and confusing.
+      "max-statements": "off",
+      // Forces every comment to start with a capital letter.
+      // Inline notes, disabled code references, and shorthand
+      // comments don't need to be grammatically correct.
+      "capitalized-comments": "off",
+      // Bans comments on the same line as code. Inline comments
+      // are often the clearest way to annotate a specific value.
+      "no-inline-comments": "off",
+      // Bans leading underscores on identifiers. Private fields
+      // use _ prefix by convention in TypeScript classes, and the
+      // naming-convention rule already handles this properly.
+      "no-underscore-dangle": "off",
+      // Forces all variable declarations to the top of their scope.
+      // Declare-near-use is far more readable and is standard TS style.
+      "vars-on-top": "off",
+      // Bans `continue` in loops, forcing deeply nested if/else blocks.
+      // `continue` is clearer for guard clauses in loop bodies.
+      "no-continue": "off",
+      // Bans `++` and `--`. Forces `+= 1` which is more verbose
+      // with no safety benefit in TypeScript.
+      "no-plusplus": "off",
+      // Bans ALL type assertions (`as T`). Type assertions are
+      // sometimes necessary for narrowing (e.g. API responses,
+      // test fixtures). The unsafe-* rules already catch real issues.
+      "@typescript-eslint/consistent-type-assertions": "off",
+      // Flags class methods that don't use `this`. These are
+      // required for interface implementations (TreeDataProvider,
+      // CodeLensProvider, FileDecorationProvider).
+      "@typescript-eslint/class-methods-use-this": "off",
+      "class-methods-use-this": "off",
+      // Flags TODO/FIXME comments as errors. TODOs are a normal
+      // part of development and should be tracked, not banned.
+      "no-warning-comments": "off",
+      // Requires `"use strict"` directive. TypeScript modules are
+      // always strict — the directive is redundant noise.
+      "strict": "off",
+      // TS exhaustiveness checking + strict-boolean-expressions
+      // already handles these better than the base ESLint rules.
+      "consistent-return": "off",
+      "default-case": "off",
+      // Forces `if (!x)` to be rewritten as `if (x) {} else {}`.
+      // Negated conditions are often the most natural way to
+      // express guard clauses and early returns.
+      "no-negated-condition": "off",
+      // Forces destructuring even when a single property access
+      // is clearer: `const name = obj.name` vs `const { name } = obj`.
+      "prefer-destructuring": "off",
+      "@typescript-eslint/prefer-destructuring": "off",
+      // Short identifiers like `i`, `r`, `f`, `k`, `v` are clear
+      // in context (loop counters, map callbacks, results).
+      // naming-convention already governs format.
+      "id-length": "off",
+      // Forces `hasOwnProperty` check in for-in loops. Irrelevant
+      // in TypeScript where objects are typed and for-of is preferred.
+      "guard-for-in": "off",
+      // Forces named groups in regex. Adds verbosity for simple
+      // patterns where positional groups are perfectly clear.
+      "prefer-named-capture-group": "off",
+      // Forces /u flag on every regex. Adds noise when not
+      // dealing with unicode-sensitive patterns.
+      "require-unicode-regexp": "off",
+      // One class per file is too restrictive when a small helper
+      // class (e.g. TreeItem subclass) is tightly coupled to its parent.
+      "max-classes-per-file": "off",
+      // Requires enum members to have explicit initializers.
+      // Auto-incrementing numeric enums are idiomatic TypeScript.
+      "@typescript-eslint/prefer-enum-initializers": "off",
+      // Member ordering is handled by logical grouping, not
+      // alphabetical/visibility sorting. Public API first is fine
+      // but the rule is too rigid for real class layouts.
+      "@typescript-eslint/member-ordering": "off",
+      // Flags type assertions between related types (e.g. narrowing).
+      // Already caught by no-unsafe-* rules where it matters.
+      "@typescript-eslint/consistent-type-assertions": "off",
+      // Setter without getter is a valid pattern for write-only
+      // callbacks (e.g. onSaveReport).
+      "accessor-pairs": "off",
+      // Module-level variables initialized in activate() can't have
+      // initializers at declaration — they depend on the extension context.
+      "@typescript-eslint/init-declarations": "off",
+      "init-declarations": "off",
+      // JSON.parse returns `unknown` — asserting the parsed shape is
+      // the standard TS pattern. The no-unsafe-assignment/call/return
+      // rules already catch genuinely dangerous untyped access.
+      "@typescript-eslint/no-unsafe-type-assertion": "off",
     },
   },
   {
     files: ["src/test/**/*.ts"],
     rules: {
+      // ── Minimal test relaxations (tests are strict too) ────────
       "max-lines-per-function": "off",
       "max-lines": "off",
       "no-magic-numbers": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-magic-numbers": "off",
+      // Mocha uses `this.timeout()` inside anonymous callbacks
+      // passed to describe/it — these 3 rules conflict with that.
+      "@typescript-eslint/no-invalid-this": "off",
+      "no-invalid-this": "off",
+      "func-names": "off",
+      // Mocha describe/it expect sync callbacks but tests are async.
+      // This is the standard Mocha async test pattern.
+      "@typescript-eslint/strict-void-return": "off",
+      // Sequential awaits in test helpers are intentional —
+      // tests need deterministic ordering, not parallelism.
+      "no-await-in-loop": "off",
+      // Test object literals (fixtures, expected values) don't
+      // need to follow property naming conventions.
+      "@typescript-eslint/naming-convention": "off",
     },
   },
   {

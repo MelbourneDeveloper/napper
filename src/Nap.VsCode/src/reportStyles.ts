@@ -1,22 +1,22 @@
 // CSS styles for standalone HTML reports
 // Extracted to keep reportGenerator.ts under 450 LOC
 
-const REPORT_PASS_COLOR = "#10b981";
-const REPORT_FAIL_COLOR = "#ef4444";
-const REPORT_GRADIENT_START = "#0f172a";
-const REPORT_GRADIENT_END = "#1e293b";
-const REPORT_ACCENT = "#6366f1";
-const REPORT_CARD_BG = "#ffffff";
-const REPORT_BODY_BG = "#f8fafc";
-const REPORT_TEXT_PRIMARY = "#0f172a";
-const REPORT_TEXT_SECONDARY = "#64748b";
-const REPORT_BORDER = "#e2e8f0";
-const REPORT_CODE_BG = "#1e293b";
-const REPORT_CODE_TEXT = "#e2e8f0";
-const REPORT_PASS_BG = "#ecfdf5";
-const REPORT_FAIL_BG = "#fef2f2";
-const REPORT_PASS_BORDER = "#a7f3d0";
-const REPORT_FAIL_BORDER = "#fecaca";
+const REPORT_ACCENT = "#6366f1",
+ REPORT_BODY_BG = "#f8fafc",
+ REPORT_BORDER = "#e2e8f0",
+ REPORT_CARD_BG = "#ffffff",
+ REPORT_CODE_BG = "#1e293b",
+ REPORT_CODE_TEXT = "#e2e8f0",
+ REPORT_FAIL_BG = "#fef2f2",
+ REPORT_FAIL_BORDER = "#fecaca",
+ REPORT_FAIL_COLOR = "#ef4444",
+ REPORT_GRADIENT_END = "#1e293b",
+ REPORT_GRADIENT_START = "#0f172a",
+ REPORT_PASS_BG = "#ecfdf5",
+ REPORT_PASS_BORDER = "#a7f3d0",
+ REPORT_PASS_COLOR = "#10b981",
+ REPORT_TEXT_PRIMARY = "#0f172a",
+ REPORT_TEXT_SECONDARY = "#64748b";
 
 export const REPORT_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -259,6 +259,18 @@ export const REPORT_STYLES = `
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  .report-group { margin-top: 16px; border: 1px solid ${REPORT_BORDER}; border-radius: 8px; overflow: hidden; }
+  .report-group-summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: ${REPORT_BODY_BG}; user-select: none; font-size: 13px; font-weight: 600; color: ${REPORT_TEXT_PRIMARY}; }
+  .report-group-summary::-webkit-details-marker { display: none; }
+  .report-group-chevron { font-size: 10px; color: ${REPORT_TEXT_SECONDARY}; transition: transform 0.2s; margin-left: auto; }
+  .report-group[open] > .report-group-summary .report-group-chevron { transform: rotate(90deg); }
+  .report-group-content { padding: 4px 14px 14px; }
+
+  .request-url-line { font-size: 13px; margin: 8px 0; word-break: break-all; font-family: 'JetBrains Mono', monospace; }
+  .request-method-tag { font-weight: 700; color: ${REPORT_ACCENT}; margin-right: 6px; }
+  .empty-hint { color: ${REPORT_TEXT_SECONDARY}; font-size: 12px; font-style: italic; display: block; padding: 8px 0; }
+  .content-type-hint { color: ${REPORT_TEXT_SECONDARY}; font-size: 11px; font-style: italic; margin-bottom: 4px; }
 
   .detail-section { margin-top: 16px; }
   .detail-section-title {

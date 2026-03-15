@@ -3,31 +3,31 @@
 
 import * as vscode from "vscode";
 import {
-  HTTP_METHODS,
+  CURL_CMD_PREFIX,
   DEFAULT_METHOD,
+  HTTP_METHODS,
+  MSG_COPIED,
   NAP_KEY_METHOD,
   NAP_KEY_URL,
-  MSG_COPIED,
-  CURL_CMD_PREFIX,
 } from "./constants";
 
-const EQUALS_CHAR = "=";
-const SPACE_CHAR = " ";
+const EQUALS_CHAR = "=",
+ SPACE_CHAR = " ",
 
-const valueAfterFirstEquals = (line: string): string => {
+ valueAfterFirstEquals = (line: string): string => {
   const eqIndex = line.indexOf(EQUALS_CHAR);
   return eqIndex === -1
     ? ""
     : line.slice(eqIndex + 1).trim();
-};
+},
 
-const matchesHttpMethodLine = (
+ matchesHttpMethodLine = (
   trimmed: string,
   method: string
 ): boolean =>
-  trimmed.startsWith(`${method}${SPACE_CHAR}`);
+  trimmed.startsWith(`${method}${SPACE_CHAR}`),
 
-const extractMethodFromLine = (
+ extractMethodFromLine = (
   trimmed: string
 ): { readonly method: string; readonly url: string } | undefined => {
   for (const m of HTTP_METHODS) {
@@ -36,9 +36,9 @@ const extractMethodFromLine = (
     }
   }
   return undefined;
-};
+},
 
-const parseLine = (
+ parseLine = (
   trimmed: string,
   current: { method: string; url: string }
 ): void => {
@@ -58,8 +58,8 @@ const parseLine = (
 export const parseMethodAndUrl = (
   text: string
 ): { readonly method: string; readonly url: string } => {
-  const result = { method: DEFAULT_METHOD, url: "" };
-  const lines = text.split("\n");
+  const result = { method: DEFAULT_METHOD, url: "" },
+   lines = text.split("\n");
   for (const line of lines) {
     parseLine(line.trim(), result);
   }
@@ -72,10 +72,10 @@ export const copyAsCurl = async (
   const fileUri = uri ?? vscode.window.activeTextEditor?.document.uri;
   if (fileUri === undefined) { return; }
 
-  const doc = await vscode.workspace.openTextDocument(fileUri);
-  const { method, url } = parseMethodAndUrl(doc.getText());
+  const doc = await vscode.workspace.openTextDocument(fileUri),
+   { method, url } = parseMethodAndUrl(doc.getText()),
 
-  const curl = `${CURL_CMD_PREFIX}${method} '${url}'`;
+   curl = `${CURL_CMD_PREFIX}${method} '${url}'`;
   await vscode.env.clipboard.writeText(curl);
   void vscode.window.showInformationMessage(MSG_COPIED);
 };

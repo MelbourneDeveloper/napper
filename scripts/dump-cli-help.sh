@@ -7,14 +7,16 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_FILE="$ROOT_DIR/docs/cli-reference.md"
 
-CLI_PATH="$ROOT_DIR/dist/cli/Nap.Cli"
+# Use the installed binary from PATH
+CLI_PATH=$(command -v napper 2>/dev/null || true)
 
-if [ ! -x "$CLI_PATH" ]; then
-    echo "CLI not found at $CLI_PATH — building first..."
+if [ -z "$CLI_PATH" ]; then
+    echo "napper not found on PATH — building first..."
     bash "$SCRIPT_DIR/build-cli.sh"
+    CLI_PATH="$HOME/.local/bin/napper"
 fi
 
-echo "==> Capturing CLI help output..."
+echo "==> Capturing CLI help output from $CLI_PATH..."
 
 HELP_OUTPUT=$("$CLI_PATH" help 2>&1)
 
@@ -73,6 +75,15 @@ nap check ./users/get-user.nap
 nap check ./smoke.naplist
 ```
 
+### `nap generate openapi <spec> --output-dir <dir>`
+
+Generate `.nap` files from an OpenAPI specification.
+
+```sh
+nap generate openapi ./openapi.json --output-dir ./tests
+nap generate openapi ./openapi.json --output-dir ./tests --output json
+```
+
 ### `nap help`
 
 Display the help message. Also available as `--help` or `-h`.
@@ -83,7 +94,9 @@ Display the help message. Also available as `--help` or `-h`.
 |---------------------|---------------------------------------------------|
 | `--env <name>`      | Load a named environment file (`.napenv.<name>`)  |
 | `--var <key=value>` | Override a variable (repeatable)                  |
-| `--output <format>` | Output format: `pretty` (default), `junit`, `json`|
+| `--output <format>` | Output format: `pretty` (default), `junit`, `json`, `ndjson` |
+| `--output-dir <dir>`| Output directory for generate command             |
+| `--verbose`         | Enable debug-level logging                        |
 
 ## Exit Codes
 

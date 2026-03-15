@@ -3,30 +3,30 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import {
   activateExtension,
-  sleep,
+  closeAllEditors,
+  deleteFixtureFile,
   getFixturePath,
   openDocument,
-  closeAllEditors,
+  sleep,
   writeFixtureFile,
-  deleteFixtureFile,
 } from "../helpers/helpers";
 import type { ExtensionApi } from "../../extension";
 import type { TreeNode } from "../../explorerProvider";
 import {
   CONTEXT_PLAYLIST,
-  CONTEXT_REQUEST_FILE,
   CONTEXT_PLAYLIST_SECTION,
+  CONTEXT_REQUEST_FILE,
 } from "../../constants";
 
-const EXTENSION_ID = "nimblesite.napper";
+const EXTENSION_ID = "nimblesite.napper",
 
-const getExplorerProvider = (): ExtensionApi["explorerProvider"] => {
+ getExplorerProvider = (): ExtensionApi["explorerProvider"] => {
   const ext = vscode.extensions.getExtension<ExtensionApi>(EXTENSION_ID);
   if (!ext) {throw new Error(`Extension ${EXTENSION_ID} not found`);}
   return ext.exports.explorerProvider;
-};
+},
 
-const findNodeByLabel = (
+ findNodeByLabel = (
   nodes: readonly TreeNode[],
   label: string
 ): TreeNode | undefined =>
@@ -128,8 +128,8 @@ suite("Explorer Tree View", () => {
 
   test(".nap file content is readable and valid", async function () {
     this.timeout(10000);
-    const doc = await openDocument("post-jsonplaceholder.nap");
-    const text = doc.getText();
+    const doc = await openDocument("post-jsonplaceholder.nap"),
+     text = doc.getText();
 
     assert.ok(
       text.includes("[request]"),
@@ -147,11 +147,11 @@ suite("Explorer Tree View", () => {
 
   test("nested playlist in tree view expands to show its own children", function () {
     this.timeout(10000);
-    const provider = getExplorerProvider();
-    const rootNodes = provider.getChildren();
+    const provider = getExplorerProvider(),
+     rootNodes = provider.getChildren(),
 
     // Find the Playlists section
-    const playlistSection = rootNodes.find(
+     playlistSection = rootNodes.find(
       (n) => n.contextValue === CONTEXT_PLAYLIST_SECTION
     );
     assert.ok(
@@ -221,17 +221,17 @@ suite("Explorer Tree View", () => {
 
   test("nested playlist in file tree also expands with children", function () {
     this.timeout(10000);
-    const provider = getExplorerProvider();
-    const rootNodes = provider.getChildren();
+    const provider = getExplorerProvider(),
+     rootNodes = provider.getChildren(),
 
     // Find the petstore folder in the file tree
-    const petstoreFolder = findNodeByLabel(rootNodes, "petstore");
+     petstoreFolder = findNodeByLabel(rootNodes, "petstore");
     assert.ok(petstoreFolder, "File tree must contain petstore folder");
 
-    const petstoreChildren = provider.getChildren(petstoreFolder);
+    const petstoreChildren = provider.getChildren(petstoreFolder),
 
     // Find full.naplist in the petstore folder
-    const fullNode = findNodeByLabel(petstoreChildren, "full");
+     fullNode = findNodeByLabel(petstoreChildren, "full");
     assert.ok(
       fullNode,
       "petstore folder must contain 'full' playlist node"

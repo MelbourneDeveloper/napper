@@ -78,150 +78,129 @@ let printHelp () =
     printfn "  --output-dir <dir>        Output directory for generate command"
     printfn "  --verbose                 Enable debug-level logging"
 
+/// Print result as ndjson and return whether it passed
+let private printNdjson (r: NapResult) : bool =
+    printfn "%s" (Output.formatJson r)
+    Console.Out.Flush()
+    r.Passed
+
+/// Format and print results, return exit code
+let private formatAndExit (output: string) (results: NapResult list) : int =
+    match output with
+    | "junit" -> printf "%s" (Output.formatJUnit results)
+    | "json" -> printf "%s" (Output.formatJsonArray results)
+    | _ ->
+        for r in results do
+            printf "%s" (Output.formatPretty r)
+        printf "%s" (Output.formatSummary results)
+    if results |> List.forall (fun r -> r.Passed) then 0 else 1
+
+/// Run all .nap files in a directory
+let private runDirectory (args: CliArgs) (dirPath: string) : int =
+    let files = Directory.GetFiles(dirPath, "*.nap") |> Array.sort
+    if files.Length = 0 then
+        eprintfn "No .nap files found in %s" dirPath
+        2
+    elif args.Output = "ndjson" then
+        let passed = files |> Array.forall (fun f ->
+            Runner.runNapFile f args.Vars args.Env |> Async.RunSynchronously |> printNdjson)
+        if passed then 0 else 1
+    else
+        files
+        |> Array.map (fun f -> Runner.runNapFile f args.Vars args.Env |> Async.RunSynchronously)
+        |> Array.toList
+        |> formatAndExit args.Output
+
+/// Merge playlist vars with CLI overrides
+let private mergeVars (playlist: NapPlaylist) (cliVars: Map<string, string>) : Map<string, string> =
+    let mutable v = playlist.Vars
+    for kv in cliVars do
+        v <- v |> Map.add kv.Key kv.Value
+    v
+
+/// Collect results from playlist steps recursively
+let rec private collectSteps (steps: PlaylistStep list) (vars: Map<string, string>) (baseDir: string) (env: string option) : NapResult list =
+    steps |> List.collect (fun step ->
+        let full p = Path.GetFullPath(Path.Combine(baseDir, p))
+        match step with
+        | NapFileStep p ->
+            [Runner.runNapFile (full p) vars env |> Async.RunSynchronously]
+        | FolderRef p ->
+            Directory.GetFiles(full p, "*.nap")
+            |> Array.sort
+            |> Array.map (fun f -> Runner.runNapFile f vars env |> Async.RunSynchronously)
+            |> Array.toList
+        | PlaylistRef p ->
+            let fp = full p
+            match File.ReadAllText(fp) |> Parser.parseNapList with
+            | Result.Ok nested -> collectSteps nested.Steps vars (Path.GetDirectoryName fp) env
+            | Result.Error _ -> []
+        | ScriptStep p ->
+            [Runner.runScript (full p) |> Async.RunSynchronously]
+    )
+
+/// Stream playlist steps as ndjson, return whether all passed
+let rec private streamSteps (steps: PlaylistStep list) (vars: Map<string, string>) (baseDir: string) (env: string option) : bool =
+    steps |> List.forall (fun step ->
+        let full p = Path.GetFullPath(Path.Combine(baseDir, p))
+        match step with
+        | NapFileStep p ->
+            Runner.runNapFile (full p) vars env |> Async.RunSynchronously |> printNdjson
+        | FolderRef p ->
+            Directory.GetFiles(full p, "*.nap")
+            |> Array.sort
+            |> Array.forall (fun f -> Runner.runNapFile f vars env |> Async.RunSynchronously |> printNdjson)
+        | PlaylistRef p ->
+            let fp = full p
+            match File.ReadAllText(fp) |> Parser.parseNapList with
+            | Result.Ok nested -> streamSteps nested.Steps vars (Path.GetDirectoryName fp) env
+            | Result.Error _ -> false
+        | ScriptStep p ->
+            Runner.runScript (full p) |> Async.RunSynchronously |> printNdjson
+    )
+
+/// Run a .naplist playlist
+let private runPlaylist (args: CliArgs) (filePath: string) : int =
+    let content = File.ReadAllText(filePath)
+    match Parser.parseNapList content with
+    | Result.Error msg ->
+        Logger.error $"Playlist parse error: {msg}"
+        eprintfn "Error parsing playlist: %s" msg
+        2
+    | Result.Ok playlist ->
+        Logger.info $"Playlist loaded: {playlist.Steps.Length} steps"
+        let dir = Path.GetDirectoryName(filePath)
+        let env = playlist.Env |> Option.orElse args.Env
+        let vars = mergeVars playlist args.Vars
+        match args.Output with
+        | "ndjson" -> if streamSteps playlist.Steps vars dir env then 0 else 1
+        | _ -> collectSteps playlist.Steps vars dir env |> formatAndExit args.Output
+
+/// Run a single .nap file
+let private runSingleNap (args: CliArgs) (filePath: string) : int =
+    let result = Runner.runNapFile filePath args.Vars args.Env |> Async.RunSynchronously
+    match args.Output with
+    | "junit" -> printf "%s" (Output.formatJUnit [result])
+    | "json" | "ndjson" -> printf "%s" (Output.formatJson result)
+    | _ -> printf "%s" (Output.formatPretty result)
+    if result.Passed then 0 else 1
+
 let runFile (args: CliArgs) : int =
     match args.File with
     | None ->
         eprintfn "Error: no file specified"
         printHelp ()
         2
-    | Some filePath ->
-        let filePath = Path.GetFullPath(filePath)
+    | Some f ->
+        let filePath = Path.GetFullPath(f)
         Logger.info $"Processing: {filePath}"
-
         if not (File.Exists filePath) && not (Directory.Exists filePath) then
             Logger.error $"File not found: {filePath}"
             eprintfn "Error: %s not found" filePath
             2
-        elif Directory.Exists filePath then
-            // Run all .nap files in directory
-            let files = Directory.GetFiles(filePath, "*.nap") |> Array.sort
-            if files.Length = 0 then
-                eprintfn "No .nap files found in %s" filePath
-                2
-            else
-                match args.Output with
-                | "ndjson" ->
-                    let mutable allPassed = true
-                    for f in files do
-                        let r = Runner.runNapFile f args.Vars args.Env |> Async.RunSynchronously
-                        if not r.Passed then allPassed <- false
-                        printfn "%s" (Output.formatJson r)
-                        Console.Out.Flush()
-                    if allPassed then 0 else 1
-                | _ ->
-                    let results =
-                        files
-                        |> Array.map (fun f -> Runner.runNapFile f args.Vars args.Env |> Async.RunSynchronously)
-                        |> Array.toList
-
-                    match args.Output with
-                    | "junit" -> printf "%s" (Output.formatJUnit results)
-                    | "json" -> printf "%s" (Output.formatJsonArray results)
-                    | _ ->
-                        for r in results do
-                            printf "%s" (Output.formatPretty r)
-                        printf "%s" (Output.formatSummary results)
-
-                    if results |> List.forall (fun r -> r.Passed) then 0 else 1
-
-        elif filePath.EndsWith ".naplist" then
-            let content = File.ReadAllText(filePath)
-            match Parser.parseNapList content with
-            | Result.Error msg ->
-                Logger.error $"Playlist parse error: {msg}"
-                eprintfn "Error parsing playlist: %s" msg
-                2
-            | Result.Ok playlist ->
-                Logger.info $"Playlist loaded: {playlist.Steps.Length} steps"
-                let playlistDir = Path.GetDirectoryName(filePath)
-                let playlistEnv = playlist.Env |> Option.orElse args.Env
-                let allVars =
-                    let mutable v = playlist.Vars
-                    for kv in args.Vars do
-                        v <- v |> Map.add kv.Key kv.Value
-                    v
-
-                let rec runSteps (steps: PlaylistStep list) (vars: Map<string, string>) (baseDir: string) : NapResult list =
-                    steps |> List.collect (fun step ->
-                        match step with
-                        | NapFileStep path ->
-                            let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                            [Runner.runNapFile fullPath vars playlistEnv |> Async.RunSynchronously]
-                        | FolderRef path ->
-                            let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                            Directory.GetFiles(fullPath, "*.nap")
-                            |> Array.sort
-                            |> Array.map (fun f -> Runner.runNapFile f vars playlistEnv |> Async.RunSynchronously)
-                            |> Array.toList
-                        | PlaylistRef path ->
-                            let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                            let nestedDir = Path.GetDirectoryName fullPath
-                            let nestedContent = File.ReadAllText(fullPath)
-                            match Parser.parseNapList nestedContent with
-                            | Result.Ok nested -> runSteps nested.Steps vars nestedDir
-                            | Result.Error _ -> []
-                        | ScriptStep path ->
-                            let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                            [Runner.runScript fullPath |> Async.RunSynchronously]
-                    )
-
-                match args.Output with
-                | "ndjson" ->
-                    let rec streamSteps (steps: PlaylistStep list) (vars: Map<string, string>) (baseDir: string) : bool =
-                        steps |> List.forall (fun step ->
-                            match step with
-                            | NapFileStep path ->
-                                let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                                let r = Runner.runNapFile fullPath vars playlistEnv |> Async.RunSynchronously
-                                printfn "%s" (Output.formatJson r)
-                                Console.Out.Flush()
-                                r.Passed
-                            | FolderRef path ->
-                                let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                                Directory.GetFiles(fullPath, "*.nap")
-                                |> Array.sort
-                                |> Array.forall (fun f ->
-                                    let r = Runner.runNapFile f vars playlistEnv |> Async.RunSynchronously
-                                    printfn "%s" (Output.formatJson r)
-                                    Console.Out.Flush()
-                                    r.Passed)
-                            | PlaylistRef path ->
-                                let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                                let nestedDir = Path.GetDirectoryName fullPath
-                                let nestedContent = File.ReadAllText(fullPath)
-                                match Parser.parseNapList nestedContent with
-                                | Result.Ok nested -> streamSteps nested.Steps vars nestedDir
-                                | Result.Error _ -> false
-                            | ScriptStep path ->
-                                let fullPath = Path.GetFullPath(Path.Combine(baseDir, path))
-                                let r = Runner.runScript fullPath |> Async.RunSynchronously
-                                printfn "%s" (Output.formatJson r)
-                                Console.Out.Flush()
-                                r.Passed
-                        )
-                    if streamSteps playlist.Steps allVars playlistDir then 0 else 1
-                | _ ->
-                    let results = runSteps playlist.Steps allVars playlistDir
-
-                    match args.Output with
-                    | "junit" -> printf "%s" (Output.formatJUnit results)
-                    | "json" -> printf "%s" (Output.formatJsonArray results)
-                    | _ ->
-                        for r in results do
-                            printf "%s" (Output.formatPretty r)
-                        printf "%s" (Output.formatSummary results)
-
-                    if results |> List.forall (fun r -> r.Passed) then 0 else 1
-        else
-            // Single .nap file
-            let result = Runner.runNapFile filePath args.Vars args.Env |> Async.RunSynchronously
-
-            match args.Output with
-            | "junit" -> printf "%s" (Output.formatJUnit [result])
-            | "json" | "ndjson" -> printf "%s" (Output.formatJson result)
-            | _ -> printf "%s" (Output.formatPretty result)
-
-            if result.Passed then 0 else 1
+        elif Directory.Exists filePath then runDirectory args filePath
+        elif filePath.EndsWith ".naplist" then runPlaylist args filePath
+        else runSingleNap args filePath
 
 let private writeGenerated (outDir: string) (result: OpenApiGenerator.GenerationResult) : unit =
     let writeFile (f: OpenApiGenerator.GeneratedFile) =
@@ -235,39 +214,36 @@ let private writeGenerated (outDir: string) (result: OpenApiGenerator.Generation
         writeFile nap
     writeFile result.Playlist
 
+/// Display generation results
+let private displayGenerated (output: string) (generated: OpenApiGenerator.GenerationResult) (outDir: string) : unit =
+    match output with
+    | "json" ->
+        printfn "{\"files\":%d,\"playlist\":\"%s\"}" generated.NapFiles.Length generated.Playlist.FileName
+    | _ ->
+        printfn "Generated %d .nap files from OpenAPI spec" generated.NapFiles.Length
+        printfn "  Playlist: %s" generated.Playlist.FileName
+        printfn "  Environment: %s" generated.Environment.FileName
+        printfn "  Output: %s" outDir
+
 let generateOpenApi (args: CliArgs) : int =
     match args.File with
     | None ->
         eprintfn "Error: no spec file specified"
         eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
         2
-    | Some specPath ->
-        let specPath = Path.GetFullPath(specPath)
+    | Some specFile ->
+        let specPath = Path.GetFullPath(specFile)
         if not (File.Exists specPath) then
             eprintfn "Error: %s not found" specPath
             2
         else
-            let outDir =
-                match args.OutputDir with
-                | Some dir -> Path.GetFullPath(dir)
-                | None -> Path.GetDirectoryName(specPath)
-            let specContent = File.ReadAllText(specPath)
-            match OpenApiGenerator.generate specContent with
-            | Error msg ->
-                eprintfn "Error: %s" msg
-                1
+            let outDir = args.OutputDir |> Option.map Path.GetFullPath |> Option.defaultWith (fun () -> Path.GetDirectoryName(specPath))
+            match File.ReadAllText(specPath) |> OpenApiGenerator.generate with
+            | Error msg -> eprintfn "Error: %s" msg; 1
             | Ok generated ->
-                if not (Directory.Exists outDir) then
-                    Directory.CreateDirectory(outDir) |> ignore
+                if not (Directory.Exists outDir) then Directory.CreateDirectory(outDir) |> ignore
                 writeGenerated outDir generated
-                match args.Output with
-                | "json" ->
-                    printfn "{\"files\":%d,\"playlist\":\"%s\"}" generated.NapFiles.Length generated.Playlist.FileName
-                | _ ->
-                    printfn "Generated %d .nap files from OpenAPI spec" generated.NapFiles.Length
-                    printfn "  Playlist: %s" generated.Playlist.FileName
-                    printfn "  Environment: %s" generated.Environment.FileName
-                    printfn "  Output: %s" outDir
+                displayGenerated args.Output generated outDir
                 0
 
 let checkFile (args: CliArgs) : int =
@@ -314,6 +290,10 @@ let main argv =
             | None ->
                 eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
                 2
+        | "version" | "--version" ->
+            let v = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+            printfn "%d.%d.%d" v.Major v.Minor v.Build
+            0
         | "help" | "--help" | "-h" ->
             printHelp ()
             0
