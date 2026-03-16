@@ -17,11 +17,13 @@
     <Compile Include="ScriptEdgeCaseTests.fs" />
     <Compile Include="CsxScriptTests.fs" />
     <Compile Include="CliIntegrationTests.fs" />
+    <Compile Include="HttpToNapConverterTests.fs" />
     <Compile Include="OpenApiGeneratorTests.fs" />
     <Compile Include="OpenApiCliTests.fs" />
     <Compile Include="LoggerTests.fs" />
     <Compile Include="RunnerE2eTests.fs" />
     <Compile Include="OpenApiE2eTests.fs" />
+    <Compile Include="HttpConvertE2eTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
