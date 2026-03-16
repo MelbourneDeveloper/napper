@@ -13,8 +13,7 @@ open Xunit
 
 let private lspBinaryPath =
     let baseDir = AppContext.BaseDirectory
-    let repoRoot =
-        DirectoryInfo(baseDir).Parent.Parent.Parent.Parent.Parent.FullName
+    let repoRoot = DirectoryInfo(baseDir).Parent.Parent.Parent.Parent.Parent.FullName
     Path.Combine(repoRoot, "src", "Nap.Lsp", "bin", "Debug", "net10.0", "napper-lsp")
 
 /// Encode a JSON-RPC message with Content-Length header (LSP wire format)
@@ -35,6 +34,7 @@ let private readMessage (reader: StreamReader) (ct: CancellationToken) : Task<Js
         while not (String.IsNullOrEmpty(headerLine)) do
             if headerLine.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase) then
                 contentLength <- headerLine.Substring(15).Trim() |> int
+
             let! nextLine = reader.ReadLineAsync(ct)
             headerLine <- nextLine
 
@@ -76,6 +76,7 @@ type LspServerProcess() =
             request["jsonrpc"] <- str "2.0"
             request["id"] <- num id
             request["method"] <- str method
+
             match paramObj with
             | Some p -> request["params"] <- p
             | None -> ()
@@ -87,13 +88,13 @@ type LspServerProcess() =
 
             use cts = new CancellationTokenSource(TimeSpan.FromSeconds(10.0))
             let reader = proc.StandardOutput
-            let mutable result : JsonNode option = None
+            let mutable result: JsonNode option = None
 
             while result.IsNone do
                 let! msg = readMessage reader cts.Token
+
                 match msg with
-                | Some node when node["id"] <> null && node["id"].GetValue<int>() = id ->
-                    result <- Some node
+                | Some node when node["id"] <> null && node["id"].GetValue<int>() = id -> result <- Some node
                 | Some _ -> ()
                 | None -> failwith "Stream ended before response received"
 
@@ -105,6 +106,7 @@ type LspServerProcess() =
             let notification = JsonObject()
             notification["jsonrpc"] <- str "2.0"
             notification["method"] <- str method
+
             match paramObj with
             | Some p -> notification["params"] <- p
             | None -> ()
@@ -121,11 +123,13 @@ type LspServerProcess() =
             do! proc.StandardInput.BaseStream.FlushAsync()
         }
 
-    member _.IsRunning : bool =
-        started && not proc.HasExited
+    member _.IsRunning: bool = started && not proc.HasExited
 
     member _.ReadStdErr() : string =
-        if proc.HasExited then proc.StandardError.ReadToEnd() else ""
+        if proc.HasExited then
+            proc.StandardError.ReadToEnd()
+        else
+            ""
 
     member this.Kill() : unit =
         if started && not proc.HasExited then

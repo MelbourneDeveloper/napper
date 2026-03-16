@@ -31,8 +31,7 @@ let private createRpc (handler: IJsonRpcMessageHandler) : JsonRpc =
         | :? TaskCanceledException -> Some()
         | :? OperationCanceledException -> Some()
         | :? JsonSerializationException -> Some()
-        | :? AggregateException as aex ->
-            aex.InnerExceptions |> Seq.tryHead |> Option.bind (|HandleableException|_|)
+        | :? AggregateException as aex -> aex.InnerExceptions |> Seq.tryHead |> Option.bind (|HandleableException|_|)
         | _ -> None
 
     let strategy = ActivityTracingStrategy()
@@ -47,7 +46,13 @@ let private createRpc (handler: IJsonRpcMessageHandler) : JsonRpc =
             match ex with
             | :? JsonSerializationException as jex ->
                 let isSerializable = this.ExceptionStrategy = ExceptionProcessing.ISerializable
-                let data: obj = if isSerializable then (jex :> obj) else Protocol.CommonErrorData(jex)
+
+                let data: obj =
+                    if isSerializable then
+                        (jex :> obj)
+                    else
+                        Protocol.CommonErrorData(jex)
+
                 Protocol.JsonRpcError.ErrorDetail(
                     Code = Protocol.JsonRpcErrorCode.ParseError,
                     Message = jex.Message,
@@ -59,7 +64,7 @@ let private startServer () =
     let input = Console.OpenStandardInput()
     let output = Console.OpenStandardOutput()
 
-    let requestHandlings : Map<string, Mappings.ServerRequestHandling<_>> =
+    let requestHandlings: Map<string, Mappings.ServerRequestHandling<_>> =
         Server.defaultRequestHandlings ()
 
     Server.start

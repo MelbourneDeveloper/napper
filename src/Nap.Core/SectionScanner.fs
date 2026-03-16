@@ -4,24 +4,30 @@
 module Nap.Core.SectionScanner
 
 /// A located section header with its line number (0-based) and name
-type SectionLocation = {
-    Name      : string
-    Line      : int
-    EndLine   : int
-}
+type SectionLocation =
+    { Name: string
+      Line: int
+      EndLine: int }
 
 /// Known .nap section names
 let private napSections =
-    Set.ofList [ "meta"; "vars"; "request"; "request.headers"; "request.body"; "assert"; "script" ]
+    Set.ofList
+        [ "meta"
+          "vars"
+          "request"
+          "request.headers"
+          "request.body"
+          "assert"
+          "script" ]
 
 /// Known .naplist section names
-let private naplistSections =
-    Set.ofList [ "meta"; "vars"; "steps" ]
+let private naplistSections = Set.ofList [ "meta"; "vars"; "steps" ]
 
 let private isSectionHeader (line: string) : string option =
     let trimmed = line.Trim()
+
     if trimmed.StartsWith "[" && trimmed.EndsWith "]" then
-        Some (trimmed.TrimStart('[').TrimEnd(']').ToLowerInvariant())
+        Some(trimmed.TrimStart('[').TrimEnd(']').ToLowerInvariant())
     else
         None
 
@@ -34,16 +40,21 @@ let private isShorthandRequest (line: string) : bool =
 /// Also detects shorthand requests (e.g. "GET https://...") as a synthetic "request" section.
 let scanNapSections (content: string) : SectionLocation list =
     let lines = content.Split([| '\n' |])
-    let mutable sections : SectionLocation list = []
+    let mutable sections: SectionLocation list = []
     let mutable lastSectionStart = -1
     let mutable lastName = ""
 
     let closeSection (endLine: int) =
         if lastSectionStart >= 0 then
-            sections <- sections @ [ { Name = lastName; Line = lastSectionStart; EndLine = endLine } ]
+            sections <-
+                sections
+                @ [ { Name = lastName
+                      Line = lastSectionStart
+                      EndLine = endLine } ]
 
     for i in 0 .. lines.Length - 1 do
         let line = lines[i]
+
         match isSectionHeader line with
         | Some name when napSections.Contains name ->
             closeSection (i - 1)
@@ -61,13 +72,17 @@ let scanNapSections (content: string) : SectionLocation list =
 /// Scan a .naplist file for section locations. Returns sections in file order.
 let scanNaplistSections (content: string) : SectionLocation list =
     let lines = content.Split([| '\n' |])
-    let mutable sections : SectionLocation list = []
+    let mutable sections: SectionLocation list = []
     let mutable lastSectionStart = -1
     let mutable lastName = ""
 
     let closeSection (endLine: int) =
         if lastSectionStart >= 0 then
-            sections <- sections @ [ { Name = lastName; Line = lastSectionStart; EndLine = endLine } ]
+            sections <-
+                sections
+                @ [ { Name = lastName
+                      Line = lastSectionStart
+                      EndLine = endLine } ]
 
     for i in 0 .. lines.Length - 1 do
         match isSectionHeader lines[i] with

@@ -31,6 +31,5 @@ type Client(notificationSender: Server.ClientNotificationSender, requestSender: 
 
     override this.WindowShowMessageRequest p =
         match box p with
-        | null ->
-            async { return Result.Error(Error.InternalError("Parameter was null")) }
+        | null -> async { return Result.Error(Error.InternalError("Parameter was null")) }
         | value -> requestSender.Send "window/showMessageRequest" value

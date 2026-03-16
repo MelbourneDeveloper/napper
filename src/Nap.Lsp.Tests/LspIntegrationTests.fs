@@ -20,7 +20,7 @@ let private initializeParams () : JsonNode =
 /// Run a full initialize handshake (initialize request + initialized notification)
 let private handshake (server: LspServerProcess) : Task<JsonNode> =
     task {
-        let! response = server.SendRequest("initialize", 1, initializeParams())
+        let! response = server.SendRequest("initialize", 1, initializeParams ())
         do! server.SendNotification("initialized", JsonObject())
         return response
     }
@@ -42,7 +42,7 @@ let ``initialize handshake returns capabilities`` () : Task =
         use server = new LspServerProcess()
         server.Start()
 
-        let! response = server.SendRequest("initialize", 1, initializeParams())
+        let! response = server.SendRequest("initialize", 1, initializeParams ())
 
         Assert.NotNull(response["result"])
         Assert.Null(response["error"])
@@ -70,7 +70,7 @@ let ``initialized notification accepted without error`` () : Task =
         use server = new LspServerProcess()
         server.Start()
 
-        let! _initResponse = server.SendRequest("initialize", 1, initializeParams())
+        let! _initResponse = server.SendRequest("initialize", 1, initializeParams ())
         do! server.SendNotification("initialized", JsonObject())
         do! Task.Delay(200)
 
@@ -99,8 +99,11 @@ let ``textDocument/didChange updates document`` () : Task =
         let! _ = handshake server
 
         // Open
-        do! server.SendNotification("textDocument/didOpen",
-            didOpenParams "file:///tmp/test.nap" 1 "[request]\nmethod = GET\nurl = https://example.com\n")
+        do!
+            server.SendNotification(
+                "textDocument/didOpen",
+                didOpenParams "file:///tmp/test.nap" 1 "[request]\nmethod = GET\nurl = https://example.com\n"
+            )
 
         // Change
         let changeParams = JsonObject()
@@ -128,8 +131,11 @@ let ``textDocument/didClose removes document`` () : Task =
         server.Start()
         let! _ = handshake server
 
-        do! server.SendNotification("textDocument/didOpen",
-            didOpenParams "file:///tmp/test.nap" 1 "GET https://example.com\n")
+        do!
+            server.SendNotification(
+                "textDocument/didOpen",
+                didOpenParams "file:///tmp/test.nap" 1 "GET https://example.com\n"
+            )
 
         let closeParams = JsonObject()
         let closeDoc = JsonObject()
@@ -212,7 +218,10 @@ let ``documentSymbol returns sections for nap file`` () : Task =
         let! _ = handshake server
 
         let uri = "file:///tmp/test.nap"
-        let content = "[meta]\nname = \"Test\"\n\n[request]\nmethod = GET\nurl = https://example.com\n\n[assert]\nstatus = 200\n"
+
+        let content =
+            "[meta]\nname = \"Test\"\n\n[request]\nmethod = GET\nurl = https://example.com\n\n[assert]\nstatus = 200\n"
+
         do! server.SendNotification("textDocument/didOpen", didOpenParams uri 1 content)
 
         let! response = server.SendRequest("textDocument/documentSymbol", 10, docSymbolParams uri)
@@ -238,9 +247,11 @@ let ``documentSymbol returns sections for naplist file`` () : Task =
         let! _ = handshake server
 
         let uri = "file:///tmp/test.naplist"
-        let content = "[meta]\nname = \"Smoke tests\"\n\n[steps]\nauth/login.nap\nusers/get-user.nap\n"
-        do! server.SendNotification("textDocument/didOpen",
-            didOpenParams uri 1 content)
+
+        let content =
+            "[meta]\nname = \"Smoke tests\"\n\n[steps]\nauth/login.nap\nusers/get-user.nap\n"
+
+        do! server.SendNotification("textDocument/didOpen", didOpenParams uri 1 content)
 
         let! response = server.SendRequest("textDocument/documentSymbol", 11, docSymbolParams uri)
 
@@ -313,8 +324,8 @@ let ``executeCommand requestInfo returns method and URL`` () : Task =
         let content = "[request]\nmethod = POST\nurl = https://api.example.com/users\n"
         do! server.SendNotification("textDocument/didOpen", didOpenParams uri 1 content)
 
-        let! response = server.SendRequest("workspace/executeCommand", 20,
-            executeCommandParams "napper.requestInfo" uri)
+        let! response =
+            server.SendRequest("workspace/executeCommand", 20, executeCommandParams "napper.requestInfo" uri)
 
         Assert.Null(response["error"])
         Assert.NotNull(response["result"])
@@ -337,8 +348,7 @@ let ``executeCommand copyCurl returns curl string`` () : Task =
         let content = "[request]\nmethod = GET\nurl = https://example.com/api\n"
         do! server.SendNotification("textDocument/didOpen", didOpenParams uri 1 content)
 
-        let! response = server.SendRequest("workspace/executeCommand", 21,
-            executeCommandParams "napper.copyCurl" uri)
+        let! response = server.SendRequest("workspace/executeCommand", 21, executeCommandParams "napper.copyCurl" uri)
 
         Assert.Null(response["error"])
         Assert.NotNull(response["result"])
@@ -359,17 +369,33 @@ let ``executeCommand listEnvironments returns env names`` () : Task =
         let! _ = handshake server
 
         // Create temp .napenv files
-        let tmpDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"napper-lsp-test-{System.Guid.NewGuid()}")
+        let tmpDir =
+            System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"napper-lsp-test-{System.Guid.NewGuid()}")
+
         System.IO.Directory.CreateDirectory(tmpDir) |> ignore
         System.IO.File.WriteAllText(System.IO.Path.Combine(tmpDir, ".napenv"), "baseUrl = https://example.com")
-        System.IO.File.WriteAllText(System.IO.Path.Combine(tmpDir, ".napenv.staging"), "baseUrl = https://staging.example.com")
-        System.IO.File.WriteAllText(System.IO.Path.Combine(tmpDir, ".napenv.production"), "baseUrl = https://prod.example.com")
+
+        System.IO.File.WriteAllText(
+            System.IO.Path.Combine(tmpDir, ".napenv.staging"),
+            "baseUrl = https://staging.example.com"
+        )
+
+        System.IO.File.WriteAllText(
+            System.IO.Path.Combine(tmpDir, ".napenv.production"),
+            "baseUrl = https://prod.example.com"
+        )
+
         System.IO.File.WriteAllText(System.IO.Path.Combine(tmpDir, ".napenv.local"), "secret = hunter2")
 
         try
             let rootUri = $"file://{tmpDir}"
-            let! response = server.SendRequest("workspace/executeCommand", 22,
-                executeCommandParams "napper.listEnvironments" rootUri)
+
+            let! response =
+                server.SendRequest(
+                    "workspace/executeCommand",
+                    22,
+                    executeCommandParams "napper.listEnvironments" rootUri
+                )
 
             Assert.Null(response["error"])
             Assert.NotNull(response["result"])

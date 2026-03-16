@@ -17,13 +17,18 @@ type NapLspServer(client: Client) =
     let commandListEnvs = "napper.listEnvironments"
     let commandRequestInfo = "napper.requestInfo"
 
-    let capabilities : ServerCapabilities =
+    let capabilities: ServerCapabilities =
         { ServerCapabilities.Default with
             TextDocumentSync = Some(U2.C2 TextDocumentSyncKind.Full)
             DocumentSymbolProvider = Some(U2.C1 true)
-            CodeLensProvider = Some { ResolveProvider = Some false; WorkDoneProgress = None }
+            CodeLensProvider =
+                Some
+                    { ResolveProvider = Some false
+                      WorkDoneProgress = None }
             ExecuteCommandProvider =
-                Some { Commands = [| commandCopyCurl; commandListEnvs; commandRequestInfo |]; WorkDoneProgress = None } }
+                Some
+                    { Commands = [| commandCopyCurl; commandListEnvs; commandRequestInfo |]
+                      WorkDoneProgress = None } }
 
     // ─── Helpers ─────────────────────────────────────────────
 
@@ -44,8 +49,13 @@ type NapLspServer(client: Client) =
 
     let sectionToSymbol (section: SectionScanner.SectionLocation) : DocumentSymbol =
         let range =
-            { Start = { Line = uint32 section.Line; Character = 0u }
-              End = { Line = uint32 section.EndLine; Character = 0u } }
+            { Start =
+                { Line = uint32 section.Line
+                  Character = 0u }
+              End =
+                { Line = uint32 section.EndLine
+                  Character = 0u } }
+
         { Name = $"[{section.Name}]"
           Detail = None
           Kind = symbolKindForSection section.Name
@@ -61,7 +71,8 @@ type NapLspServer(client: Client) =
     let uriToFilePath (uri: string) : string =
         if uri.StartsWith "file://" then
             System.Uri(uri).LocalPath
-        else uri
+        else
+            uri
 
     let uriToDirectoryPath (uri: string) : string =
         uriToFilePath uri |> System.IO.Path.GetDirectoryName
@@ -75,9 +86,13 @@ type NapLspServer(client: Client) =
 
     let methodString (m: HttpMethod) : string =
         match m with
-        | GET -> "GET" | POST -> "POST" | PUT -> "PUT"
-        | PATCH -> "PATCH" | DELETE -> "DELETE"
-        | HEAD -> "HEAD" | OPTIONS -> "OPTIONS"
+        | GET -> "GET"
+        | POST -> "POST"
+        | PUT -> "PUT"
+        | PATCH -> "PATCH"
+        | DELETE -> "DELETE"
+        | HEAD -> "HEAD"
+        | OPTIONS -> "OPTIONS"
 
     // ─── Lifecycle ───────────────────────────────────────────
 
@@ -127,8 +142,7 @@ type NapLspServer(client: Client) =
             | [| U2.C2 { Text = newText } |] ->
                 Workspace.changeDocument doc.Uri (int doc.Version) newText
                 do! client.LogDebug $"Changed {doc.Uri}"
-            | _ ->
-                Logger.warn "Received unsupported partial/multi change"
+            | _ -> Logger.warn "Received unsupported partial/multi change"
         }
 
     override _.TextDocumentDidClose(param) =
@@ -146,20 +160,17 @@ type NapLspServer(client: Client) =
             let uri = param.TextDocument.Uri
 
             match getDocumentText uri with
-            | None ->
-                return Result.Ok None
+            | None -> return Result.Ok None
             | Some text ->
                 let sections =
                     if isNapFile uri then
                         SectionScanner.scanNapSections text
                     elif isNaplistFile uri then
                         SectionScanner.scanNaplistSections text
-                    else []
+                    else
+                        []
 
-                let symbols =
-                    sections
-                    |> List.map sectionToSymbol
-                    |> Array.ofList
+                let symbols = sections |> List.map sectionToSymbol |> Array.ofList
 
                 Logger.debug $"documentSymbol: {uri} -> {symbols.Length} symbols"
                 return Result.Ok(Some(U2.C2 symbols))
@@ -173,10 +184,10 @@ type NapLspServer(client: Client) =
             let uri = param.TextDocument.Uri
 
             match getDocumentText uri with
-            | None ->
-                return Result.Ok None
+            | None -> return Result.Ok None
             | Some text when isNapFile uri ->
                 let sections = SectionScanner.scanNapSections text
+
                 let lenses =
                     sections
                     |> List.choose (fun s ->
@@ -188,19 +199,22 @@ type NapLspServer(client: Client) =
                             // Extract method + URL for display
                             let detail =
                                 match Parser.parseNapFile text with
-                                | Result.Ok nap ->
-                                    Some $"{methodString nap.Request.Method} {nap.Request.Url}"
+                                | Result.Ok nap -> Some $"{methodString nap.Request.Method} {nap.Request.Url}"
                                 | Result.Error _ -> None
 
-                            Some { Range = range
-                                   Command = None
-                                   Data = detail |> Option.map (fun d -> JValue(d) :> JToken) }
-                        else None)
+                            Some
+                                { Range = range
+                                  Command = None
+                                  Data = detail |> Option.map (fun d -> JValue(d) :> JToken) }
+                        else
+                            None)
                     |> Array.ofList
+
                 Logger.debug $"codeLens: {uri} -> {lenses.Length} lenses"
                 return Result.Ok(Some lenses)
             | Some text when isNaplistFile uri ->
                 let sections = SectionScanner.scanNaplistSections text
+
                 let lenses =
                     sections
                     |> List.choose (fun s ->
@@ -208,12 +222,17 @@ type NapLspServer(client: Client) =
                             let range =
                                 { Start = { Line = uint32 s.Line; Character = 0u }
                                   End = { Line = uint32 s.Line; Character = 0u } }
-                            Some { Range = range; Command = None; Data = None }
-                        else None)
+
+                            Some
+                                { Range = range
+                                  Command = None
+                                  Data = None }
+                        else
+                            None)
                     |> Array.ofList
+
                 return Result.Ok(Some lenses)
-            | _ ->
-                return Result.Ok None
+            | _ -> return Result.Ok None
         }
 
     // ─── Execute Command ─────────────────────────────────────
@@ -225,6 +244,7 @@ type NapLspServer(client: Client) =
             |> Option.bind Array.tryHead
             |> Option.map (fun (t: JToken) -> t.ToObject<string>())
             |> Option.defaultValue ""
+
         async {
             match param.Command with
             | cmd when cmd = commandRequestInfo ->
@@ -240,8 +260,7 @@ type NapLspServer(client: Client) =
                     result["headers"] <- headers
                     Logger.debug $"requestInfo: {uri} -> {methodString request.Method} {request.Url}"
                     return Result.Ok(Some(result :> JToken))
-                | None ->
-                    return Result.Ok None
+                | None -> return Result.Ok None
 
             | cmd when cmd = commandCopyCurl ->
                 let uri = extractedArg
@@ -251,8 +270,7 @@ type NapLspServer(client: Client) =
                     let curl = CurlGenerator.toCurl request
                     Logger.debug $"copyCurl: {uri} -> {curl}"
                     return Result.Ok(Some(JValue(curl) :> JToken))
-                | None ->
-                    return Result.Ok None
+                | None -> return Result.Ok None
 
             | cmd when cmd = commandListEnvs ->
                 let rootUri = extractedArg
