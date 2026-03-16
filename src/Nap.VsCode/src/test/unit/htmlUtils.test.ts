@@ -1,3 +1,4 @@
+// Specs: vscode-layout
 import * as assert from "assert";
 import {
   buildResultDetailHtml,
@@ -8,6 +9,8 @@ import {
   buildCollapsibleSection,
   buildHeadersTableRows,
   escapeHtml,
+  formatBodyHtml,
+  highlightJson,
 } from "../../htmlUtils";
 import type { RunResult } from "../../types";
 import {
@@ -903,5 +906,48 @@ suite("escapeHtml", () => {
 
   test("returns plain text unchanged", () => {
     assert.strictEqual(escapeHtml("hello world"), "hello world");
+  });
+});
+
+suite("JSON highlighting — null, boolean, and empty object", () => {
+  test("null value gets json-null class", () => {
+    const html = highlightJson(null, 0);
+
+    assert.ok(html.includes("json-null"), "null must use json-null CSS class");
+    assert.ok(html.includes("null"), "null must render as text 'null'");
+  });
+
+  test("boolean true gets json-bool class", () => {
+    const html = highlightJson(true, 0);
+
+    assert.ok(html.includes("json-bool"), "boolean must use json-bool CSS class");
+    assert.ok(html.includes("true"), "true must render as text 'true'");
+  });
+
+  test("boolean false gets json-bool class", () => {
+    const html = highlightJson(false, 0);
+
+    assert.ok(html.includes("json-bool"), "boolean must use json-bool CSS class");
+    assert.ok(html.includes("false"), "false must render as text 'false'");
+  });
+
+  test("empty object renders as {}", () => {
+    const html = highlightJson({}, 0);
+
+    assert.strictEqual(html, "{}", "empty object must render as '{}'");
+  });
+
+  test("formatBodyHtml handles JSON with null and boolean values", () => {
+    const html = formatBodyHtml('{"active":true,"deleted":null}');
+
+    assert.ok(html.includes("json-bool"), "boolean in body must be highlighted");
+    assert.ok(html.includes("json-null"), "null in body must be highlighted");
+    assert.ok(html.includes("json-key"), "keys must be highlighted");
+  });
+
+  test("empty array renders as []", () => {
+    const html = highlightJson([], 0);
+
+    assert.strictEqual(html, "[]", "empty array must render as '[]'");
   });
 });

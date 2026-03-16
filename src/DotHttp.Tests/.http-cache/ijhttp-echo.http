@@ -1,0 +1,12 @@
+### Echo test
+GET /echo HTTP/1.1
+Accept: application/json
+Public-Variable: {{public-variable}}
+Another-Variable: {{another-variable}}
+Third-Variable: {{third-variable}}
+Hidden-Variable: {{hidden-variable}}
+Hidden-Variable2: {{hidden-variable2}}
+Last-Variable: {{last-variable}}
+Host: localhost:{{localport}}
+
+###

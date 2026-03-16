@@ -8,11 +8,11 @@ eleventyNavigation:
   order: 5
 ---
 
-# .naplist Playlists
+# .naplist Playlists (spec: naplist-file)
 
 A `.naplist` file defines an ordered sequence of steps to execute. Steps can be `.nap` files, folders, other playlists, or F#/C# scripts.
 
-## Basic format
+## Basic format (spec: naplist-meta, naplist-steps)
 
 ```
 [meta]
@@ -25,7 +25,7 @@ description = Quick checks for core endpoints
 ./users/create-user.nap
 ```
 
-## Full format
+## Full format (spec: naplist-meta, naplist-vars, naplist-steps)
 
 ```
 [meta]
@@ -55,7 +55,7 @@ adminToken = {% raw %}{{ADMIN_TOKEN}}{% endraw %}
 
 ## Step types
 
-### .nap files
+### .nap files (spec: naplist-nap-step)
 
 Run a single HTTP request:
 
@@ -63,15 +63,15 @@ Run a single HTTP request:
 ./users/get-user.nap
 ```
 
-### Folders
+### Folders (spec: naplist-folder-step)
 
-Run all `.nap` files in a folder, sorted by filename:
+Run all `.nap` files in a folder, sorted by filename (spec: collection-sort):
 
 ```
 ./users/
 ```
 
-### Nested playlists
+### Nested playlists (spec: naplist-nested)
 
 Run another `.naplist` file:
 
@@ -81,7 +81,7 @@ Run another `.naplist` file:
 
 Nesting is recursive — playlists can reference other playlists.
 
-### F# and C# scripts
+### F# and C# scripts (spec: naplist-script-step)
 
 Run an orchestration script:
 
@@ -92,7 +92,7 @@ Run an orchestration script:
 
 Scripts can use the injected `NapRunner` to run requests and playlists programmatically. See [F# Scripting](/docs/fsharp-scripting/) or [C# Scripting](/docs/csharp-scripting/).
 
-## Variables
+## Variables (spec: naplist-var-scope)
 
 Variables defined in `[vars]` are available to all steps. Steps can also set variables for downstream steps using F# or C# scripts.
 

@@ -8,7 +8,7 @@ eleventyNavigation:
   order: 11
 ---
 
-# Napper vs Postman
+# Napper vs Postman (spec: cli-run, nap-file)
 
 Napper is a free, open-source, CLI-first alternative to Postman for API testing. Here is how they compare.
 
@@ -20,17 +20,17 @@ Postman is a GUI-first application with a standalone desktop client. The command
 
 No. Napper requires no account, no sign-up, and no cloud sync. Postman requires an account to use the desktop application and locks collaboration features, advanced scripting, and API monitoring behind paid tiers.
 
-## How do file formats compare?
+## How do file formats compare? (spec: nap-file)
 
 Postman stores collections as JSON blobs that are difficult to read in diffs and code reviews. Napper stores every request as a plain text `.nap` file, every test suite as a `.naplist` file, and every environment as a `.napenv` file. All formats are human-readable and produce clean git diffs.
 
-## How does scripting compare?
+## How does scripting compare? (spec: script-fsx, script-csx)
 
 Postman provides a sandboxed JavaScript environment with a limited set of built-in libraries. Napper supports both F# (`.fsx`) and C# (`.csx`) scripts with full access to the .NET ecosystem. You can parse XML, call databases, generate cryptographic tokens, validate JSON schemas, and reference any NuGet package.
 
-## How does CI/CD integration compare?
+## How does CI/CD integration compare? (spec: cli-run, cli-output)
 
-Postman requires Newman (a separate npm package) for running collections from the command line. Napper is CLI-first with a self-contained binary and no runtime dependencies. It outputs JUnit XML, TAP, JSON, and NDJSON formats natively.
+Postman requires Newman (a separate npm package) for running collections from the command line. Napper is CLI-first with a self-contained binary and no runtime dependencies. It outputs JUnit XML, JSON, and NDJSON formats natively.
 
 ## Feature comparison
 
@@ -41,9 +41,10 @@ Postman requires Newman (a separate npm package) for running collections from th
 | Git-friendly files | Plain text `.nap` files | JSON blobs |
 | Assertions | Declarative + F#/C# scripts | JavaScript scripts |
 | Scripting | Full F# and C# with .NET access | Sandboxed JavaScript |
-| CI/CD output | JUnit, TAP, JSON, NDJSON | Via Newman |
+| CI/CD output | JUnit, JSON, NDJSON | Via Newman |
 | Test Explorer | Native VS Code support | No |
 | Account required | No | Yes |
+| .http file migration | Built-in converter | Import only |
 | Pricing | Free, MIT license | Freemium with paid tiers |
 
 ## When should you choose Napper over Postman?

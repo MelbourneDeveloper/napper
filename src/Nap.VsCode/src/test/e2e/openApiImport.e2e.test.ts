@@ -1,3 +1,4 @@
+// Specs: vscode-openapi, vscode-openapi-import
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as fs from "fs";
@@ -35,6 +36,12 @@ import {
 } from "../../constants";
 
 const PETSTORE_URL = OPENAPI_URL_PLACEHOLDER,
+ BEECEPTOR_URL = "https://beeceptor.com/docs/storefront-sample.json",
+ BEECEPTOR_EXPECTED_ENDPOINTS = 11,
+ BEECEPTOR_BASE_URL_DOMAIN = "api.demo-ecommerce.com",
+ BEECEPTOR_AUTH_REGISTER_PATH = "/auth/register",
+ BEECEPTOR_CHECKOUT_PATH = "/checkout",
+ BEECEPTOR_SPEC_TITLE = "E-commerce API",
  NONEXISTENT_URL = "https://httpbin.org/status/404",
  TEMP_SPEC_FILENAME = ".openapi-spec.json";
 
@@ -257,6 +264,127 @@ suite("OpenAPI CLI Generate", () => {
       }
     } finally {
       fs.rmSync(tmpDir, { recursive: true });
+    }
+  });
+});
+
+// ─── Beeceptor URL → CLI generate E2E ───────────────────────
+// Proves the URL content drives generated output — not a fixture
+
+suite("OpenAPI URL-to-Generate E2E (Beeceptor)", () => {
+  suiteSetup(async function () {
+    this.timeout(30_000);
+    await activateExtension();
+  });
+
+  test("downloadSpec + CLI generate produces beeceptor-specific output", async function () {
+    this.timeout(60_000);
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napper-beeceptor-"));
+
+    try {
+      const specResult = await downloadSpec(BEECEPTOR_URL);
+      assert.ok(specResult.ok, `Beeceptor URL download must succeed, got: ${specResult.ok ? "" : specResult.error}`);
+
+      const specPath = saveTempSpec(specResult.value, tmpDir);
+      assert.ok(
+        fs.existsSync(specPath),
+        "Temp spec file must exist after saving downloaded content"
+      );
+
+      const stdout = await runCliGenerate(specPath, tmpDir),
+       generated = JSON.parse(stdout) as { files: number; playlist: string };
+
+      assert.strictEqual(
+        generated.files,
+        BEECEPTOR_EXPECTED_ENDPOINTS,
+        `Beeceptor spec must produce exactly ${BEECEPTOR_EXPECTED_ENDPOINTS} endpoints`
+      );
+
+      const napenvPath = path.join(tmpDir, NAPENV_EXTENSION),
+       envContent = fs.readFileSync(napenvPath, ENCODING_UTF8);
+      assert.ok(
+        envContent.includes(BEECEPTOR_BASE_URL_DOMAIN),
+        `Environment must contain beeceptor base URL domain ${BEECEPTOR_BASE_URL_DOMAIN}`
+      );
+
+      const playlistPath = path.join(tmpDir, generated.playlist),
+       playlistContent = fs.readFileSync(playlistPath, ENCODING_UTF8);
+      assert.ok(
+        playlistContent.includes(BEECEPTOR_SPEC_TITLE),
+        `Playlist must contain beeceptor spec title "${BEECEPTOR_SPEC_TITLE}"`
+      );
+
+      const napFiles = collectNapFiles(tmpDir);
+      const hasAuthRegister = napFiles.some((f: string) => {
+        const content = fs.readFileSync(f, ENCODING_UTF8);
+        return content.includes(BEECEPTOR_AUTH_REGISTER_PATH);
+      });
+      assert.ok(hasAuthRegister, "Must have auth/register endpoint from beeceptor spec");
+
+      const hasCheckout = napFiles.some((f: string) => {
+        const content = fs.readFileSync(f, ENCODING_UTF8);
+        return content.includes(BEECEPTOR_CHECKOUT_PATH);
+      });
+      assert.ok(hasCheckout, "Must have checkout endpoint from beeceptor spec");
+
+      for (const napFile of napFiles) {
+        const content = fs.readFileSync(napFile, ENCODING_UTF8);
+        assert.ok(
+          content.includes(SECTION_META),
+          `${path.basename(napFile)} must have [meta] section`
+        );
+        assert.ok(
+          content.includes(SECTION_REQUEST),
+          `${path.basename(napFile)} must have [request] section`
+        );
+        assert.ok(
+          content.includes(SECTION_ASSERT),
+          `${path.basename(napFile)} must have [assert] section`
+        );
+      }
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true });
+    }
+  });
+
+  test("beeceptor URL produces different output than petstore URL", async function () {
+    this.timeout(60_000);
+    const beeDir = fs.mkdtempSync(path.join(os.tmpdir(), "napper-bee-")),
+     petDir = fs.mkdtempSync(path.join(os.tmpdir(), "napper-pet-"));
+
+    try {
+      const beeResult = await downloadSpec(BEECEPTOR_URL);
+      assert.ok(beeResult.ok, "Beeceptor download must succeed");
+      const beePath = saveTempSpec(beeResult.value, beeDir);
+      await runCliGenerate(beePath, beeDir);
+
+      const petResult = await downloadSpec(PETSTORE_URL);
+      assert.ok(petResult.ok, "Petstore download must succeed");
+      const petPath = saveTempSpec(petResult.value, petDir);
+      await runCliGenerate(petPath, petDir);
+
+      const beeEnv = fs.readFileSync(path.join(beeDir, NAPENV_EXTENSION), ENCODING_UTF8),
+       petEnv = fs.readFileSync(path.join(petDir, NAPENV_EXTENSION), ENCODING_UTF8);
+
+      assert.ok(
+        beeEnv.includes(BEECEPTOR_BASE_URL_DOMAIN),
+        "Beeceptor env must have beeceptor domain"
+      );
+      assert.ok(
+        !petEnv.includes(BEECEPTOR_BASE_URL_DOMAIN),
+        "Petstore env must NOT have beeceptor domain"
+      );
+
+      const beeNaps = collectNapFiles(beeDir),
+       petNaps = collectNapFiles(petDir);
+      assert.notStrictEqual(
+        beeNaps.length,
+        petNaps.length,
+        "Different specs must produce different number of files"
+      );
+    } finally {
+      fs.rmSync(beeDir, { recursive: true });
+      fs.rmSync(petDir, { recursive: true });
     }
   });
 });

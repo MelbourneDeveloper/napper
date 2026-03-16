@@ -1,3 +1,4 @@
+// Specs: vscode-impl
 // CLI Installer — downloads the correct Napper CLI binary from GitHub releases
 // Decoupled from vscode SDK — takes config values as parameters
 

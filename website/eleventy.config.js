@@ -69,6 +69,28 @@ export default function (eleventyConfig) {
     return content;
   });
 
+  // Fix OG site_name: use short name instead of full title
+  eleventyConfig.addTransform("og-site-name", function (content) {
+    if (this.page.outputPath?.endsWith(".html")) {
+      return content.replace(
+        '<meta property="og:site_name" content="Napper — CLI-First API Testing for VS Code">',
+        '<meta property="og:site_name" content="Napper">'
+      );
+    }
+    return content;
+  });
+
+  // Replace techdoc generator tag with project branding
+  eleventyConfig.addTransform("generator-tag", function (content) {
+    if (this.page.outputPath?.endsWith(".html")) {
+      return content.replace(
+        '<meta name="generator" content="Eleventy + techdoc">',
+        '<meta name="generator" content="Eleventy">'
+      );
+    }
+    return content;
+  });
+
   // Fix llms.txt: remove dead /api/ link
   eleventyConfig.addTransform("llms-fix", function (content) {
     if (this.page.outputPath === "llms.txt" || this.page.outputPath?.endsWith("/llms.txt")) {

@@ -1,3 +1,7 @@
+// Specs: cli-run, nap-assert, assert-status, assert-equals, assert-exists, assert-contains,
+//        assert-matches, assert-lt, assert-gt, script-fsx, script-csx, script-dispatch,
+//        env-interpolation, collection-folder, collection-sort, naplist-steps,
+//        naplist-nap-step, naplist-folder-step, naplist-nested, naplist-script-step, naplist-var-scope
 module Nap.Core.Runner
 
 open System

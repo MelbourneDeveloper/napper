@@ -1,3 +1,4 @@
+// Specs: vscode-explorer, vscode-playlists
 // Tree data provider for the Explorer view
 // Shows .nap and .naplist files in workspace folder structure
 
@@ -35,10 +36,7 @@ export interface TreeNode {
 const isScriptFile = (filePath: string): boolean =>
   filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION),
 
- getContextValue = (filePath: string, isDirectory: boolean): string => {
-  if (isDirectory) {
-    return CONTEXT_FOLDER;
-  }
+ getContextValue = (filePath: string): string => {
   if (filePath.endsWith(NAPLIST_EXTENSION)) {
     return CONTEXT_PLAYLIST;
   }
@@ -95,7 +93,7 @@ export const createFileNode = (
     label: path.basename(filePath, path.extname(filePath)),
     filePath,
     isDirectory: false as const,
-    contextValue: getContextValue(filePath, false),
+    contextValue: getContextValue(filePath),
     runState: getRunState(filePath, results),
   };
   if (method !== undefined) {

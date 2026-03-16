@@ -12,7 +12,7 @@ eleventyNavigation:
 
 Get up and running with Napper in under 5 minutes.
 
-## How do I create my first request?
+## How do I create my first request? (spec: nap-minimal, nap-request)
 
 Create a file called `hello.nap`:
 
@@ -28,7 +28,7 @@ napper run ./hello.nap
 
 You should see the JSON response printed to your terminal.
 
-## How do I add assertions?
+## How do I add assertions? (spec: nap-assert)
 
 Edit `hello.nap` to verify the response:
 
@@ -44,7 +44,7 @@ body.title exists
 
 Run it again. Napper will report whether each assertion passed or failed.
 
-## How do I use variables and environments?
+## How do I use variables and environments? (spec: nap-vars, cli-env)
 
 Create a `.napenv` file in the same directory:
 
@@ -84,7 +84,7 @@ Run the entire suite:
 napper run ./smoke.naplist
 ```
 
-## How do I use Napper in CI/CD?
+## How do I use Napper in CI/CD? (spec: cli-output, cli-exit-codes)
 
 Output JUnit XML for your pipeline:
 

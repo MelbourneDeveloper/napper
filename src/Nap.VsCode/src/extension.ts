@@ -1,3 +1,4 @@
+// Specs: vscode-impl, vscode-commands
 // Napper VSCode Extension — main entry point
 // Registers all providers, commands, and file watchers
 
@@ -24,11 +25,14 @@ import {
 import { newPlaylist, newRequest } from "./fileCreation";
 import { copyAsCurl } from "./curlCopy";
 import { importOpenApiFromFile, importOpenApiFromUrl, runAiEnrichment } from "./openApiImport";
+import { convertHttpFile, convertHttpDirectory } from "./httpConvert";
 import { registerContextMenuCommands } from "./contextMenuCommands";
 import { registerAutoRun, registerWatchers } from "./watchers";
 import {
   CLI_BIN_DIR,
   CLI_ERROR_PREFIX,
+  CMD_CONVERT_HTTP_DIR,
+  CMD_CONVERT_HTTP_FILE,
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_INSTALL_MSG,
@@ -50,8 +54,10 @@ import {
   CONFIG_SPLIT_LAYOUT,
   DEFAULT_CLI_PATH,
   ENCODING_UTF8,
+  HTTP_FILE_EXTENSION,
   LANG_NAP,
   LANG_NAPLIST,
+  REST_FILE_EXTENSION,
   LAYOUT_BELOW,
   LAYOUT_BESIDE,
   LOG_CHANNEL_NAME,
@@ -366,6 +372,17 @@ const collectResult = (state: StreamState, result: RunResult): void => {
   );
 },
 
+ registerHttpConvertCommands = (context: vscode.ExtensionContext): void => {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(CMD_CONVERT_HTTP_FILE, async (uri?: vscode.Uri) => {
+      await convertHttpFile(explorerProvider, logger, uri);
+    }),
+    vscode.commands.registerCommand(CMD_CONVERT_HTTP_DIR, async () => {
+      await convertHttpDirectory(explorerProvider, logger);
+    })
+  );
+},
+
  registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(
     vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
@@ -394,7 +411,13 @@ const collectResult = (state: StreamState, result: RunResult): void => {
   const codeLens = new CodeLensProvider();
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
-      [{ language: LANG_NAP }, { language: LANG_NAPLIST }], codeLens
+      [
+        { language: LANG_NAP },
+        { language: LANG_NAPLIST },
+        { pattern: `**/*${HTTP_FILE_EXTENSION}` },
+        { pattern: `**/*${REST_FILE_EXTENSION}` },
+      ],
+      codeLens
     )
   );
 },
@@ -425,6 +448,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   registerRunCommands(context);
   registerEditCommands(context);
   registerOpenApiCommands(context);
+  registerHttpConvertCommands(context);
   registerContextMenuCommands(context, explorerProvider);
   registerWatchers(context, explorerProvider, logger);
   registerAutoRun(context, async (uri) => runFile(uri));

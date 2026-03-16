@@ -1,3 +1,4 @@
+// Specs: vscode-commands, vscode-new-request
 // File creation commands — newRequest, newPlaylist
 // Extracted from extension.ts to keep files under 450 LOC
 

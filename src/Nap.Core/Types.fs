@@ -1,3 +1,7 @@
+// Specs: nap-file, nap-meta, nap-vars, nap-request, nap-headers, nap-body, nap-assert, nap-script,
+//        http-methods, env-interpolation, assert-status, assert-equals, assert-exists, assert-contains,
+//        assert-matches, assert-lt, assert-gt, naplist-file, naplist-steps, naplist-nap-step,
+//        naplist-folder-step, naplist-nested, naplist-script-step
 namespace Nap.Core
 
 open System

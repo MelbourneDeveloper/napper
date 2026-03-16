@@ -1,3 +1,4 @@
+// Specs: vscode-env-switcher, vscode-impl
 // VSCode adapter for the environment switcher
 // Status bar item and quick pick integration
 

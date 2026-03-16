@@ -1,3 +1,4 @@
+// Specs: vscode-impl, vscode-commands, vscode-syntax, vscode-settings
 import * as assert from "assert";
 import * as fs from "fs";
 import {

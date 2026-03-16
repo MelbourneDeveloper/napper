@@ -1,3 +1,4 @@
+// Specs: env-file, env-base, env-local, env-named, env-resolution, env-interpolation, cli-var
 module Nap.Core.Environment
 
 open System
@@ -72,6 +73,26 @@ let resolveVars (vars: Map<string, string>) (input: string) : string =
             sb.Append(input.[i]) |> ignore
             i <- i + 1
     sb.ToString()
+
+/// Detect available environment names by scanning a directory for .napenv.{name} files.
+/// Excludes .napenv (base) and .napenv.local (secrets). Returns sorted unique names.
+let detectEnvironmentNames (dir: string) : string list =
+    if not (Directory.Exists dir) then []
+    else
+        let prefix = ".napenv."
+        let localSuffix = ".local"
+        Directory.GetFiles(dir, ".napenv.*")
+        |> Array.choose (fun path ->
+            let fileName = Path.GetFileName(path)
+            if fileName = ".napenv" then None
+            elif fileName.EndsWith(localSuffix) then None
+            elif fileName.StartsWith(prefix) then
+                Some (fileName.Substring(prefix.Length))
+            else None
+        )
+        |> Array.distinct
+        |> Array.sort
+        |> Array.toList
 
 /// Resolve all variables in a NapFile's request
 let resolveNapFile (vars: Map<string, string>) (napFile: NapFile) : NapFile =

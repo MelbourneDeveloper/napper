@@ -1,3 +1,6 @@
+// Specs: nap-file, nap-minimal, nap-full, nap-meta, nap-vars, nap-request, nap-headers, nap-body,
+//        nap-assert, nap-script, nap-comments, http-methods, env-interpolation,
+//        naplist-file, naplist-meta, naplist-vars, naplist-steps
 module Nap.Core.Parser
 
 open FParsec
@@ -7,9 +10,7 @@ open Nap.Core
 
 let private ws : Parser<unit, unit> = spaces
 let private ws1 : Parser<unit, unit> = spaces1
-let private lineEnd : Parser<unit, unit> = skipNewline <|> eof
 let private commentLine : Parser<unit, unit> = pchar '#' >>. skipRestOfLine true
-let private blankOrComment : Parser<unit, unit> = ws >>. optional commentLine >>. ws
 let private skipCommentsAndBlanks : Parser<unit, unit> =
     skipMany (attempt (ws >>. commentLine)) >>. ws
 let private quotedString =

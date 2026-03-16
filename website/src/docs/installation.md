@@ -29,7 +29,7 @@ The extension includes:
 - Environment switching via status bar
 - CodeLens actions (Run, Copy as curl)
 
-## CLI Binary
+## CLI Binary (spec: cli-run)
 
 For CI/CD pipelines or terminal-only workflows, install the standalone CLI.
 
@@ -67,7 +67,7 @@ Download `napper-win-x64.exe` from releases and add it to your PATH.
 napper --help
 ```
 
-## Requirements
+## Requirements (spec: script-fsx, script-csx)
 
 - **CLI**: Self-contained binary, no runtime dependencies
 - **VS Code Extension**: VS Code 1.100.0 or later

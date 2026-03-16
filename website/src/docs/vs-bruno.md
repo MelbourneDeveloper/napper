@@ -8,7 +8,7 @@ eleventyNavigation:
   order: 12
 ---
 
-# Napper vs Bruno
+# Napper vs Bruno (spec: cli-run, nap-file)
 
 Napper and Bruno are both free, open-source alternatives to Postman that store requests as plain text files. Here is how they differ.
 
@@ -20,17 +20,17 @@ Bruno is a GUI-first tool with a standalone desktop application. It focuses on p
 
 Bruno has its own standalone desktop application built with Electron. Napper integrates directly into VS Code as a native extension with syntax highlighting, a request explorer, environment switching, and Test Explorer integration. If you already work in VS Code, Napper fits into your existing workflow without switching applications.
 
-## How does scripting compare?
+## How does scripting compare? (spec: script-fsx, script-csx)
 
 Bruno provides sandboxed JavaScript for pre-request and post-request scripts, similar to Postman. Napper supports both F# (`.fsx`) and C# (`.csx`) scripts with full access to the .NET ecosystem. Scripts in Napper are not sandboxed, so you can import NuGet packages, call databases, parse XML, generate tokens, and perform any operation the .NET runtime supports.
 
-## How do file formats compare?
+## How do file formats compare? (spec: nap-file)
 
 Both Napper and Bruno store requests as plain text files that work well with git. Bruno uses its own Bru markup language. Napper uses `.nap` files with a TOML-inspired section-based format. Both produce clean diffs in code reviews.
 
-## How does CI/CD integration compare?
+## How does CI/CD integration compare? (spec: cli-run, cli-output)
 
-Bruno provides a CLI for running collections from the terminal. Napper is designed CLI-first, meaning the command line is the primary interface rather than an afterthought. Napper outputs JUnit XML, TAP, JSON, and NDJSON formats natively and requires no runtime dependencies.
+Bruno provides a CLI for running collections from the terminal. Napper is designed CLI-first, meaning the command line is the primary interface rather than an afterthought. Napper outputs JUnit XML, JSON, and NDJSON formats natively and requires no runtime dependencies.
 
 ## Feature comparison
 
@@ -43,7 +43,8 @@ Bruno provides a CLI for running collections from the terminal. Napper is design
 | Scripting | Full F# and C# with .NET access | Sandboxed JavaScript |
 | Editor integration | Native VS Code extension | Standalone Electron app |
 | Test Explorer | Native VS Code support | No |
-| CI/CD output | JUnit, TAP, JSON, NDJSON | JSON via CLI |
+| CI/CD output | JUnit, JSON, NDJSON | JSON via CLI |
+| .http file migration | Built-in converter | No |
 | Pricing | Free, MIT license | Free, MIT license |
 
 ## When should you choose Napper over Bruno?

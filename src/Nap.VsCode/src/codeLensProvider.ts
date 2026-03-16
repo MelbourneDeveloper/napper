@@ -1,13 +1,18 @@
+// Specs: vscode-codelens, vscode-commands
 // CodeLens provider for .nap and .naplist files
 // Shows "Run" and "Copy as curl" actions above key sections
 
 import * as vscode from "vscode";
 import {
+  CMD_CONVERT_HTTP_FILE,
   CMD_COPY_CURL,
   CMD_RUN_FILE,
+  CONVERT_HTTP_CODELENS_TITLE,
+  HTTP_FILE_EXTENSION,
   HTTP_METHODS,
   NAPLIST_EXTENSION,
   NAP_EXTENSION,
+  REST_FILE_EXTENSION,
   SECTION_META,
   SECTION_REQUEST,
 } from "./constants";
@@ -63,6 +68,23 @@ const RUN_LENS_TITLE = "$(play) Run",
   return lenses;
 },
 
+ isHttpFile = (fileName: string): boolean =>
+  fileName.endsWith(HTTP_FILE_EXTENSION) ||
+  fileName.endsWith(REST_FILE_EXTENSION),
+
+ buildHttpLenses = (
+  document: vscode.TextDocument
+): vscode.CodeLens[] => {
+  const range = new vscode.Range(0, 0, 0, 0);
+  return [
+    new vscode.CodeLens(range, {
+      title: CONVERT_HTTP_CODELENS_TITLE,
+      command: CMD_CONVERT_HTTP_FILE,
+      arguments: [document.uri],
+    }),
+  ];
+},
+
  buildPlaylistLenses = (
   document: vscode.TextDocument
 ): vscode.CodeLens[] => {
@@ -92,10 +114,12 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
 
   provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
     const isNap = document.fileName.endsWith(NAP_EXTENSION),
-     isNapList = document.fileName.endsWith(NAPLIST_EXTENSION);
+     isNapList = document.fileName.endsWith(NAPLIST_EXTENSION),
+     isHttp = isHttpFile(document.fileName);
 
     if (isNap) {return buildRequestLenses(document);}
     if (isNapList) {return buildPlaylistLenses(document);}
+    if (isHttp) {return buildHttpLenses(document);}
     return [];
   }
 }

@@ -1,3 +1,4 @@
+// Specs: vscode-commands
 // Curl copy command — copyAsCurl and parsing helpers
 // Extracted from extension.ts to keep files under 450 LOC
 

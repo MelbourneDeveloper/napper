@@ -1,3 +1,4 @@
+// Specs: vscode-playlists
 import * as assert from "assert";
 import * as fs from "fs";
 import * as os from "os";

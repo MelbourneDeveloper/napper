@@ -20,12 +20,12 @@ Napper is a free, open-source API testing tool that runs from the command line a
 
 Everything you need for API testing. Nothing you don't.
 
-- **CLI First** -- The command line is the product. Run requests, execute test suites, and integrate with CI/CD pipelines from your terminal.
-- **VS Code Native** -- Full extension with syntax highlighting, request explorer, environment switching, and Test Explorer integration. Never leave your editor.
-- **F# and C# Scripting** -- Full power of F# and C# for pre/post request hooks. Extract tokens, build dynamic payloads, orchestrate complex flows with the entire .NET ecosystem.
-- **Declarative Assertions** -- Assert on status codes, JSON paths, headers, and response times with a clean, readable syntax. No scripting required for simple checks.
-- **Composable Playlists** -- Chain requests into test suites with `.naplist` files. Nest playlists, reference folders, pass variables between steps.
-- **Plain Text, Git Friendly** -- Every request is a `.nap` file. Every environment is a `.napenv` file. Version control everything. No binary blobs, no lock-in.
+- **CLI First** (`cli-run`) -- The command line is the product. Run requests, execute test suites, and integrate with CI/CD pipelines from your terminal.
+- **VS Code Native** (`vscode-extension`) -- Full extension with syntax highlighting (`vscode-syntax`), request explorer (`vscode-explorer`), environment switching (`vscode-env-switcher`), and Test Explorer integration (`vscode-test-explorer`). Never leave your editor.
+- **F# and C# Scripting** (`script-fsx`, `script-csx`) -- Full power of F# and C# for pre/post request hooks. Extract tokens, build dynamic payloads, orchestrate complex flows with the entire .NET ecosystem.
+- **Declarative Assertions** (`nap-assert`) -- Assert on status codes (`assert-status`), JSON paths (`assert-equals`, `assert-exists`), headers (`assert-contains`), and response times (`assert-lt`) with a clean, readable syntax. No scripting required for simple checks.
+- **Composable Playlists** (`naplist-file`) -- Chain requests into test suites with `.naplist` files. Nest playlists (`naplist-nested`), reference folders (`naplist-folder-step`), pass variables between steps (`naplist-var-scope`).
+- **Plain Text, Git Friendly** (`nap-file`) -- Every request is a `.nap` file. Every environment is a `.napenv` file (`env-file`). Version control everything. No binary blobs, no lock-in.
 
 ## Quick Start
 
@@ -179,14 +179,17 @@ Variable priority (highest wins):
 
 ```
 Usage:
-  napper run <file|folder>     Run a .nap file, .naplist playlist, or folder
-  napper check <file>          Validate a .nap or .naplist file
-  napper help                  Show this help
+  napper run <file|folder>                              Run a .nap file, .naplist playlist, or folder (cli-run)
+  napper check <file>                                   Validate a .nap or .naplist file (cli-check)
+  napper generate openapi <spec> --output-dir <dir>     Generate .nap files from OpenAPI spec (cli-generate)
+  napper help                                           Show this help
 
 Options:
-  --env <name>              Environment name (loads .napenv.<name>)
-  --var <key=value>         Variable override (repeatable)
-  --output <format>         Output: pretty (default), junit, json
+  --env <name>              Environment name (loads .napenv.<name>) (cli-env)
+  --var <key=value>         Variable override (repeatable) (cli-var)
+  --output <format>         Output: pretty, junit, json, ndjson (cli-output)
+  --output-dir <dir>        Output directory for generate command (cli-output-dir)
+  --verbose                 Enable debug-level logging (cli-verbose)
 ```
 
 | Exit Code | Meaning |
@@ -204,7 +207,7 @@ Options:
 | Git-friendly files | Yes | JSON blobs | Yes | Yes |
 | Assertions | Declarative + scripts | JS scripts | JS scripts | None |
 | Full scripting language | F# + C# (.fsx/.csx) | Sandboxed JS | Sandboxed JS | None |
-| CI/CD output formats | JUnit, TAP, JSON | Via Newman | Via CLI | None |
+| CI/CD output formats | JUnit, JSON, NDJSON | Via Newman | Via CLI | None |
 | Test Explorer | Native | No | No | No |
 | Free & open source | Yes | Freemium | Yes | Yes |
 | No account required | Yes | Account needed | Yes | Yes |

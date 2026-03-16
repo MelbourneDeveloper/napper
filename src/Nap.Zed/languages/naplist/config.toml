@@ -1,0 +1,5 @@
+name = "Naplist"
+grammar = "naplist"
+path_suffixes = ["naplist"]
+line_comments = ["# "]
+tab_size = 2

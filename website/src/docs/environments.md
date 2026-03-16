@@ -8,13 +8,13 @@ eleventyNavigation:
   order: 6
 ---
 
-# Environments
+# Environments (spec: env-file)
 
 Napper uses `.napenv` files for environment-specific configuration. These are simple key-value files that define variables for your requests.
 
-## .napenv files
+## .napenv files (spec: env-file)
 
-### Base environment
+### Base environment (spec: env-base)
 
 Create a `.napenv` file in your project root:
 
@@ -25,7 +25,7 @@ timeout = 5000
 
 This file should be committed to version control.
 
-### Named environments
+### Named environments (spec: env-named)
 
 Create environment-specific files like `.napenv.staging` or `.napenv.production`:
 
@@ -47,7 +47,7 @@ napper run ./tests/ --env staging
 
 Or use the environment switcher in the VS Code status bar.
 
-### Local secrets
+### Local secrets (spec: env-local)
 
 Create a `.napenv.local` file for secrets that should never be committed:
 
@@ -59,7 +59,7 @@ adminPassword = supersecret
 
 The VS Code extension masks values from `.napenv.local` in hover tooltips.
 
-## Resolution order
+## Resolution order (spec: env-resolution)
 
 Variables are resolved from highest to lowest priority:
 
@@ -71,7 +71,7 @@ Variables are resolved from highest to lowest priority:
 
 This means CLI flags always win, and file-level defaults are the fallback.
 
-## Usage in requests
+## Usage in requests (spec: env-interpolation)
 
 Reference variables with double curly braces:
 

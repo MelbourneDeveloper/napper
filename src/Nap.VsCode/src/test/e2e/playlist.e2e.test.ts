@@ -1,3 +1,4 @@
+// Specs: vscode-playlists, vscode-layout, vscode-commands
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as fs from "fs";

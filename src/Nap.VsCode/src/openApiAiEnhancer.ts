@@ -1,3 +1,4 @@
+// Specs: vscode-openapi-ai
 // AI enrichment for OpenAPI-generated .nap files
 // Pure functions — NO VS Code SDK dependency — fully testable
 

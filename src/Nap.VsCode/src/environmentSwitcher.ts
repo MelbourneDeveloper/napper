@@ -1,3 +1,4 @@
+// Specs: vscode-env-switcher
 // Environment switcher — status bar item + quick pick
 // Decoupled: detection logic is pure, only the adapter touches vscode
 

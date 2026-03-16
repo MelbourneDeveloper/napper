@@ -1,0 +1,5 @@
+name = "Napenv"
+grammar = "napenv"
+path_suffixes = ["napenv"]
+line_comments = ["# "]
+tab_size = 2

@@ -1,16 +1,19 @@
+// Specs: cli-run, cli-check, cli-generate, cli-convert, cli-env, cli-var, cli-output, cli-output-dir, cli-verbose, cli-exit-codes
 open System
 open System.IO
 open Nap.Core
 
 /// Parse CLI arguments into a structured form
 type CliArgs = {
-    Command    : string        // "run", "check", "generate", "help"
-    SubCommand : string option // e.g. "openapi" for "generate openapi"
+    Command    : string        // "run", "check", "generate", "convert", "help"
+    SubCommand : string option // e.g. "openapi" for "generate openapi", "http" for "convert http"
     File       : string option
     Env        : string option
+    EnvFile    : string option // --env-file for convert command
     Vars       : Map<string, string>
     Output     : string        // "pretty", "junit", "json", "ndjson"
-    OutputDir  : string option // --output-dir for generate command
+    OutputDir  : string option // --output-dir for generate/convert command
+    DryRun     : bool          // --dry-run for convert command
     Verbose    : bool
 }
 
@@ -19,9 +22,11 @@ let parseArgs (argv: string array) : CliArgs =
     let mutable subCommand = None
     let mutable file = None
     let mutable env = None
+    let mutable envFile = None
     let mutable vars = Map.empty
     let mutable output = "pretty"
     let mutable outputDir = None
+    let mutable dryRun = false
     let mutable verbose = false
     let mutable i = 0
 
@@ -29,8 +34,8 @@ let parseArgs (argv: string array) : CliArgs =
         command <- argv[0]
         i <- 1
 
-    // For "generate openapi", consume the subcommand
-    if command = "generate" && i < argv.Length && not (argv[i].StartsWith "--") then
+    // For "generate openapi" or "convert http", consume the subcommand
+    if (command = "generate" || command = "convert") && i < argv.Length && not (argv[i].StartsWith "--") then
         subCommand <- Some argv[i]
         i <- i + 1
 
@@ -50,6 +55,12 @@ let parseArgs (argv: string array) : CliArgs =
         | "--output-dir" when i + 1 < argv.Length ->
             outputDir <- Some argv[i + 1]
             i <- i + 2
+        | "--env-file" when i + 1 < argv.Length ->
+            envFile <- Some argv[i + 1]
+            i <- i + 2
+        | "--dry-run" ->
+            dryRun <- true
+            i <- i + 1
         | "--verbose" ->
             verbose <- true
             i <- i + 1
@@ -60,7 +71,8 @@ let parseArgs (argv: string array) : CliArgs =
             i <- i + 1
 
     { Command = command; SubCommand = subCommand; File = file; Env = env
-      Vars = vars; Output = output; OutputDir = outputDir; Verbose = verbose }
+      EnvFile = envFile; Vars = vars; Output = output; OutputDir = outputDir
+      DryRun = dryRun; Verbose = verbose }
 
 let printHelp () =
     printfn "Nap — API testing tool"
@@ -69,13 +81,16 @@ let printHelp () =
     printfn "  nap run <file|folder>                     Run a .nap file, .naplist playlist, or folder"
     printfn "  nap check <file>                          Validate a .nap or .naplist file"
     printfn "  nap generate openapi <spec> --output-dir <dir>  Generate .nap files from OpenAPI spec"
+    printfn "  nap convert http <file|dir> --output-dir <dir>  Convert .http files to .nap format"
     printfn "  nap help                                  Show this help"
     printfn ""
     printfn "Options:"
     printfn "  --env <name>              Environment name (loads .napenv.<name>)"
+    printfn "  --env-file <path>         Path to http-client.env.json (for convert)"
     printfn "  --var <key=value>         Variable override (repeatable)"
     printfn "  --output <format>         Output: pretty (default), junit, json, ndjson"
-    printfn "  --output-dir <dir>        Output directory for generate command"
+    printfn "  --output-dir <dir>        Output directory for generate/convert commands"
+    printfn "  --dry-run                 Preview without writing files (convert command)"
     printfn "  --verbose                 Enable debug-level logging"
 
 /// Print result as ndjson and return whether it passed
@@ -271,6 +286,131 @@ let checkFile (args: CliArgs) : int =
                 eprintfn "  %s" msg
                 1
 
+/// Write a convert result to disk
+let private writeConvertResult (outDir: string) (result: HttpToNapConverter.ConvertResult) : unit =
+    for fileName: string, content: string in result.GeneratedFiles do
+        let fullPath = Path.Combine(outDir, fileName)
+        let dir = Path.GetDirectoryName fullPath
+        if not (String.IsNullOrEmpty dir) && not (Directory.Exists dir) then
+            Directory.CreateDirectory dir |> ignore
+        File.WriteAllText(fullPath, content)
+        Logger.info $"Wrote: {fullPath}"
+
+/// Convert .http files to .nap format
+let convertHttp (args: CliArgs) : int =
+    match args.File with
+    | None ->
+        eprintfn "Error: no file or directory specified"
+        eprintfn "Usage: nap convert http <file|dir> --output-dir <dir>"
+        2
+    | Some inputPath ->
+        let fullInput = Path.GetFullPath(inputPath)
+        Logger.info $"Converting: {fullInput}"
+
+        if not (File.Exists fullInput) && not (Directory.Exists fullInput) then
+            eprintfn "Error: %s not found" fullInput
+            2
+        else
+            let httpFiles =
+                if Directory.Exists fullInput then
+                    Directory.GetFiles(fullInput, "*.http")
+                    |> Array.append (Directory.GetFiles(fullInput, "*.rest"))
+                    |> Array.sort |> Array.toList
+                else [ fullInput ]
+
+            if List.isEmpty httpFiles then
+                eprintfn "No .http or .rest files found in %s" fullInput
+                2
+            else
+                let outDir =
+                    args.OutputDir
+                    |> Option.map Path.GetFullPath
+                    |> Option.defaultWith (fun () ->
+                        if Directory.Exists fullInput then fullInput
+                        else Path.GetDirectoryName(fullInput))
+
+                let mutable totalFiles = 0
+                let mutable allWarnings = []
+
+                for httpPath in httpFiles do
+                    let content = File.ReadAllText(httpPath)
+                    match DotHttp.Parser.parse content with
+                    | Error msg ->
+                        eprintfn "Error parsing %s: %s" (Path.GetFileName httpPath) msg
+                    | Ok (httpFile: DotHttp.HttpFile) ->
+                        Logger.info $"Parsed {httpPath}: {httpFile.Requests.Length} requests, dialect={httpFile.Dialect}"
+
+                        // Convert env files if present
+                        match args.EnvFile with
+                        | Some envFilePath ->
+                            let envPath = Path.GetFullPath(envFilePath)
+                            if File.Exists envPath then
+                                let envJson = File.ReadAllText(envPath)
+                                let isPrivate = envPath.Contains("private")
+                                match HttpToNapConverter.convertEnvJson envJson isPrivate with
+                                | Ok envFiles ->
+                                    if not args.DryRun then
+                                        for fn: string, c: string in envFiles do
+                                            let fp = Path.Combine(outDir, fn)
+                                            File.WriteAllText(fp, c)
+                                            Logger.info $"Wrote env: {fp}"
+                                    else
+                                        for fn: string, _ in envFiles do
+                                            printfn "  [dry-run] Would write: %s" fn
+                                | Error msg ->
+                                    eprintfn "Warning: %s" msg
+                        | None ->
+                            // Auto-detect JetBrains env files next to input
+                            let inputDir =
+                                if Directory.Exists fullInput then fullInput
+                                else Path.GetDirectoryName(fullInput)
+                            let jbEnvPath = Path.Combine(inputDir, "http-client.env.json")
+                            let jbPrivatePath = Path.Combine(inputDir, "http-client.private.env.json")
+                            for envPath, isPrivate in [ jbEnvPath, false; jbPrivatePath, true ] do
+                                if File.Exists envPath then
+                                    Logger.info $"Auto-detected env file: {envPath}"
+                                    let envJson = File.ReadAllText(envPath)
+                                    match HttpToNapConverter.convertEnvJson envJson isPrivate with
+                                    | Ok envFiles ->
+                                        if not args.DryRun then
+                                            for (fn, c) in envFiles do
+                                                let fp = Path.Combine(outDir, fn)
+                                                File.WriteAllText(fp, c)
+                                                Logger.info $"Wrote env: {fp}"
+                                        else
+                                            for (fn, _) in envFiles do
+                                                printfn "  [dry-run] Would write: %s" fn
+                                    | Error msg ->
+                                        eprintfn "Warning: %s" msg
+
+                        let result = HttpToNapConverter.convert httpFile
+
+                        if args.DryRun then
+                            printfn "Dry run for %s:" (Path.GetFileName httpPath)
+                            for fn: string, _ in result.GeneratedFiles do
+                                printfn "  Would write: %s" fn
+                        else
+                            if not (Directory.Exists outDir) then
+                                Directory.CreateDirectory(outDir) |> ignore
+                            writeConvertResult outDir result
+
+                        totalFiles <- totalFiles + result.GeneratedFiles.Length
+                        allWarnings <- allWarnings @ result.Warnings
+
+                for w in allWarnings do
+                    let prefix = match w.RequestName with Some n -> sprintf "[%s] " n | None -> ""
+                    eprintfn "Warning: %s%s" prefix w.Message
+
+                match args.Output with
+                | "json" ->
+                    printfn "{\"files\":%d,\"warnings\":%d}" totalFiles allWarnings.Length
+                | _ ->
+                    printfn "Converted %d requests to .nap files" totalFiles
+                    printfn "  Output: %s" outDir
+                    if not (List.isEmpty allWarnings) then
+                        printfn "  Warnings: %d" allWarnings.Length
+                0
+
 [<EntryPoint>]
 let main argv =
     let args = parseArgs argv
@@ -289,6 +429,15 @@ let main argv =
                 2
             | None ->
                 eprintfn "Usage: nap generate openapi <spec.json> --output-dir <dir>"
+                2
+        | "convert" ->
+            match args.SubCommand with
+            | Some "http" -> convertHttp args
+            | Some other ->
+                eprintfn "Unknown convert target: %s" other
+                2
+            | None ->
+                eprintfn "Usage: nap convert http <file|dir> --output-dir <dir>"
                 2
         | "version" | "--version" ->
             let v = Reflection.Assembly.GetExecutingAssembly().GetName().Version

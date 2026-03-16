@@ -1,3 +1,4 @@
+// Specs: vscode-commands, vscode-explorer, vscode-playlists
 // Context menu command handlers for tree view items
 // Scripts: Add to Playlist, Performance Test, Delete
 // Playlists: Add .nap, Add Script, Delete, Duplicate, Copy Path

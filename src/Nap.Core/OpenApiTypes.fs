@@ -1,3 +1,4 @@
+// Specs: openapi-generate, openapi-nap-gen, openapi-meta-flag
 module Nap.Core.OpenApiTypes
 
 // --- String constants for .nap file generation (single location) ---

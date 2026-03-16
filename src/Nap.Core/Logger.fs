@@ -1,3 +1,4 @@
+// Specs: cli-verbose
 module Nap.Core.Logger
 
 open System

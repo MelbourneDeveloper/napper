@@ -1,3 +1,4 @@
+// Specs: output-pretty, output-junit, output-json, output-ndjson
 module Nap.Core.Output
 
 open System

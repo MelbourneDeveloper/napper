@@ -1,3 +1,7 @@
+// Specs: openapi-generate, openapi-input, openapi-oas3, openapi-swagger2, openapi-nap-gen,
+//        openapi-tag-dirs, openapi-naplist-gen, openapi-napenv-gen, openapi-baseurl,
+//        openapi-params, openapi-body-gen, openapi-assert-gen, openapi-query-params,
+//        openapi-auth, openapi-error-gen, openapi-ref, openapi-meta-flag
 module Nap.Core.OpenApiGenerator
 
 open System

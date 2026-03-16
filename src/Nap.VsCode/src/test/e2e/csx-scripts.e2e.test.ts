@@ -1,3 +1,4 @@
+// Specs: vscode-commands, vscode-playlists, script-csx
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as fs from "fs";

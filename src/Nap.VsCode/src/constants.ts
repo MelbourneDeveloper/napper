@@ -318,6 +318,15 @@ export const LOG_MSG_STREAM_RESULT = "Stream result:";
 export const LOG_MSG_STREAM_DONE = "Stream completed";
 export const LOG_MSG_TREE_REFRESH = "Explorer tree refresh";
 export const LOG_MSG_OPENAPI_IMPORT = "OpenAPI import:";
+export const LOG_MSG_OPENAPI_URL_FETCH = "OpenAPI URL fetch:";
+export const LOG_MSG_OPENAPI_URL_DOWNLOAD_OK = "OpenAPI URL download succeeded, content length:";
+export const LOG_MSG_OPENAPI_URL_DOWNLOAD_FAIL = "OpenAPI URL download failed:";
+export const LOG_MSG_OPENAPI_SPEC_SAVED = "OpenAPI spec saved to:";
+export const LOG_MSG_OPENAPI_AI_CHOICE = "OpenAPI AI choice:";
+export const LOG_MSG_OPENAPI_AI_NO_MODEL = "No Copilot model available for AI enhancement";
+export const LOG_MSG_OPENAPI_AI_MODEL_SELECTED = "Copilot model selected for AI enhancement:";
+export const LOG_MSG_OPENAPI_GENERATE_CLI = "OpenAPI generate CLI call:";
+export const LOG_MSG_OPENAPI_GENERATE_RESULT = "OpenAPI generate result:";
 
 // AI enrichment
 export const OPENAPI_AI_CHOICE_TITLE = "How should tests be generated?";
@@ -365,6 +374,26 @@ export const SCRIPT_GLOB = "**/*.{fsx,csx}";
 
 // Playlist duplication
 export const DUPLICATE_SUFFIX = "-copy";
+
+// .http file conversion
+export const HTTP_FILE_EXTENSION = ".http";
+export const REST_FILE_EXTENSION = ".rest";
+export const HTTP_FILE_GLOB = "**/*.http";
+export const CLI_CMD_CONVERT = "convert";
+export const CLI_SUBCMD_HTTP = "http";
+export const CMD_CONVERT_HTTP_FILE = "napper.convertHttpFile";
+export const CMD_CONVERT_HTTP_DIR = "napper.convertHttpDirectory";
+export const CONVERT_HTTP_PICK_FILE = "Select .http file to convert";
+export const CONVERT_HTTP_PICK_DIR = "Select directory containing .http files";
+export const CONVERT_HTTP_FILTER_LABEL = "HTTP Files";
+export const CONVERT_HTTP_FILE_EXTENSIONS = ["http", "rest"];
+export const CONVERT_HTTP_SUCCESS_PREFIX = "Converted ";
+export const CONVERT_HTTP_SUCCESS_SUFFIX = " requests to .nap files";
+export const CONVERT_HTTP_ERROR_PREFIX = "Failed to convert .http: ";
+export const CONVERT_HTTP_NO_FILES = "No .http or .rest files found";
+export const LOG_MSG_CONVERT_HTTP = "Convert .http:";
+export const LOG_MSG_CONVERT_HTTP_RESULT = "Convert .http result:";
+export const CONVERT_HTTP_CODELENS_TITLE = "$(file-add) Convert to .nap";
 
 // Numeric thresholds
 export const PERCENTAGE_MULTIPLIER = 100;
