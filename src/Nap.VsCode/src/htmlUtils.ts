@@ -2,7 +2,7 @@
 // Shared HTML utility functions for webview panels
 // Used by both responsePanel and playlistPanel
 
-import type { AssertionResult, RunResult } from "./types";
+import type { AssertionResult, RunResult } from './types';
 import {
   JSON_INDENT_SIZE,
   NO_REQUEST_HEADERS,
@@ -15,67 +15,62 @@ import {
   SECTION_LABEL_REQUEST_HEADERS,
   SECTION_LABEL_RESPONSE,
   SECTION_LABEL_RESPONSE_HEADERS,
-} from "./constants";
+} from './constants';
 
 export const escapeHtml = (text: string): string =>
   text
-    .split("&").join("&amp;")
-    .split("<").join("&lt;")
-    .split(">").join("&gt;")
-    .split('"').join("&quot;");
+    .split('&')
+    .join('&amp;')
+    .split('<')
+    .join('&lt;')
+    .split('>')
+    .join('&gt;')
+    .split('"')
+    .join('&quot;');
 
 const jsonSpan = (cls: string, content: string): string =>
-  `<span class="json-${cls}">${escapeHtml(content)}</span>`,
-
- highlightJsonPrimitive = (value: unknown): string | undefined => {
-  if (value === null) {
-    return jsonSpan("null", "null");
-  }
-  if (typeof value === "boolean") {
-    return jsonSpan("bool", String(value));
-  }
-  if (typeof value === "number") {
-    return jsonSpan("number", String(value));
-  }
-  if (typeof value === "string") {
-    return jsonSpan("string", `"${escapeHtml(value)}"`);
-  }
-  return undefined;
-},
-
- highlightJsonArray = (
-  items: readonly unknown[],
-  indent: number
-): string => {
-  if (items.length === 0) {
-    return "[]";
-  }
-  const pad = " ".repeat(indent),
-   innerPad = " ".repeat(indent + JSON_INDENT_SIZE),
-   rendered = items
-    .map((item) => `${innerPad}${highlightJson(item, indent + JSON_INDENT_SIZE)}`)
-    .join(",\n");
-  return `[\n${rendered}\n${pad}]`;
-},
-
- highlightJsonObject = (
-  value: Record<string, unknown>,
-  indent: number
-): string => {
-  const entries = Object.entries(value);
-  if (entries.length === 0) {
-    return "{}";
-  }
-  const pad = " ".repeat(indent),
-   innerPad = " ".repeat(indent + JSON_INDENT_SIZE),
-   props = entries
-    .map(
-      ([k, v]) =>
-        `${innerPad}${jsonSpan("key", `"${escapeHtml(k)}"`)}: ${highlightJson(v, indent + JSON_INDENT_SIZE)}`
-    )
-    .join(",\n");
-  return `{\n${props}\n${pad}}`;
-};
+    `<span class="json-${cls}">${escapeHtml(content)}</span>`,
+  highlightJsonPrimitive = (value: unknown): string | undefined => {
+    if (value === null) {
+      return jsonSpan('null', 'null');
+    }
+    if (typeof value === 'boolean') {
+      return jsonSpan('bool', String(value));
+    }
+    if (typeof value === 'number') {
+      return jsonSpan('number', String(value));
+    }
+    if (typeof value === 'string') {
+      return jsonSpan('string', `"${escapeHtml(value)}"`);
+    }
+    return undefined;
+  },
+  highlightJsonArray = (items: readonly unknown[], indent: number): string => {
+    if (items.length === 0) {
+      return '[]';
+    }
+    const pad = ' '.repeat(indent),
+      innerPad = ' '.repeat(indent + JSON_INDENT_SIZE),
+      rendered = items
+        .map((item) => `${innerPad}${highlightJson(item, indent + JSON_INDENT_SIZE)}`)
+        .join(',\n');
+    return `[\n${rendered}\n${pad}]`;
+  },
+  highlightJsonObject = (value: Record<string, unknown>, indent: number): string => {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      return '{}';
+    }
+    const pad = ' '.repeat(indent),
+      innerPad = ' '.repeat(indent + JSON_INDENT_SIZE),
+      props = entries
+        .map(
+          ([k, v]) =>
+            `${innerPad}${jsonSpan('key', `"${escapeHtml(k)}"`)}: ${highlightJson(v, indent + JSON_INDENT_SIZE)}`,
+        )
+        .join(',\n');
+    return `{\n${props}\n${pad}}`;
+  };
 
 export function highlightJson(value: unknown, indent: number): string {
   const primitive = highlightJsonPrimitive(value);
@@ -85,10 +80,10 @@ export function highlightJson(value: unknown, indent: number): string {
   if (Array.isArray(value)) {
     return highlightJsonArray(value, indent);
   }
-  if (typeof value === "object" && value !== null) {
+  if (typeof value === 'object' && value !== null) {
     return highlightJsonObject(value as Record<string, unknown>, indent);
   }
-  return escapeHtml(typeof value === "undefined" ? "undefined" : JSON.stringify(value));
+  return escapeHtml(typeof value === 'undefined' ? 'undefined' : JSON.stringify(value));
 }
 
 export const formatBodyHtml = (body: string): string => {
@@ -113,58 +108,59 @@ export const buildCollapsibleSection = ({
   readonly content: string;
   readonly open: boolean;
 }): string =>
-  `<details class="section"${open ? " open" : ""}>
+  `<details class="section"${open ? ' open' : ''}>
     <summary><h3>${title}</h3><span class="chevron">&#x25B6;</span></summary>
     <div class="section-content">${content}</div>
   </details>`;
 
 export const buildHeadersTableRows = (
-  headers: Readonly<Record<string, string>> | undefined
+  headers: Readonly<Record<string, string>> | undefined,
 ): string => {
-  if (!headers) {return "";}
+  if (!headers) {
+    return '';
+  }
   return Object.entries(headers)
     .map(
-      ([k, v]) =>
-        `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`
+      ([k, v]) => `<tr><td class="header-key">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`,
     )
-    .join("\n");
+    .join('\n');
 };
 
-const buildAssertionRowsHtml = (
-  assertions: readonly AssertionResult[]
-): string => {
-  if (assertions.length === 0) {return "";}
+const buildAssertionRowsHtml = (assertions: readonly AssertionResult[]): string => {
+  if (assertions.length === 0) {
+    return '';
+  }
   return assertions
     .map((a) => {
-      const icon = a.passed ? "&#x2713;" : "&#x2717;",
-       cls = a.passed ? "pass" : "fail",
-       detail = a.passed
-        ? ""
-        : `<div class="assert-detail">expected: ${escapeHtml(a.expected)} | actual: ${escapeHtml(a.actual)}</div>`;
+      const icon = a.passed ? '&#x2713;' : '&#x2717;',
+        cls = a.passed ? 'pass' : 'fail',
+        detail = a.passed
+          ? ''
+          : `<div class="assert-detail">expected: ${escapeHtml(a.expected)} | actual: ${escapeHtml(a.actual)}</div>`;
       return `<div class="assert-row ${cls}">${icon} ${escapeHtml(a.target)}${detail}</div>`;
     })
-    .join("\n");
+    .join('\n');
 };
 
 const buildRequestUrlHtml = (result: RunResult): string =>
-  result.requestUrl !== undefined && result.requestUrl !== ""
-    ? `<div class="request-url"><span class="request-method">${escapeHtml(result.requestMethod ?? "")}</span> ${escapeHtml(result.requestUrl)}</div>`
-    : "";
+  result.requestUrl !== undefined && result.requestUrl !== ''
+    ? `<div class="request-url"><span class="request-method">${escapeHtml(result.requestMethod ?? '')}</span> ${escapeHtml(result.requestUrl)}</div>`
+    : '';
 
 export const buildErrorHtml = (error: string | undefined): string =>
-  error !== undefined && error !== ""
+  error !== undefined && error !== ''
     ? buildCollapsibleSection({
         title: SECTION_LABEL_ERROR,
         content: `<pre class="error-text">${escapeHtml(error)}</pre>`,
         open: true,
       })
-    : "";
+    : '';
 
-export const buildLogHtml = (
-  log: readonly string[] | undefined
-): string => {
-  if (!log || log.length === 0) {return "";}
-  const lines = log.map((line) => escapeHtml(line)).join("\n");
+export const buildLogHtml = (log: readonly string[] | undefined): string => {
+  if (!log || log.length === 0) {
+    return '';
+  }
+  const lines = log.map((line) => escapeHtml(line)).join('\n');
   return buildCollapsibleSection({
     title: SECTION_LABEL_OUTPUT,
     content: `<pre class="log-output">${lines}</pre>`,
@@ -173,21 +169,25 @@ export const buildLogHtml = (
 };
 
 const buildRequestBodyHtml = (result: RunResult): string => {
-  if (result.requestBody === undefined || result.requestBody === "") {return "";}
+  if (result.requestBody === undefined || result.requestBody === '') {
+    return '';
+  }
   const formatted = formatBodyHtml(result.requestBody),
-   contentTypeHint = result.requestBodyContentType !== undefined && result.requestBodyContentType !== ""
-    ? `<div class="content-type-hint">${escapeHtml(result.requestBodyContentType)}</div>`
-    : "";
+    contentTypeHint =
+      result.requestBodyContentType !== undefined && result.requestBodyContentType !== ''
+        ? `<div class="content-type-hint">${escapeHtml(result.requestBodyContentType)}</div>`
+        : '';
   return `<div class="subsection"><h4 class="subsection-title">${SECTION_LABEL_REQUEST_BODY}</h4>${contentTypeHint}<pre class="body">${formatted}</pre></div>`;
 };
 
 export const buildRequestGroupHtml = (result: RunResult): string => {
   const urlHtml = buildRequestUrlHtml(result),
-   headersRows = buildHeadersTableRows(result.requestHeaders),
-   headersHtml = headersRows !== ""
-    ? `<div class="subsection"><h4 class="subsection-title">${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${headersRows}</table></div>`
-    : `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`,
-   bodyHtml = buildRequestBodyHtml(result);
+    headersRows = buildHeadersTableRows(result.requestHeaders),
+    headersHtml =
+      headersRows !== ''
+        ? `<div class="subsection"><h4 class="subsection-title">${SECTION_LABEL_REQUEST_HEADERS}</h4><table>${headersRows}</table></div>`
+        : `<span class="empty-hint">${NO_REQUEST_HEADERS}</span>`,
+    bodyHtml = buildRequestBodyHtml(result);
 
   return buildCollapsibleSection({
     title: SECTION_LABEL_REQUEST,
@@ -196,27 +196,31 @@ export const buildRequestGroupHtml = (result: RunResult): string => {
   });
 };
 
-const buildResponseSubsection = (
-  title: string,
-  content: string
-): string =>
+const buildResponseSubsection = (title: string, content: string): string =>
   `<div class="subsection"><h4 class="subsection-title">${title}</h4>${content}</div>`;
 
 const buildResponseParts = (result: RunResult): readonly string[] => {
   const parts: string[] = [],
-   assertionsHtml = buildAssertionRowsHtml(result.assertions);
+    assertionsHtml = buildAssertionRowsHtml(result.assertions);
 
-  if (assertionsHtml !== "") {
+  if (assertionsHtml !== '') {
     parts.push(buildResponseSubsection(SECTION_LABEL_ASSERTIONS, assertionsHtml));
   }
 
   const headersRows = buildHeadersTableRows(result.headers);
-  if (headersRows !== "") {
-    parts.push(buildResponseSubsection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${headersRows}</table>`));
+  if (headersRows !== '') {
+    parts.push(
+      buildResponseSubsection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${headersRows}</table>`),
+    );
   }
 
-  if (result.body !== undefined && result.body !== "") {
-    parts.push(buildResponseSubsection(SECTION_LABEL_BODY, `<pre class="body">${formatBodyHtml(result.body)}</pre>`));
+  if (result.body !== undefined && result.body !== '') {
+    parts.push(
+      buildResponseSubsection(
+        SECTION_LABEL_BODY,
+        `<pre class="body">${formatBodyHtml(result.body)}</pre>`,
+      ),
+    );
   }
 
   return parts;
@@ -224,10 +228,12 @@ const buildResponseParts = (result: RunResult): readonly string[] => {
 
 export const buildResponseGroupHtml = (result: RunResult): string => {
   const parts = buildResponseParts(result);
-  if (parts.length === 0) {return "";}
+  if (parts.length === 0) {
+    return '';
+  }
   return buildCollapsibleSection({
     title: SECTION_LABEL_RESPONSE,
-    content: parts.join("\n"),
+    content: parts.join('\n'),
     open: true,
   });
 };

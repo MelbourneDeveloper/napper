@@ -8,18 +8,23 @@ open Nap.Core
 
 let private createTempCsx (content: string) : string =
     let dir = Path.GetTempPath()
-    let path = Path.Combine(dir, sprintf "nap-test-%s.csx" (Guid.NewGuid().ToString("N")))
+
+    let path =
+        Path.Combine(dir, sprintf "nap-test-%s.csx" (Guid.NewGuid().ToString("N")))
+
     File.WriteAllText(path, content)
     path
 
 let private cleanupScript (path: string) =
-    if File.Exists(path) then File.Delete(path)
+    if File.Exists(path) then
+        File.Delete(path)
 
 // ─── Passing C# scripts ─────────────────── Spec: script-csx
 
 [<Fact>]
 let ``CSX script with single output line`` () =
     let path = createTempCsx "Console.WriteLine(\"hello from csharp\");"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
@@ -29,8 +34,11 @@ let ``CSX script with single output line`` () =
 
 [<Fact>]
 let ``CSX script with multiple output lines`` () =
-    let script = "Console.WriteLine(\"line1\");\nConsole.WriteLine(\"line2\");\nConsole.WriteLine(\"line3\");"
+    let script =
+        "Console.WriteLine(\"line1\");\nConsole.WriteLine(\"line2\");\nConsole.WriteLine(\"line3\");"
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
@@ -41,6 +49,7 @@ let ``CSX script with multiple output lines`` () =
 [<Fact>]
 let ``CSX script with no output`` () =
     let path = createTempCsx "var x = 1 + 1;"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
@@ -51,6 +60,7 @@ let ``CSX script with no output`` () =
 [<Fact>]
 let ``CSX result has no HTTP response`` () =
     let path = createTempCsx "Console.WriteLine(\"ok\");"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Response.IsNone)
@@ -60,6 +70,7 @@ let ``CSX result has no HTTP response`` () =
 [<Fact>]
 let ``CSX result has no assertions`` () =
     let path = createTempCsx "Console.WriteLine(\"ok\");"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.Empty(result.Assertions)
@@ -69,6 +80,7 @@ let ``CSX result has no assertions`` () =
 [<Fact>]
 let ``CSX result has correct file path`` () =
     let path = createTempCsx "Console.WriteLine(\"ok\");"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.Equal(path, result.File)
@@ -80,6 +92,7 @@ let ``CSX result has correct file path`` () =
 [<Fact>]
 let ``CSX script with compilation error fails`` () =
     let path = createTempCsx "int x = \"not an int\";"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.False(result.Passed)
@@ -89,7 +102,9 @@ let ``CSX script with compilation error fails`` () =
 
 [<Fact>]
 let ``CSX script with explicit exit code 1 fails`` () =
-    let path = createTempCsx "Console.WriteLine(\"about to fail\");\nEnvironment.Exit(1);"
+    let path =
+        createTempCsx "Console.WriteLine(\"about to fail\");\nEnvironment.Exit(1);"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.False(result.Passed)
@@ -99,7 +114,9 @@ let ``CSX script with explicit exit code 1 fails`` () =
 
 [<Fact>]
 let ``CSX failed script still captures stdout before failure`` () =
-    let path = createTempCsx "Console.WriteLine(\"before error\");\nEnvironment.Exit(1);"
+    let path =
+        createTempCsx "Console.WriteLine(\"before error\");\nEnvironment.Exit(1);"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.False(result.Passed)
@@ -110,6 +127,7 @@ let ``CSX failed script still captures stdout before failure`` () =
 [<Fact>]
 let ``CSX script with runtime exception fails`` () =
     let path = createTempCsx "throw new Exception(\"boom\");"
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.False(result.Passed)
@@ -121,8 +139,11 @@ let ``CSX script with runtime exception fails`` () =
 
 [<Fact>]
 let ``CSX script can do computation and print result`` () =
-    let script = "var sum = Enumerable.Range(1, 10).Sum();\nConsole.WriteLine($\"Sum: {sum}\");"
+    let script =
+        "var sum = Enumerable.Range(1, 10).Sum();\nConsole.WriteLine($\"Sum: {sum}\");"
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
@@ -132,8 +153,11 @@ let ``CSX script can do computation and print result`` () =
 
 [<Fact>]
 let ``CSX script can read environment variables`` () =
-    let script = "Console.WriteLine($\"PATH exists: {Environment.GetEnvironmentVariable(\"PATH\") != null}\");"
+    let script =
+        "Console.WriteLine($\"PATH exists: {Environment.GetEnvironmentVariable(\"PATH\") != null}\");"
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
@@ -143,17 +167,25 @@ let ``CSX script can read environment variables`` () =
 
 [<Fact>]
 let ``CSX script can write and read temp file`` () =
-    let tempFile = Path.Combine(Path.GetTempPath(), sprintf "nap-csx-io-%s.txt" (Guid.NewGuid().ToString("N")))
+    let tempFile =
+        Path.Combine(Path.GetTempPath(), sprintf "nap-csx-io-%s.txt" (Guid.NewGuid().ToString("N")))
+
     let script =
-        sprintf "var path = @\"%s\";\nSystem.IO.File.WriteAllText(path, \"hello from csx\");\nvar content = System.IO.File.ReadAllText(path);\nConsole.WriteLine($\"Read: {content}\");\nSystem.IO.File.Delete(path);" tempFile
+        sprintf
+            "var path = @\"%s\";\nSystem.IO.File.WriteAllText(path, \"hello from csx\");\nvar content = System.IO.File.ReadAllText(path);\nConsole.WriteLine($\"Read: {content}\");\nSystem.IO.File.Delete(path);"
+            tempFile
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
         Assert.Contains("Read: hello from csx", result.Log)
     finally
         cleanupScript path
-        if File.Exists(tempFile) then File.Delete(tempFile)
+
+        if File.Exists(tempFile) then
+            File.Delete(tempFile)
 
 // ─── Non-existent C# script ─────────────── Spec: script-csx
 
@@ -168,18 +200,24 @@ let ``Non-existent CSX script path fails`` () =
 
 [<Fact>]
 let ``CSX script can make HTTP request`` () =
-    let script = """
+    let script =
+        """
 using System.Net.Http;
 var client = new HttpClient();
 var response = await client.GetAsync("https://jsonplaceholder.typicode.com/posts/1");
 Console.WriteLine($"Status: {(int)response.StatusCode}");
 """
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")
-        Assert.True(result.Log |> List.exists (fun l -> l.Contains("Status: 200")),
-            $"Should contain status 200. Log: {result.Log}")
+
+        Assert.True(
+            result.Log |> List.exists (fun l -> l.Contains("Status: 200")),
+            $"Should contain status 200. Log: {result.Log}"
+        )
     finally
         cleanupScript path
 
@@ -187,11 +225,14 @@ Console.WriteLine($"Status: {(int)response.StatusCode}");
 
 [<Fact>]
 let ``CSX script with async await`` () =
-    let script = """
+    let script =
+        """
 var result = await Task.Run(() => 42);
 Console.WriteLine($"Async result: {result}");
 """
+
     let path = createTempCsx script
+
     try
         let result = Runner.runScript path |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass. Error: {result.Error}")

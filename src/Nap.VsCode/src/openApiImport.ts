@@ -2,15 +2,15 @@
 // OpenAPI import command — calls CLI to generate .nap files from spec
 // Deterministic generation lives in F# CLI; AI enrichment is optional via Copilot
 
-import * as vscode from "vscode";
-import * as path from "path";
-import * as fs from "fs";
-import { execFile } from "child_process";
-import type { ExplorerAdapter } from "./explorerAdapter";
-import type { Logger } from "./logger";
-import { type Result, err, ok } from "./types";
-import * as https from "https";
-import type { IncomingMessage } from "http";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import { execFile } from 'child_process';
+import type { ExplorerAdapter } from './explorerAdapter';
+import type { Logger } from './logger';
+import { type Result, err, ok } from './types';
+import * as https from 'https';
+import type { IncomingMessage } from 'http';
 import {
   CLI_CMD_GENERATE,
   CLI_FLAG_OUTPUT,
@@ -57,7 +57,7 @@ import {
   OPENAPI_URL_PLACEHOLDER,
   OPENAPI_URL_PROMPT,
   SECTION_REQUEST_BODY,
-} from "./constants";
+} from './constants';
 import {
   type GeneratedFile,
   type OperationSummary,
@@ -73,11 +73,20 @@ import {
   parsePlaylistOrderResponse,
   parseTestDataResponse,
   reorderPlaylistSteps,
-} from "./openApiAiEnhancer";
+} from './openApiAiEnhancer';
 
-interface GenerateResult { readonly files: number; readonly playlist: string }
-interface PickedPaths { readonly specFile: vscode.Uri; readonly outFolder: vscode.Uri }
-interface ImportContext { readonly explorer: ExplorerAdapter; readonly logger: Logger }
+interface GenerateResult {
+  readonly files: number;
+  readonly playlist: string;
+}
+interface PickedPaths {
+  readonly specFile: vscode.Uri;
+  readonly outFolder: vscode.Uri;
+}
+interface ImportContext {
+  readonly explorer: ExplorerAdapter;
+  readonly logger: Logger;
+}
 
 interface LmRequestParams {
   readonly model: vscode.LanguageModelChat;
@@ -100,222 +109,257 @@ interface EnrichmentContext {
 }
 
 const MAX_PREVIEW_LENGTH = 200,
- NAME_PREFIX = "name = ",
- BODY_PREFIX = "body.",
- EXISTS_SUFFIX = " exists",
-
- resolveCliPath = (): string => {
-  const configured = vscode.workspace
-    .getConfiguration(CONFIG_SECTION)
-    .get<string>(CONFIG_CLI_PATH, "");
-  return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
-},
-
- pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
-  vscode.window.showOpenDialog({
-    canSelectFiles: true, canSelectFolders: false, canSelectMany: false,
-    filters: { [OPENAPI_FILTER_LABEL]: [...OPENAPI_FILE_EXTENSIONS] }, title: OPENAPI_PICK_FILE,
-  }),
-
- pickOutputFolder = (): Thenable<readonly vscode.Uri[] | undefined> => {
-  const uri = vscode.workspace.workspaceFolders?.[0]?.uri,
-   base = uri !== undefined ? { defaultUri: uri } : {};
-  return vscode.window.showOpenDialog({
-    canSelectFiles: false, canSelectFolders: true, canSelectMany: false, title: OPENAPI_PICK_FOLDER, ...base,
-  });
-},
-
- pickPaths = async (): Promise<PickedPaths | undefined> => {
-  const specFile = (await pickSpecFile())?.[0];
-  if (specFile === undefined) { return undefined; }
-  const outFolder = (await pickOutputFolder())?.[0];
-  return outFolder !== undefined ? { specFile, outFolder } : undefined;
-},
-
- buildGenerateArgs = (
-  specPath: string,
-  outDir: string
-): readonly string[] => [
-  CLI_CMD_GENERATE, CLI_SUBCMD_OPENAPI, specPath,
-  CLI_FLAG_OUTPUT_DIR, outDir, CLI_FLAG_OUTPUT, CLI_OUTPUT_JSON,
-],
-
- parseGenerateOutput = (stdout: string): Result<GenerateResult, string> => {
-  try { return ok(JSON.parse(stdout) as GenerateResult); }
-  catch { return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`); }
-},
-
- callCliGenerate = async (specPath: string, outDir: string, logger: Logger): Promise<Result<GenerateResult, string>> =>
-  new Promise((resolve) => {
-    const cliPath = resolveCliPath();
-    logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
-    execFile(cliPath, [...buildGenerateArgs(specPath, outDir)],
-      { timeout: 30_000, env: { ...process.env } },
-      (error, stdout, stderr) => {
-        if (error !== null && stdout.length === 0) {
-          const msg = stderr.length > 0 ? ` — ${stderr}` : "";
-          logger.error(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`);
-          resolve(err(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`));
-          return;
-        }
-        const result = parseGenerateOutput(stdout);
-        (result.ok ? logger.info : logger.error)(`${LOG_MSG_OPENAPI_GENERATE_RESULT} ${result.ok ? `${result.value.files} files` : result.error}`);
-        resolve(result);
-      });
-  }),
-
- handleSuccess = async (outDir: string, generated: GenerateResult, ctx: ImportContext): Promise<void> => {
-  ctx.logger.info(`${LOG_MSG_OPENAPI_IMPORT} ${generated.files}`);
-  ctx.explorer.refresh();
-  await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(path.join(outDir, generated.playlist)));
-  void vscode.window.showInformationMessage(`${OPENAPI_SUCCESS_PREFIX}${generated.files}${OPENAPI_SUCCESS_SUFFIX}`);
-},
-
- askAiChoice = async (): Promise<string | undefined> => {
-  const picked = await vscode.window.showQuickPick(
-    [{ label: OPENAPI_AI_CHOICE_BASIC }, { label: OPENAPI_AI_CHOICE_ENHANCED }],
-    { title: OPENAPI_AI_CHOICE_TITLE, placeHolder: OPENAPI_AI_CHOICE_TITLE }
-  );
-  return picked?.label;
-},
-
- selectCopilotModel = async (): Promise<vscode.LanguageModelChat | undefined> => {
-  const models = await vscode.lm.selectChatModels({ family: OPENAPI_AI_COPILOT_FAMILY });
-  return models[0];
-},
-
- sendLmRequest = async (
-  params: LmRequestParams
-): Promise<string> => {
-  const messages = [
-    vscode.LanguageModelChatMessage.User(`${params.systemPrompt}\n\n${params.userPrompt}`),
-  ],
-   response = await params.model.sendRequest(messages, {}, params.token),
-   parts: string[] = [];
-  for await (const chunk of response.text) { parts.push(chunk); }
-  return parts.join("");
-},
-
- collectNapFiles = (
-  dir: string,
-  baseDir: string,
-  out: GeneratedFile[]
-): void => {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) { collectNapFiles(full, baseDir, out); }
-    else if (entry.name.endsWith(NAP_EXTENSION)) {
-      out.push({ fileName: path.relative(baseDir, full), content: fs.readFileSync(full, "utf-8") });
+  NAME_PREFIX = 'name = ',
+  BODY_PREFIX = 'body.',
+  EXISTS_SUFFIX = ' exists',
+  resolveCliPath = (): string => {
+    const configured = vscode.workspace
+      .getConfiguration(CONFIG_SECTION)
+      .get<string>(CONFIG_CLI_PATH, '');
+    return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
+  },
+  pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
+    vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectFolders: false,
+      canSelectMany: false,
+      filters: { [OPENAPI_FILTER_LABEL]: [...OPENAPI_FILE_EXTENSIONS] },
+      title: OPENAPI_PICK_FILE,
+    }),
+  pickOutputFolder = (): Thenable<readonly vscode.Uri[] | undefined> => {
+    const uri = vscode.workspace.workspaceFolders?.[0]?.uri,
+      base = uri !== undefined ? { defaultUri: uri } : {};
+    return vscode.window.showOpenDialog({
+      canSelectFiles: false,
+      canSelectFolders: true,
+      canSelectMany: false,
+      title: OPENAPI_PICK_FOLDER,
+      ...base,
+    });
+  },
+  pickPaths = async (): Promise<PickedPaths | undefined> => {
+    const specFile = (await pickSpecFile())?.[0];
+    if (specFile === undefined) {
+      return undefined;
     }
-  }
-},
+    const outFolder = (await pickOutputFolder())?.[0];
+    return outFolder !== undefined ? { specFile, outFolder } : undefined;
+  },
+  buildGenerateArgs = (specPath: string, outDir: string): readonly string[] => [
+    CLI_CMD_GENERATE,
+    CLI_SUBCMD_OPENAPI,
+    specPath,
+    CLI_FLAG_OUTPUT_DIR,
+    outDir,
+    CLI_FLAG_OUTPUT,
+    CLI_OUTPUT_JSON,
+  ],
+  parseGenerateOutput = (stdout: string): Result<GenerateResult, string> => {
+    try {
+      return ok(JSON.parse(stdout) as GenerateResult);
+    } catch {
+      return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
+    }
+  },
+  callCliGenerate = async (
+    specPath: string,
+    outDir: string,
+    logger: Logger,
+  ): Promise<Result<GenerateResult, string>> =>
+    new Promise((resolve) => {
+      const cliPath = resolveCliPath();
+      logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
+      execFile(
+        cliPath,
+        [...buildGenerateArgs(specPath, outDir)],
+        { timeout: 30_000, env: { ...process.env } },
+        (error, stdout, stderr) => {
+          if (error !== null && stdout.length === 0) {
+            const msg = stderr.length > 0 ? ` — ${stderr}` : '';
+            logger.error(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`);
+            resolve(err(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`));
+            return;
+          }
+          const result = parseGenerateOutput(stdout);
+          (result.ok ? logger.info : logger.error)(
+            `${LOG_MSG_OPENAPI_GENERATE_RESULT} ${result.ok ? `${result.value.files} files` : result.error}`,
+          );
+          resolve(result);
+        },
+      );
+    }),
+  handleSuccess = async (
+    outDir: string,
+    generated: GenerateResult,
+    ctx: ImportContext,
+  ): Promise<void> => {
+    ctx.logger.info(`${LOG_MSG_OPENAPI_IMPORT} ${generated.files}`);
+    ctx.explorer.refresh();
+    await vscode.window.showTextDocument(
+      await vscode.workspace.openTextDocument(path.join(outDir, generated.playlist)),
+    );
+    void vscode.window.showInformationMessage(
+      `${OPENAPI_SUCCESS_PREFIX}${generated.files}${OPENAPI_SUCCESS_SUFFIX}`,
+    );
+  },
+  askAiChoice = async (): Promise<string | undefined> => {
+    const picked = await vscode.window.showQuickPick(
+      [{ label: OPENAPI_AI_CHOICE_BASIC }, { label: OPENAPI_AI_CHOICE_ENHANCED }],
+      { title: OPENAPI_AI_CHOICE_TITLE, placeHolder: OPENAPI_AI_CHOICE_TITLE },
+    );
+    return picked?.label;
+  },
+  selectCopilotModel = async (): Promise<vscode.LanguageModelChat | undefined> => {
+    const models = await vscode.lm.selectChatModels({ family: OPENAPI_AI_COPILOT_FAMILY });
+    return models[0];
+  },
+  sendLmRequest = async (params: LmRequestParams): Promise<string> => {
+    const messages = [
+        vscode.LanguageModelChatMessage.User(`${params.systemPrompt}\n\n${params.userPrompt}`),
+      ],
+      response = await params.model.sendRequest(messages, {}, params.token),
+      parts: string[] = [];
+    for await (const chunk of response.text) {
+      parts.push(chunk);
+    }
+    return parts.join('');
+  },
+  collectNapFiles = (dir: string, baseDir: string, out: GeneratedFile[]): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        collectNapFiles(full, baseDir, out);
+      } else if (entry.name.endsWith(NAP_EXTENSION)) {
+        out.push({
+          fileName: path.relative(baseDir, full),
+          content: fs.readFileSync(full, 'utf-8'),
+        });
+      }
+    }
+  },
+  readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
+    const files: GeneratedFile[] = [];
+    collectNapFiles(outDir, outDir, files);
+    return files;
+  },
+  HTTP_METHOD_PREFIXES = [
+    'GET ',
+    'POST ',
+    'PUT ',
+    'PATCH ',
+    'DELETE ',
+    'HEAD ',
+    'OPTIONS ',
+  ] as const,
+  isRequestLine = (line: string): boolean =>
+    HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix)),
+  extractSummary = (file: GeneratedFile): OperationSummary => {
+    const lines = file.content.split('\n'),
+      nameLine = lines.find((l) => l.startsWith(NAME_PREFIX)),
+      requestLine = lines.find(isRequestLine),
+      name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
+    return {
+      operationId: name,
+      method: requestLine?.split(' ')[0] ?? 'GET',
+      path: requestLine?.split(' ')[1] ?? '',
+      summary: name,
+      responseFields: lines
+        .filter((l) => l.startsWith(BODY_PREFIX) && l.includes(EXISTS_SUFFIX))
+        .map((l) => l.slice(BODY_PREFIX.length, l.indexOf(EXISTS_SUFFIX))),
+      hasRequestBody: file.content.includes(SECTION_REQUEST_BODY),
+    };
+  },
+  enrichAssertionStep = async (
+    step: EnrichStepParams,
+    logger: Logger,
+  ): Promise<readonly GeneratedFile[]> => {
+    const response = await sendLmRequest({
+        ...step.lm,
+        systemPrompt: getAssertionSystemPrompt(),
+        userPrompt: buildAssertionPrompt(step.operations),
+      }),
+      result = parseAssertionResponse(response);
+    if (!result.ok) {
+      logger.info(result.error);
+      return step.files;
+    }
+    return applyAssertionEnrichments(step.files, result.value);
+  },
+  enrichTestDataStep = async (
+    step: EnrichStepParams,
+    logger: Logger,
+  ): Promise<readonly GeneratedFile[]> => {
+    const prompt = buildTestDataPrompt(step.operations);
+    if (prompt.length === 0) {
+      return step.files;
+    }
+    const response = await sendLmRequest({
+        ...step.lm,
+        systemPrompt: getTestDataSystemPrompt(),
+        userPrompt: prompt,
+      }),
+      result = parseTestDataResponse(response);
+    if (!result.ok) {
+      logger.info(result.error);
+      return step.files;
+    }
+    return applyTestDataEnrichments(step.files, result.value);
+  },
+  reorderPlaylistStep = async (
+    params: LmRequestParams,
+    outDir: string,
+    fileNames: readonly string[],
+  ): Promise<void> => {
+    const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION)),
+      [first] = naplists;
+    if (first === undefined) {
+      return;
+    }
+    const playlistPath = path.join(outDir, first),
+      response = await sendLmRequest({
+        ...params,
+        systemPrompt: getPlaylistSystemPrompt(),
+        userPrompt: buildPlaylistOrderPrompt(fileNames),
+      }),
+      result = parsePlaylistOrderResponse(response);
+    if (!result.ok) {
+      return;
+    }
+    fs.writeFileSync(
+      playlistPath,
+      reorderPlaylistSteps(fs.readFileSync(playlistPath, 'utf-8'), result.value),
+      'utf-8',
+    );
+  },
+  writeEnrichedFiles = (outDir: string, files: readonly GeneratedFile[]): void => {
+    for (const file of files) {
+      fs.writeFileSync(path.join(outDir, file.fileName), file.content, 'utf-8');
+    }
+  },
+  executeEnrichmentSteps = async (ctx: EnrichmentContext): Promise<void> => {
+    const files = readGeneratedFiles(ctx.outDir),
+      operations = files.map(extractSummary);
 
- readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
-  const files: GeneratedFile[] = [];
-  collectNapFiles(outDir, outDir, files);
-  return files;
-},
+    ctx.progress.report({ message: OPENAPI_AI_ENRICHING_ASSERTIONS });
+    let enriched = await enrichAssertionStep({ lm: ctx.baseParams, operations, files }, ctx.logger);
 
- HTTP_METHOD_PREFIXES = ["GET ", "POST ", "PUT ", "PATCH ", "DELETE ", "HEAD ", "OPTIONS "] as const,
+    ctx.progress.report({ message: OPENAPI_AI_ENRICHING_TEST_DATA });
+    enriched = await enrichTestDataStep(
+      { lm: ctx.baseParams, operations, files: enriched },
+      ctx.logger,
+    );
 
- isRequestLine = (line: string): boolean =>
-  HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix)),
+    ctx.progress.report({ message: OPENAPI_AI_REORDERING_PLAYLIST });
+    await reorderPlaylistStep(
+      ctx.baseParams,
+      ctx.outDir,
+      enriched.map((f) => f.fileName),
+    );
 
- extractSummary = (file: GeneratedFile): OperationSummary => {
-  const lines = file.content.split("\n"),
-   nameLine = lines.find((l) => l.startsWith(NAME_PREFIX)),
-   requestLine = lines.find(isRequestLine),
-   name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
-  return {
-    operationId: name,
-    method: requestLine?.split(" ")[0] ?? "GET",
-    path: requestLine?.split(" ")[1] ?? "",
-    summary: name,
-    responseFields: lines
-      .filter((l) => l.startsWith(BODY_PREFIX) && l.includes(EXISTS_SUFFIX))
-      .map((l) => l.slice(BODY_PREFIX.length, l.indexOf(EXISTS_SUFFIX))),
-    hasRequestBody: file.content.includes(SECTION_REQUEST_BODY),
+    writeEnrichedFiles(ctx.outDir, enriched);
   };
-},
 
- enrichAssertionStep = async (
-  step: EnrichStepParams,
-  logger: Logger
-): Promise<readonly GeneratedFile[]> => {
-  const response = await sendLmRequest({
-    ...step.lm, systemPrompt: getAssertionSystemPrompt(),
-    userPrompt: buildAssertionPrompt(step.operations),
-  }),
-   result = parseAssertionResponse(response);
-  if (!result.ok) { logger.info(result.error); return step.files; }
-  return applyAssertionEnrichments(step.files, result.value);
-},
-
- enrichTestDataStep = async (
-  step: EnrichStepParams,
-  logger: Logger
-): Promise<readonly GeneratedFile[]> => {
-  const prompt = buildTestDataPrompt(step.operations);
-  if (prompt.length === 0) { return step.files; }
-  const response = await sendLmRequest({
-    ...step.lm, systemPrompt: getTestDataSystemPrompt(), userPrompt: prompt,
-  }),
-   result = parseTestDataResponse(response);
-  if (!result.ok) { logger.info(result.error); return step.files; }
-  return applyTestDataEnrichments(step.files, result.value);
-},
-
- reorderPlaylistStep = async (
-  params: LmRequestParams,
-  outDir: string,
-  fileNames: readonly string[]
-): Promise<void> => {
-  const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION)),
-   [first] = naplists;
-  if (first === undefined) { return; }
-  const playlistPath = path.join(outDir, first),
-   response = await sendLmRequest({
-    ...params, systemPrompt: getPlaylistSystemPrompt(),
-    userPrompt: buildPlaylistOrderPrompt(fileNames),
-  }),
-   result = parsePlaylistOrderResponse(response);
-  if (!result.ok) { return; }
-  fs.writeFileSync(playlistPath, reorderPlaylistSteps(
-    fs.readFileSync(playlistPath, "utf-8"), result.value
-  ), "utf-8");
-},
-
- writeEnrichedFiles = (
-  outDir: string,
-  files: readonly GeneratedFile[]
-): void => {
-  for (const file of files) {
-    fs.writeFileSync(path.join(outDir, file.fileName), file.content, "utf-8");
-  }
-},
-
- executeEnrichmentSteps = async (
-  ctx: EnrichmentContext
-): Promise<void> => {
-  const files = readGeneratedFiles(ctx.outDir),
-   operations = files.map(extractSummary);
-
-  ctx.progress.report({ message: OPENAPI_AI_ENRICHING_ASSERTIONS });
-  let enriched = await enrichAssertionStep({ lm: ctx.baseParams, operations, files }, ctx.logger);
-
-  ctx.progress.report({ message: OPENAPI_AI_ENRICHING_TEST_DATA });
-  enriched = await enrichTestDataStep({ lm: ctx.baseParams, operations, files: enriched }, ctx.logger);
-
-  ctx.progress.report({ message: OPENAPI_AI_REORDERING_PLAYLIST });
-  await reorderPlaylistStep(ctx.baseParams, ctx.outDir, enriched.map((f) => f.fileName));
-
-  writeEnrichedFiles(ctx.outDir, enriched);
-};
-
-export const runAiEnrichment = async (
-  outDir: string,
-  logger: Logger
-): Promise<void> => {
+export const runAiEnrichment = async (outDir: string, logger: Logger): Promise<void> => {
   const model = await selectCopilotModel();
   if (model === undefined) {
     logger.warn(LOG_MSG_OPENAPI_AI_NO_MODEL);
@@ -324,43 +368,56 @@ export const runAiEnrichment = async (
   }
   logger.info(`${LOG_MSG_OPENAPI_AI_MODEL_SELECTED} ${model.name}`);
   await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: OPENAPI_AI_PROGRESS_TITLE, cancellable: true },
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: OPENAPI_AI_PROGRESS_TITLE,
+      cancellable: true,
+    },
     async (progress, token) => {
-      const baseParams: LmRequestParams = { model, systemPrompt: "", userPrompt: "", token };
+      const baseParams: LmRequestParams = { model, systemPrompt: '', userPrompt: '', token };
       await executeEnrichmentSteps({ progress, baseParams, outDir, logger });
-    }
+    },
   );
 };
 
 const isRedirect = (code: number): boolean =>
-  code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN,
-
- isClientError = (code: number): boolean =>
-  code >= HTTP_STATUS_CLIENT_ERROR_MIN,
-
- collectBody = (
-  res: IncomingMessage,
-  resolve: (r: Result<string, string>) => void
-): void => {
-  const chunks: Buffer[] = [];
-  res.on("data", (chunk: Buffer) => { chunks.push(chunk); });
-  res.on("end", () => { resolve(ok(Buffer.concat(chunks).toString("utf-8"))); });
-  res.on("error", (e) => { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`)); });
-};
+    code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN,
+  isClientError = (code: number): boolean => code >= HTTP_STATUS_CLIENT_ERROR_MIN,
+  collectBody = (res: IncomingMessage, resolve: (r: Result<string, string>) => void): void => {
+    const chunks: Buffer[] = [];
+    res.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+    res.on('end', () => {
+      resolve(ok(Buffer.concat(chunks).toString('utf-8')));
+    });
+    res.on('error', (e) => {
+      resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`));
+    });
+  };
 
 export async function downloadSpec(url: string): Promise<Result<string, string>> {
   return new Promise((resolve) => {
-    https.get(url, (res) => {
-      const status = res.statusCode ?? 0;
-      if (isRedirect(status) && res.headers.location !== undefined) {
-        downloadSpec(res.headers.location).then(resolve).catch(() => {
-          resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}redirect`));
-        });
-        return;
-      }
-      if (isClientError(status)) { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}HTTP ${status}`)); return; }
-      collectBody(res, resolve);
-    }).on("error", (e) => { resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`)); });
+    https
+      .get(url, (res) => {
+        const status = res.statusCode ?? 0;
+        if (isRedirect(status) && res.headers.location !== undefined) {
+          downloadSpec(res.headers.location)
+            .then(resolve)
+            .catch(() => {
+              resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}redirect`));
+            });
+          return;
+        }
+        if (isClientError(status)) {
+          resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}HTTP ${status}`));
+          return;
+        }
+        collectBody(res, resolve);
+      })
+      .on('error', (e) => {
+        resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`));
+      });
   });
 }
 
@@ -372,18 +429,20 @@ const askForUrl = async (): Promise<string | undefined> =>
   });
 
 export const saveTempSpec = (content: string, outDir: string): string => {
-  const specPath = path.join(outDir, ".openapi-spec.json");
-  fs.writeFileSync(specPath, content, "utf-8");
+  const specPath = path.join(outDir, '.openapi-spec.json');
+  fs.writeFileSync(specPath, content, 'utf-8');
   return specPath;
 };
 
 const generateAndEnrich = async (
   specPath: string,
   outDir: string,
-  ctx: ImportContext
+  ctx: ImportContext,
 ): Promise<void> => {
   const choice = await askAiChoice();
-  if (choice === undefined) { return; }
+  if (choice === undefined) {
+    return;
+  }
   ctx.logger.info(`${LOG_MSG_OPENAPI_AI_CHOICE} ${choice}`);
   const result = await callCliGenerate(specPath, outDir, ctx.logger);
   if (!result.ok) {
@@ -399,12 +458,16 @@ const generateAndEnrich = async (
 const fetchAndSaveSpec = async (
   url: string,
   outDir: string,
-  logger: Logger
+  logger: Logger,
 ): Promise<string | undefined> => {
   logger.info(`${LOG_MSG_OPENAPI_URL_FETCH} ${url}`);
   const specResult = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: OPENAPI_DOWNLOADING, cancellable: false },
-    async () => downloadSpec(url)
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: OPENAPI_DOWNLOADING,
+      cancellable: false,
+    },
+    async () => downloadSpec(url),
   );
   if (!specResult.ok) {
     logger.error(`${LOG_MSG_OPENAPI_URL_DOWNLOAD_FAIL} ${specResult.error}`);
@@ -419,23 +482,31 @@ const fetchAndSaveSpec = async (
 
 export const importOpenApiFromUrl = async (
   explorer: ExplorerAdapter,
-  logger: Logger
+  logger: Logger,
 ): Promise<void> => {
   const url = await askForUrl();
-  if (url === undefined || url.length === 0) { return; }
+  if (url === undefined || url.length === 0) {
+    return;
+  }
   const outFolder = await pickOutputFolder(),
-   outDir = outFolder?.[0]?.fsPath;
-  if (outDir === undefined) { return; }
+    outDir = outFolder?.[0]?.fsPath;
+  if (outDir === undefined) {
+    return;
+  }
   const specPath = await fetchAndSaveSpec(url, outDir, logger);
-  if (specPath === undefined) { return; }
+  if (specPath === undefined) {
+    return;
+  }
   await generateAndEnrich(specPath, outDir, { explorer, logger });
 };
 
 export const importOpenApiFromFile = async (
   explorer: ExplorerAdapter,
-  logger: Logger
+  logger: Logger,
 ): Promise<void> => {
   const paths = await pickPaths();
-  if (paths === undefined) { return; }
+  if (paths === undefined) {
+    return;
+  }
   await generateAndEnrich(paths.specFile.fsPath, paths.outFolder.fsPath, { explorer, logger });
 };

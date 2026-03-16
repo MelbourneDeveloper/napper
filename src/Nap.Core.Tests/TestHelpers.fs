@@ -12,9 +12,15 @@ let NapperBinaryName = "napper"
 // --- CLI runner: uses the installed binary, never recompiles ---
 
 let private findNapper () : string =
-    let localBin = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", NapperBinaryName)
-    if File.Exists localBin then localBin
-    else NapperBinaryName
+    let localBin =
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".local",
+            "bin",
+            NapperBinaryName
+        )
+
+    if File.Exists localBin then localBin else NapperBinaryName
 
 let runCli (args: string) (cwd: string) : int * string * string =
     let binary = findNapper ()
@@ -40,4 +46,5 @@ let createTempDir (prefix: string) : string =
     dir
 
 let cleanupDir (dir: string) : unit =
-    if Directory.Exists(dir) then Directory.Delete(dir, true)
+    if Directory.Exists(dir) then
+        Directory.Delete(dir, true)

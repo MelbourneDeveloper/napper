@@ -16,11 +16,14 @@ let private httpClient = new HttpClient()
 
 let private loadCached (filename: string) (url: string) : string =
     let path = Path.Combine(cacheDir, filename)
+
     if not (Directory.Exists cacheDir) then
         Directory.CreateDirectory cacheDir |> ignore
+
     if not (File.Exists path) then
         let content = httpClient.GetStringAsync(url).Result
         File.WriteAllText(path, content)
+
     File.ReadAllText path
 
 let private unwrap (input: string) : HttpFile =
@@ -400,7 +403,8 @@ let ``real-world download: Clockify API requests`` () =
     // Most requests have no body, except request 4 whose continuation
     // line (?project=...&start=...) is parsed as body
     for i in 0 .. f.Requests.Length - 1 do
-        if i <> 4 then Assert.True((reqAt f i).Body.IsNone)
+        if i <> 4 then
+            Assert.True((reqAt f i).Body.IsNone)
 
     // Request 0: /user
     Assert.Contains("/user", (reqAt f 0).Url)
@@ -644,6 +648,7 @@ let ``real-world download: UKP-SQuARE ML platform API`` () =
     // Multiple inline @token variables referencing response body
     let tokenVars = f.FileVariables |> List.filter (fun (k, _) -> k = "token")
     Assert.True(tokenVars.Length >= 4)
+
     for (_, v) in tokenVars do
         Assert.Contains("get_token.response.body.access_token", v)
 
@@ -753,21 +758,27 @@ let ``real-world download: Panasonic Comfort Cloud IoT API`` () =
 
     // Requests referencing device GUID via response variable in URL
     // Only 2 requests have device.response.body in the URL (deviceStatus/now and deviceStatus)
-    let deviceGuidRequests = f.Requests |> List.filter (fun r ->
-        r.Url.Contains("device.response.body"))
+    let deviceGuidRequests =
+        f.Requests |> List.filter (fun r -> r.Url.Contains("device.response.body"))
+
     Assert.True(deviceGuidRequests.Length >= 2)
+
     for req in deviceGuidRequests do
         Assert.Contains("deviceGuid", req.Url)
         assertHeader req "X-User-Authorization" "login.response.body"
 
     // Device control POSTs with nested JSON
-    let controls = f.Requests |> List.filter (fun r ->
-        r.Method = "POST" && r.Url.Contains("control"))
+    let controls =
+        f.Requests
+        |> List.filter (fun r -> r.Method = "POST" && r.Url.Contains("control"))
+
     Assert.True(controls.Length >= 2)
 
     // First control: full parameter set
-    let fullControl = controls |> List.find (fun r ->
-        r.Body.IsSome && r.Body.Value.Contains("operationMode"))
+    let fullControl =
+        controls
+        |> List.find (fun r -> r.Body.IsSome && r.Body.Value.Contains("operationMode"))
+
     Assert.Contains("\"operate\": 1", fullControl.Body.Value)
     Assert.Contains("\"operationMode\": 3", fullControl.Body.Value)
     Assert.Contains("\"temperatureSet\": 22.5", fullControl.Body.Value)
@@ -777,13 +788,13 @@ let ``real-world download: Panasonic Comfort Cloud IoT API`` () =
     Assert.Contains("deviceGuid", fullControl.Body.Value)
 
     // Second control: just temperature
-    let tempControl = controls |> List.find (fun r ->
-        r.Body.IsSome && r.Body.Value.Contains("21.0"))
+    let tempControl =
+        controls |> List.find (fun r -> r.Body.IsSome && r.Body.Value.Contains("21.0"))
+
     Assert.Contains("\"temperatureSet\": 21.0", tempControl.Body.Value)
 
     // History data POST
-    let history = f.Requests |> List.find (fun r ->
-        r.Url.Contains("deviceHistoryData"))
+    let history = f.Requests |> List.find (fun r -> r.Url.Contains("deviceHistoryData"))
     Assert.Equal("POST", history.Method)
     Assert.True(history.Body.IsSome)
     Assert.Contains("\"dataMode\": 0", history.Body.Value)
@@ -791,12 +802,16 @@ let ``real-world download: Panasonic Comfort Cloud IoT API`` () =
     Assert.Contains("osTimezone", history.Body.Value)
 
     // Agreement endpoints
-    let agreementGet = f.Requests |> List.filter (fun r ->
-        r.Method = "GET" && r.Url.Contains("agreement"))
+    let agreementGet =
+        f.Requests
+        |> List.filter (fun r -> r.Method = "GET" && r.Url.Contains("agreement"))
+
     Assert.True(agreementGet.Length >= 3)
 
-    let agreementPut = f.Requests |> List.find (fun r ->
-        r.Method = "PUT" && r.Url.Contains("agreement"))
+    let agreementPut =
+        f.Requests
+        |> List.find (fun r -> r.Method = "PUT" && r.Url.Contains("agreement"))
+
     Assert.True(agreementPut.Body.IsSome)
     Assert.Contains("\"agreementStatus\": 0", agreementPut.Body.Value)
     Assert.Contains("\"type\": 0", agreementPut.Body.Value)
@@ -806,9 +821,12 @@ let ``real-world download: Panasonic Comfort Cloud IoT API`` () =
     Assert.True(richHeaderRequests.Length >= 5)
 
     // Requests with Accept-Encoding and Connection headers
-    let withAcceptEncoding = f.Requests |> List.filter (fun r ->
-        r.Headers |> List.exists (fun (k, _) -> k = "Accept-Encoding"))
+    let withAcceptEncoding =
+        f.Requests
+        |> List.filter (fun r -> r.Headers |> List.exists (fun (k, _) -> k = "Accept-Encoding"))
+
     Assert.True(withAcceptEncoding.Length >= 1)
+
     for req in withAcceptEncoding do
         assertHeaderExact req "Accept-Encoding" "gzip"
         assertHeaderExact req "Connection" "Keep-Alive"

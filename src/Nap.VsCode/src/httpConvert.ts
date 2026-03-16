@@ -2,13 +2,13 @@
 // .http → .nap conversion — calls CLI `nap convert http` subprocess
 // Decoupled from vscode SDK where possible; thin vscode layer for dialogs
 
-import * as vscode from "vscode";
-import * as path from "path";
-import * as fs from "fs";
-import { execFile } from "child_process";
-import type { ExplorerAdapter } from "./explorerAdapter";
-import type { Logger } from "./logger";
-import { type Result, err, ok } from "./types";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import { execFile } from 'child_process';
+import type { ExplorerAdapter } from './explorerAdapter';
+import type { Logger } from './logger';
+import { type Result, err, ok } from './types';
 import {
   CLI_CMD_CONVERT,
   CLI_FLAG_OUTPUT,
@@ -31,7 +31,7 @@ import {
   LOG_MSG_CONVERT_HTTP,
   LOG_MSG_CONVERT_HTTP_RESULT,
   REST_FILE_EXTENSION,
-} from "./constants";
+} from './constants';
 
 const MAX_PREVIEW_LENGTH = 200;
 
@@ -48,14 +48,11 @@ interface ConvertContext {
 const resolveCliPath = (): string => {
   const configured = vscode.workspace
     .getConfiguration(CONFIG_SECTION)
-    .get<string>(CONFIG_CLI_PATH, "");
+    .get<string>(CONFIG_CLI_PATH, '');
   return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
 };
 
-const buildConvertArgs = (
-  inputPath: string,
-  outDir: string
-): readonly string[] => [
+const buildConvertArgs = (inputPath: string, outDir: string): readonly string[] => [
   CLI_CMD_CONVERT,
   CLI_SUBCMD_HTTP,
   inputPath,
@@ -65,21 +62,16 @@ const buildConvertArgs = (
   CLI_OUTPUT_JSON,
 ];
 
-const parseConvertOutput = (
-  stdout: string
-): Result<ConvertResult, string> => {
+const parseConvertOutput = (stdout: string): Result<ConvertResult, string> => {
   try {
     return ok(JSON.parse(stdout) as ConvertResult);
   } catch {
-    return err(
-      `${CONVERT_HTTP_ERROR_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`
-    );
+    return err(`${CONVERT_HTTP_ERROR_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
   }
 };
 
 const isHttpFile = (filePath: string): boolean =>
-  filePath.endsWith(HTTP_FILE_EXTENSION) ||
-  filePath.endsWith(REST_FILE_EXTENSION);
+  filePath.endsWith(HTTP_FILE_EXTENSION) || filePath.endsWith(REST_FILE_EXTENSION);
 
 interface ExecContext {
   readonly cliPath: string;
@@ -88,7 +80,7 @@ interface ExecContext {
 }
 
 const resolveExecError = (ctx: ExecContext, stderr: string): void => {
-  const msg = stderr.length > 0 ? ` — ${stderr}` : "";
+  const msg = stderr.length > 0 ? ` — ${stderr}` : '';
   ctx.logger.error(`${CLI_SPAWN_FAILED_PREFIX}${ctx.cliPath}${msg}`);
   ctx.resolve(err(`${CLI_SPAWN_FAILED_PREFIX}${ctx.cliPath}${msg}`));
 };
@@ -97,16 +89,12 @@ const resolveExecSuccess = (ctx: ExecContext, stdout: string): void => {
   const result = parseConvertOutput(stdout);
   const logFn = result.ok ? ctx.logger.info : ctx.logger.error;
   logFn(
-    `${LOG_MSG_CONVERT_HTTP_RESULT} ${result.ok ? `${result.value.files} files` : result.error}`
+    `${LOG_MSG_CONVERT_HTTP_RESULT} ${result.ok ? `${result.value.files} files` : result.error}`,
   );
   ctx.resolve(result);
 };
 
-const spawnConvert = (
-  inputPath: string,
-  outDir: string,
-  ctx: ExecContext
-): void => {
+const spawnConvert = (inputPath: string, outDir: string, ctx: ExecContext): void => {
   execFile(
     ctx.cliPath,
     [...buildConvertArgs(inputPath, outDir)],
@@ -117,46 +105,37 @@ const spawnConvert = (
       } else {
         resolveExecSuccess(ctx, stdout);
       }
-    }
+    },
   );
 };
 
 export const callCliConvert = async (
   inputPath: string,
   outDir: string,
-  logger: Logger
+  logger: Logger,
 ): Promise<Result<ConvertResult, string>> =>
   new Promise((resolve) => {
     const cliPath = resolveCliPath();
-    logger.info(
-      `${LOG_MSG_CONVERT_HTTP} ${cliPath} ${inputPath} → ${outDir}`
-    );
+    logger.info(`${LOG_MSG_CONVERT_HTTP} ${cliPath} ${inputPath} → ${outDir}`);
     spawnConvert(inputPath, outDir, { cliPath, logger, resolve });
   });
 
-const handleConvertSuccess = (
-  generated: ConvertResult,
-  ctx: ConvertContext
-): void => {
-  ctx.logger.info(
-    `${LOG_MSG_CONVERT_HTTP} ${generated.files} files generated`
-  );
+const handleConvertSuccess = (generated: ConvertResult, ctx: ConvertContext): void => {
+  ctx.logger.info(`${LOG_MSG_CONVERT_HTTP} ${generated.files} files generated`);
   ctx.explorer.refresh();
   void vscode.window.showInformationMessage(
-    `${CONVERT_HTTP_SUCCESS_PREFIX}${generated.files}${CONVERT_HTTP_SUCCESS_SUFFIX}`
+    `${CONVERT_HTTP_SUCCESS_PREFIX}${generated.files}${CONVERT_HTTP_SUCCESS_SUFFIX}`,
   );
 };
 
 const runConvert = async (
   inputPath: string,
   outDir: string,
-  ctx: ConvertContext
+  ctx: ConvertContext,
 ): Promise<void> => {
   const result = await callCliConvert(inputPath, outDir, ctx.logger);
   if (!result.ok) {
-    await vscode.window.showErrorMessage(
-      `${CONVERT_HTTP_ERROR_PREFIX}${result.error}`
-    );
+    await vscode.window.showErrorMessage(`${CONVERT_HTTP_ERROR_PREFIX}${result.error}`);
     return;
   }
   handleConvertSuccess(result.value, ctx);
@@ -178,7 +157,7 @@ const pickHttpFile = async (): Promise<vscode.Uri | undefined> => {
 export const convertHttpFile = async (
   explorer: ExplorerAdapter,
   logger: Logger,
-  fileUri?: vscode.Uri
+  fileUri?: vscode.Uri,
 ): Promise<void> => {
   const uri = fileUri ?? (await pickHttpFile());
   if (uri === undefined) {
@@ -204,15 +183,13 @@ const pickHttpDirectory = async (): Promise<vscode.Uri | undefined> => {
 
 export const convertHttpDirectory = async (
   explorer: ExplorerAdapter,
-  logger: Logger
+  logger: Logger,
 ): Promise<void> => {
   const uri = await pickHttpDirectory();
   if (uri === undefined) {
     return;
   }
-  const hasHttpFiles = fs
-    .readdirSync(uri.fsPath)
-    .some((f) => isHttpFile(f));
+  const hasHttpFiles = fs.readdirSync(uri.fsPath).some((f) => isHttpFile(f));
   if (!hasHttpFiles) {
     await vscode.window.showWarningMessage(CONVERT_HTTP_NO_FILES);
     return;

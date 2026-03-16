@@ -9,18 +9,22 @@ open Xunit
 let private runCli args cwd = TestHelpers.runCli args cwd
 
 let private createTempDir () =
-    let dir = Path.Combine(Path.GetTempPath(), sprintf "nap-arg-test-%s" (Guid.NewGuid().ToString("N")))
+    let dir =
+        Path.Combine(Path.GetTempPath(), sprintf "nap-arg-test-%s" (Guid.NewGuid().ToString("N")))
+
     Directory.CreateDirectory(dir) |> ignore
     dir
 
 let private cleanupDir (dir: string) =
-    if Directory.Exists(dir) then Directory.Delete(dir, true)
+    if Directory.Exists(dir) then
+        Directory.Delete(dir, true)
 
 // ─── Help variations ─────────────────────── Spec: cli-exit-codes
 
 [<Fact>]
 let ``No args shows help with exit 0`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, stdout, _ = runCli "" dir
         Assert.Equal(0, exitCode)
@@ -31,6 +35,7 @@ let ``No args shows help with exit 0`` () =
 [<Fact>]
 let ``help command shows all options`` () =
     let dir = createTempDir ()
+
     try
         let _, stdout, _ = runCli "help" dir
         Assert.Contains("nap run", stdout)
@@ -44,6 +49,7 @@ let ``help command shows all options`` () =
 [<Fact>]
 let ``--help flag shows usage`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, stdout, _ = runCli "--help" dir
         Assert.Equal(0, exitCode)
@@ -54,6 +60,7 @@ let ``--help flag shows usage`` () =
 [<Fact>]
 let ``-h flag shows usage`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, stdout, _ = runCli "-h" dir
         Assert.Equal(0, exitCode)
@@ -66,6 +73,7 @@ let ``-h flag shows usage`` () =
 [<Fact>]
 let ``unknown command returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "bogus" dir
         Assert.Equal(2, exitCode)
@@ -78,6 +86,7 @@ let ``unknown command returns exit 2`` () =
 [<Fact>]
 let ``check no file returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "check" dir
         Assert.Equal(2, exitCode)
@@ -88,6 +97,7 @@ let ``check no file returns exit 2`` () =
 [<Fact>]
 let ``check missing file returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "check ghost.nap" dir
         Assert.Equal(2, exitCode)
@@ -100,6 +110,7 @@ let ``check missing file returns exit 2`` () =
 [<Fact>]
 let ``run no file returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "run" dir
         Assert.Equal(2, exitCode)
@@ -110,6 +121,7 @@ let ``run no file returns exit 2`` () =
 [<Fact>]
 let ``run missing file returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "run ghost.nap" dir
         Assert.Equal(2, exitCode)
@@ -120,6 +132,7 @@ let ``run missing file returns exit 2`` () =
 [<Fact>]
 let ``run empty directory returns exit 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli (sprintf "run %s" dir) dir
         Assert.Equal(2, exitCode)
@@ -132,6 +145,7 @@ let ``run empty directory returns exit 2`` () =
 [<Fact>]
 let ``--var handles equals in value`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let exitCode, _, _ = runCli "run test.nap --var token=abc==def --output json" dir
@@ -144,6 +158,7 @@ let ``--var handles equals in value`` () =
 [<Fact>]
 let ``flags before file path work`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let exitCode, _, _ = runCli "run --output json test.nap" dir
@@ -156,6 +171,7 @@ let ``flags before file path work`` () =
 [<Fact>]
 let ``json output is valid JSON`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let _, stdout, _ = runCli "run test.nap --output json" dir
@@ -167,6 +183,7 @@ let ``json output is valid JSON`` () =
 [<Fact>]
 let ``junit output is valid XML`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let _, stdout, _ = runCli "run test.nap --output junit" dir
@@ -178,6 +195,7 @@ let ``junit output is valid XML`` () =
 [<Fact>]
 let ``ndjson output gives one line per result`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let _, stdout, _ = runCli "run test.nap --output ndjson" dir
@@ -191,6 +209,7 @@ let ``ndjson output gives one line per result`` () =
 [<Fact>]
 let ``pretty output is default`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         let _, stdout, _ = runCli "run test.nap" dir

@@ -2,8 +2,8 @@
 // Environment switcher — status bar item + quick pick
 // Decoupled: detection logic is pure, only the adapter touches vscode
 
-import * as path from "path";
-import { NAPENV_EXTENSION, NAPENV_LOCAL_SUFFIX } from "./constants";
+import * as path from 'path';
+import { NAPENV_EXTENSION, NAPENV_LOCAL_SUFFIX } from './constants';
 
 export const extractEnvName = (fileName: string): string | undefined => {
   const base = path.basename(fileName);
@@ -23,9 +23,7 @@ export const extractEnvName = (fileName: string): string | undefined => {
   return undefined;
 };
 
-export const detectEnvironments = (
-  filePaths: readonly string[]
-): readonly string[] => {
+export const detectEnvironments = (filePaths: readonly string[]): readonly string[] => {
   const envs: string[] = [];
 
   for (const fp of filePaths) {

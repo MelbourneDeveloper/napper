@@ -12,7 +12,10 @@ open Xunit
 // ─── Infrastructure ─────────────────────────────────────────
 
 let private runCli args cwd = TestHelpers.runCli args cwd
-let private createTempDir () = TestHelpers.createTempDir "nap-openapi-e2e"
+
+let private createTempDir () =
+    TestHelpers.createTempDir "nap-openapi-e2e"
+
 let private cleanupDir dir = TestHelpers.cleanupDir dir
 
 [<Literal>]
@@ -24,16 +27,17 @@ let private BeeceptorUrl = "https://beeceptor.com/docs/storefront-sample.json"
 [<Literal>]
 let private BeeceptorEndpointCount = 11
 
-let private specCacheDir =
-    Path.Combine(__SOURCE_DIRECTORY__, ".spec-cache")
+let private specCacheDir = Path.Combine(__SOURCE_DIRECTORY__, ".spec-cache")
 
 let private cachedDownload (url: string) (fileName: string) : string =
     let cachePath = Path.Combine(specCacheDir, fileName)
+
     if File.Exists(cachePath) then
         File.ReadAllText(cachePath)
     else
         if not (Directory.Exists(specCacheDir)) then
             Directory.CreateDirectory(specCacheDir) |> ignore
+
         use client = new HttpClient()
         let json = client.GetStringAsync(url).Result
         File.WriteAllText(cachePath, json)
@@ -60,6 +64,7 @@ let private generatePetstore (outDir: string) : int * string * string =
 [<Fact>]
 let ``Petstore generate exits with code 0`` () =
     let outDir = createTempDir ()
+
     try
         let exitCode, stdout, _ = generatePetstore outDir
         Assert.Equal(0, exitCode)
@@ -70,6 +75,7 @@ let ``Petstore generate exits with code 0`` () =
 [<Fact>]
 let ``Petstore generates napenv with base URL`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let envFile = Path.Combine(outDir, ".napenv")
@@ -82,6 +88,7 @@ let ``Petstore generates napenv with base URL`` () =
 [<Fact>]
 let ``Petstore generates naplist file`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let naplists = Directory.GetFiles(outDir, "*.naplist")
@@ -95,6 +102,7 @@ let ``Petstore generates naplist file`` () =
 [<Fact>]
 let ``Petstore creates tag subdirectories`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let petDir = Path.Combine(outDir, "pet")
@@ -109,6 +117,7 @@ let ``Petstore creates tag subdirectories`` () =
 [<Fact>]
 let ``Petstore pet folder has nap files for CRUD operations`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let petDir = Path.Combine(outDir, "pet")
@@ -120,10 +129,12 @@ let ``Petstore pet folder has nap files for CRUD operations`` () =
 [<Fact>]
 let ``Petstore nap files contain meta with generated flag`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
         Assert.True(allNaps.Length > 0, "Must have at least one .nap file")
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             Assert.Contains("[meta]", content)
@@ -134,9 +145,11 @@ let ``Petstore nap files contain meta with generated flag`` () =
 [<Fact>]
 let ``Petstore nap files contain request section with baseUrl`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             Assert.Contains("[request]", content)
@@ -147,9 +160,11 @@ let ``Petstore nap files contain request section with baseUrl`` () =
 [<Fact>]
 let ``Petstore nap files contain assert section`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             Assert.Contains("[assert]", content)
@@ -160,15 +175,19 @@ let ``Petstore nap files contain assert section`` () =
 [<Fact>]
 let ``Petstore POST endpoints have request body`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let postFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("POST {{baseUrl}}"))
+
         Assert.True(postFiles.Length >= 1, "Must have at least one POST endpoint")
+
         for f in postFiles do
             let content = File.ReadAllText(f)
             Assert.Contains("[request.headers]", content)
@@ -179,15 +198,22 @@ let ``Petstore POST endpoints have request body`` () =
 [<Fact>]
 let ``Petstore path param endpoints have vars section`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let paramFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains("{{petId}}") || content.Contains("{{orderId}}") || content.Contains("{{username}}"))
+
+                content.Contains("{{petId}}")
+                || content.Contains("{{orderId}}")
+                || content.Contains("{{username}}"))
+
         Assert.True(paramFiles.Length >= 1, "Must have endpoints with path params")
+
         for f in paramFiles do
             let content = File.ReadAllText(f)
             Assert.Contains("[vars]", content)
@@ -198,6 +224,7 @@ let ``Petstore path param endpoints have vars section`` () =
 [<Fact>]
 let ``Petstore naplist references all generated nap files`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let naplists = Directory.GetFiles(outDir, "*.naplist")
@@ -205,6 +232,7 @@ let ``Petstore naplist references all generated nap files`` () =
         let playlistContent = File.ReadAllText(naplists[0])
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
         Assert.True(allNaps.Length >= 10, $"Petstore must produce at least 10 nap files, got {allNaps.Length}")
+
         for napFile in allNaps do
             let napName = Path.GetFileName(napFile)
             Assert.True(playlistContent.Contains(napName), $"Playlist must reference {napName}")
@@ -214,14 +242,17 @@ let ``Petstore naplist references all generated nap files`` () =
 [<Fact>]
 let ``Petstore api_key auth adds header`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let apiKeyFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("api_key = {{apiKey}}"))
+
         Assert.True(apiKeyFiles.Length >= 1, "At least one endpoint must use api_key auth header")
     finally
         cleanupDir outDir
@@ -229,14 +260,17 @@ let ``Petstore api_key auth adds header`` () =
 [<Fact>]
 let ``Petstore query param endpoints have params in URL`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let queryFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("?") && content.Contains("={{"))
+
         Assert.True(queryFiles.Length >= 1, "Must have endpoints with query params in URL")
     finally
         cleanupDir outDir
@@ -246,8 +280,11 @@ let ``Petstore query param endpoints have params in URL`` () =
 [<Fact>]
 let ``Generate with missing spec returns exit code 2`` () =
     let dir = createTempDir ()
+
     try
-        let exitCode, _, stderr = runCli "generate openapi nonexistent.json --output-dir ." dir
+        let exitCode, _, stderr =
+            runCli "generate openapi nonexistent.json --output-dir ." dir
+
         Assert.Equal(2, exitCode)
         Assert.Contains("not found", stderr)
     finally
@@ -256,6 +293,7 @@ let ``Generate with missing spec returns exit code 2`` () =
 [<Fact>]
 let ``Generate with no spec file returns exit code 2`` () =
     let dir = createTempDir ()
+
     try
         let exitCode, _, stderr = runCli "generate openapi" dir
         Assert.Equal(2, exitCode)
@@ -266,6 +304,7 @@ let ``Generate with no spec file returns exit code 2`` () =
 [<Fact>]
 let ``Generate with invalid JSON returns exit code 1`` () =
     let dir = createTempDir ()
+
     try
         File.WriteAllText(Path.Combine(dir, "bad.json"), "not valid json{{{")
         let exitCode, _, stderr = runCli "generate openapi bad.json --output-dir ." dir
@@ -279,6 +318,7 @@ let ``Generate with invalid JSON returns exit code 1`` () =
 [<Fact>]
 let ``Beeceptor generate exits with code 0`` () =
     let outDir = createTempDir ()
+
     try
         let exitCode, stdout, _ = generateBeeceptor outDir
         Assert.Equal(0, exitCode)
@@ -289,6 +329,7 @@ let ``Beeceptor generate exits with code 0`` () =
 [<Fact>]
 let ``Beeceptor generates napenv with base URL`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let envFile = Path.Combine(outDir, ".napenv")
@@ -302,6 +343,7 @@ let ``Beeceptor generates napenv with base URL`` () =
 [<Fact>]
 let ``Beeceptor generates all 11 nap files`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
@@ -312,6 +354,7 @@ let ``Beeceptor generates all 11 nap files`` () =
 [<Fact>]
 let ``Beeceptor generates naplist referencing all endpoints`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let naplists = Directory.GetFiles(outDir, "*.naplist")
@@ -326,9 +369,11 @@ let ``Beeceptor generates naplist referencing all endpoints`` () =
 [<Fact>]
 let ``Beeceptor nap files all have meta and assert sections`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             Assert.Contains("[meta]", content)
@@ -343,9 +388,11 @@ let ``Beeceptor nap files all have meta and assert sections`` () =
 [<Fact>]
 let ``Beeceptor POST endpoints have request body and headers`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let postFiles =
             allNaps
             |> Array.filter (fun f ->
@@ -353,6 +400,7 @@ let ``Beeceptor POST endpoints have request body and headers`` () =
                 content.Contains "POST {{baseUrl}}")
         // auth/register, auth/login, cart/items, checkout, addresses POST = 5
         Assert.True(postFiles.Length >= 5, $"Must have at least 5 POST endpoints, got {postFiles.Length}")
+
         for f in postFiles do
             let content = File.ReadAllText(f)
             Assert.Contains("[request.headers]", content)
@@ -363,9 +411,11 @@ let ``Beeceptor POST endpoints have request body and headers`` () =
 [<Fact>]
 let ``Beeceptor bearer auth endpoints have Authorization header`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let authFiles =
             allNaps
             |> Array.filter (fun f ->
@@ -379,14 +429,17 @@ let ``Beeceptor bearer auth endpoints have Authorization header`` () =
 [<Fact>]
 let ``Beeceptor products endpoint has query params`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let queryFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("category={{category}}"))
+
         Assert.True(queryFiles.Length >= 1, "Must have products endpoint with category query param")
         let content = File.ReadAllText(queryFiles[0])
         Assert.Contains("search={{search}}", content)
@@ -398,15 +451,19 @@ let ``Beeceptor products endpoint has query params`` () =
 [<Fact>]
 let ``Beeceptor path param endpoints have vars section`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let paramFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("{{id}}") || content.Contains("{{orderId}}"))
+
         Assert.True(paramFiles.Length >= 2, $"Must have at least 2 path param endpoints, got {paramFiles.Length}")
+
         for f in paramFiles do
             let content = File.ReadAllText(f)
             Assert.Contains("[vars]", content)
@@ -417,14 +474,17 @@ let ``Beeceptor path param endpoints have vars section`` () =
 [<Fact>]
 let ``Beeceptor checkout endpoint asserts 201 status`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let checkoutFiles =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("POST {{baseUrl}}/checkout"))
+
         Assert.True(checkoutFiles.Length >= 1, "Must have checkout endpoint")
         let content = File.ReadAllText(checkoutFiles[0])
         Assert.Contains("status = 201", content)
@@ -436,10 +496,12 @@ let ``Beeceptor checkout endpoint asserts 201 status`` () =
 [<Fact>]
 let ``Petstore every nap file has correct section ordering`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
         Assert.True(allNaps.Length >= 10, $"Must have at least 10 nap files, got {allNaps.Length}")
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             let metaIdx = content.IndexOf("[meta]")
@@ -454,33 +516,47 @@ let ``Petstore every nap file has correct section ordering`` () =
 [<Fact>]
 let ``Petstore POST endpoints include actual JSON body content`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         let postFilesWithBody =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
                 content.Contains("POST {{baseUrl}}") && content.Contains("[request.body]"))
+
         Assert.True(postFilesWithBody.Length >= 1, "Must have POST endpoints with body")
+
         for f in postFilesWithBody do
             let content = File.ReadAllText(f)
             Assert.Contains("\"\"\"", content)
             let tripleQuoteCount = content.Split("\"\"\"").Length - 1
-            Assert.True(tripleQuoteCount >= 2, $"Body must have opening and closing triple-quotes in {Path.GetFileName f}")
+
+            Assert.True(
+                tripleQuoteCount >= 2,
+                $"Body must have opening and closing triple-quotes in {Path.GetFileName f}"
+            )
     finally
         cleanupDir outDir
 
 [<Fact>]
 let ``Petstore every path param endpoint has matching vars`` () =
     let outDir = createTempDir ()
+
     try
         generatePetstore outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
+
             let hasPathParam =
-                content.Contains("{{petId}}") || content.Contains("{{orderId}}") || content.Contains("{{username}}")
+                content.Contains("{{petId}}")
+                || content.Contains("{{orderId}}")
+                || content.Contains("{{username}}")
+
             if hasPathParam then
                 Assert.Contains("[vars]", content)
                 Assert.Contains("REPLACE_ME", content)
@@ -490,12 +566,15 @@ let ``Petstore every path param endpoint has matching vars`` () =
 [<Fact>]
 let ``Beeceptor every path param endpoint has matching vars`` () =
     let outDir = createTempDir ()
+
     try
         generateBeeceptor outDir |> ignore
         let allNaps = Directory.GetFiles(outDir, "*.nap", SearchOption.AllDirectories)
+
         for napFile in allNaps do
             let content = File.ReadAllText(napFile)
             let hasPathParam = content.Contains("{{id}}") || content.Contains("{{orderId}}")
+
             if hasPathParam then
                 Assert.Contains("[vars]", content)
                 Assert.Contains("REPLACE_ME", content)

@@ -1,10 +1,7 @@
 // Specs: vscode-settings
-import * as assert from "assert";
-import * as vscode from "vscode";
-import {
-  activateExtension,
-  sleep,
-} from "../helpers/helpers";
+import * as assert from 'assert';
+import * as vscode from 'vscode';
+import { activateExtension, sleep } from '../helpers/helpers';
 import {
   CONFIG_AUTO_RUN,
   CONFIG_CLI_PATH,
@@ -13,81 +10,54 @@ import {
   CONFIG_SECTION,
   CONFIG_SPLIT_LAYOUT,
   DEFAULT_CLI_PATH,
-} from "../../constants";
+} from '../../constants';
 
-suite("Configuration", () => {
+suite('Configuration', () => {
   suiteSetup(async function () {
     this.timeout(30000);
     await activateExtension();
     await sleep(3000);
   });
 
-  test("napper configuration section exists", () => {
+  test('napper configuration section exists', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    assert.notStrictEqual(config, undefined, "napper configuration section should exist");
+    assert.notStrictEqual(config, undefined, 'napper configuration section should exist');
   });
 
-  test("autoRunOnSave defaults to false", () => {
+  test('autoRunOnSave defaults to false', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     autoRun = config.get<boolean>(CONFIG_AUTO_RUN);
-    assert.strictEqual(
-      autoRun,
-      false,
-      "autoRunOnSave should default to false"
-    );
+      autoRun = config.get<boolean>(CONFIG_AUTO_RUN);
+    assert.strictEqual(autoRun, false, 'autoRunOnSave should default to false');
   });
 
-  test("splitEditorLayout defaults to beside", () => {
+  test('splitEditorLayout defaults to beside', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     layout = config.get<string>(CONFIG_SPLIT_LAYOUT);
-    assert.strictEqual(
-      layout,
-      "beside",
-      "splitEditorLayout should default to 'beside'"
-    );
+      layout = config.get<string>(CONFIG_SPLIT_LAYOUT);
+    assert.strictEqual(layout, 'beside', "splitEditorLayout should default to 'beside'");
   });
 
-  test("maskSecretsInPreview defaults to true", () => {
+  test('maskSecretsInPreview defaults to true', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     mask = config.get<boolean>(CONFIG_MASK_SECRETS);
-    assert.strictEqual(
-      mask,
-      true,
-      "maskSecretsInPreview should default to true"
-    );
+      mask = config.get<boolean>(CONFIG_MASK_SECRETS);
+    assert.strictEqual(mask, true, 'maskSecretsInPreview should default to true');
   });
 
-  test("cliPath has a default value", () => {
+  test('cliPath has a default value', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     cliPath = config.get<string>(CONFIG_CLI_PATH);
-    assert.strictEqual(
-      cliPath,
-      DEFAULT_CLI_PATH,
-      `cliPath should default to ${DEFAULT_CLI_PATH}`
-    );
+      cliPath = config.get<string>(CONFIG_CLI_PATH);
+    assert.strictEqual(cliPath, DEFAULT_CLI_PATH, `cliPath should default to ${DEFAULT_CLI_PATH}`);
   });
 
-  test("defaultEnvironment defaults to empty string", () => {
+  test('defaultEnvironment defaults to empty string', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     env = config.get<string>(CONFIG_DEFAULT_ENV);
-    assert.strictEqual(
-      env,
-      "",
-      "defaultEnvironment should default to empty string"
-    );
+      env = config.get<string>(CONFIG_DEFAULT_ENV);
+    assert.strictEqual(env, '', 'defaultEnvironment should default to empty string');
   });
 
-  test("splitEditorLayout only accepts valid values", () => {
+  test('splitEditorLayout only accepts valid values', () => {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-     inspected = config.inspect<string>(CONFIG_SPLIT_LAYOUT);
-    assert.ok(
-      inspected,
-      "splitEditorLayout should be inspectable"
-    );
-    assert.strictEqual(
-      inspected.defaultValue,
-      "beside",
-      "Default should be 'beside'"
-    );
+      inspected = config.inspect<string>(CONFIG_SPLIT_LAYOUT);
+    assert.ok(inspected, 'splitEditorLayout should be inspectable');
+    assert.strictEqual(inspected.defaultValue, 'beside', "Default should be 'beside'");
   });
 });

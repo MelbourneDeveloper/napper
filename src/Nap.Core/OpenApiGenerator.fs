@@ -17,19 +17,17 @@ type GenerationResult = OpenApiTypes.GenerationResult
 // --- Internal types ---
 
 [<NoComparison; NoEquality>]
-type private EndpointInfo = {
-    Method: string
-    UrlPath: string
-    Operation: OpenApiOperation
-    QueryParams: string list
-    AuthHeaders: AuthHeader list
-}
+type private EndpointInfo =
+    { Method: string
+      UrlPath: string
+      Operation: OpenApiOperation
+      QueryParams: string list
+      AuthHeaders: AuthHeader list }
 
 [<NoComparison; NoEquality>]
-type private TagGroup = {
-    Tag: string option
-    Endpoints: EndpointInfo list
-}
+type private TagGroup =
+    { Tag: string option
+      Endpoints: EndpointInfo list }
 
 // --- Null-safe helpers ---
 
@@ -50,24 +48,31 @@ let private safeDict (dict: Collections.Generic.IDictionary<'K, 'V>) : ('K * 'V)
 
 // --- HTTP method order ---
 
-let private methodOrder = [
-    HttpMethod.Get; HttpMethod.Post; HttpMethod.Put
-    HttpMethod.Patch; HttpMethod.Delete; HttpMethod.Head; HttpMethod.Options
-]
+let private methodOrder =
+    [ HttpMethod.Get
+      HttpMethod.Post
+      HttpMethod.Put
+      HttpMethod.Patch
+      HttpMethod.Delete
+      HttpMethod.Head
+      HttpMethod.Options ]
 
 // --- Pure text helpers ---
 
 let private convertPathParams (urlPath: string) : string =
     let sb = Text.StringBuilder()
+
     for c in urlPath do
         if c = '{' then sb.Append("{{") |> ignore
         elif c = '}' then sb.Append("}}") |> ignore
         else sb.Append(c) |> ignore
+
     sb.ToString()
 
 let private splitOnDelimiters (text: string) : string list =
     let parts = Collections.Generic.List<string>()
     let current = Text.StringBuilder()
+
     for c in text do
         if c = '/' || c = '{' || c = '}' || c = ' ' then
             if current.Length > 0 then
@@ -75,8 +80,10 @@ let private splitOnDelimiters (text: string) : string list =
                 current.Clear() |> ignore
         else
             current.Append(c) |> ignore
+
     if current.Length > 0 then
         parts.Add(current.ToString().ToLowerInvariant())
+
     Seq.toList parts
 
 let private pathToSlug (method: string) (urlPath: string) : string =
@@ -98,26 +105,38 @@ let rec private generateExample (schema: IOpenApiSchema) (w: Utf8JsonWriter) : u
 
 and private writeByType (schema: IOpenApiSchema) (w: Utf8JsonWriter) : unit =
     let t = schema.Type
-    if not t.HasValue then w.WriteNullValue()
+
+    if not t.HasValue then
+        w.WriteNullValue()
     else
         let v = t.Value
-        if v.HasFlag(JsonSchemaType.String) then w.WriteStringValue(SchemaExampleString)
-        elif v.HasFlag(JsonSchemaType.Number) then w.WriteNumberValue(0)
-        elif v.HasFlag(JsonSchemaType.Integer) then w.WriteNumberValue(0)
-        elif v.HasFlag(JsonSchemaType.Boolean) then w.WriteBooleanValue(true)
+
+        if v.HasFlag(JsonSchemaType.String) then
+            w.WriteStringValue(SchemaExampleString)
+        elif v.HasFlag(JsonSchemaType.Number) then
+            w.WriteNumberValue(0)
+        elif v.HasFlag(JsonSchemaType.Integer) then
+            w.WriteNumberValue(0)
+        elif v.HasFlag(JsonSchemaType.Boolean) then
+            w.WriteBooleanValue(true)
         elif v.HasFlag(JsonSchemaType.Array) then
             w.WriteStartArray()
+
             match box schema.Items with
             | null -> ()
             | _ -> generateExample schema.Items w
+
             w.WriteEndArray()
         elif v.HasFlag(JsonSchemaType.Object) then
             w.WriteStartObject()
+
             for k, propSchema in safeDict schema.Properties do
                 w.WritePropertyName(k)
                 generateExample propSchema w
+
             w.WriteEndObject()
-        else w.WriteNullValue()
+        else
+            w.WriteNullValue()
 
 let private schemaToJson (schema: IOpenApiSchema) : string =
     use stream = new IO.MemoryStream()
@@ -141,10 +160,10 @@ let private extractRequestBody (op: OpenApiOperation) : string option =
                 | null ->
                     match box media.Schema with
                     | null -> None
-                    | _ -> Some (schemaToJson media.Schema)
+                    | _ -> Some(schemaToJson media.Schema)
                 | _ ->
                     let opts = JsonSerializerOptions(WriteIndented = true)
-                    Some (media.Example.ToJsonString(opts))
+                    Some(media.Example.ToJsonString(opts))
             | _ -> None
 
 // --- Status code helpers ---
@@ -171,6 +190,7 @@ let private extractResponseSchema (responses: OpenApiResponses) : IOpenApiSchema
     | _ when responses.Count = 0 -> None
     | _ ->
         let code = string (findSuccessStatus responses)
+
         match responses.TryGetValue(code) with
         | true, resp ->
             match box resp.Content with
@@ -190,15 +210,19 @@ let private extractPathParams (urlPath: string) : string list =
     let result = Collections.Generic.List<string>()
     let current = Text.StringBuilder()
     let mutable inside = false
+
     for c in urlPath do
         if c = '{' then
             inside <- true
             current.Clear() |> ignore
         elif c = '}' && inside then
             inside <- false
-            if current.Length > 0 then result.Add(current.ToString())
+
+            if current.Length > 0 then
+                result.Add(current.ToString())
         elif inside then
             current.Append(c) |> ignore
+
     Seq.toList result
 
 let private extractQueryParams (op: OpenApiOperation) : string list =
@@ -212,19 +236,31 @@ let private resolveScheme (scheme: OpenApiSecuritySchemeReference) : AuthHeader 
     match box scheme with
     | null -> None
     | _ ->
-        if not scheme.Type.HasValue then None
+        if not scheme.Type.HasValue then
+            None
         else
             match scheme.Type.Value with
             | SecuritySchemeType.Http ->
                 if scheme.Scheme = BearerScheme then
-                    Some { HeaderName = AuthHeaderName; HeaderValue = sprintf "%s{{token}}" AuthBearerPrefix; VarName = "token" }
+                    Some
+                        { HeaderName = AuthHeaderName
+                          HeaderValue = sprintf "%s{{token}}" AuthBearerPrefix
+                          VarName = "token" }
                 elif scheme.Scheme = BasicScheme then
-                    Some { HeaderName = AuthHeaderName; HeaderValue = sprintf "%s{{basicAuth}}" AuthBasicPrefix; VarName = "basicAuth" }
-                else None
+                    Some
+                        { HeaderName = AuthHeaderName
+                          HeaderValue = sprintf "%s{{basicAuth}}" AuthBasicPrefix
+                          VarName = "basicAuth" }
+                else
+                    None
             | SecuritySchemeType.ApiKey when scheme.In.HasValue && scheme.In.Value = ParameterLocation.Header ->
                 if not (String.IsNullOrEmpty(scheme.Name)) then
-                    Some { HeaderName = scheme.Name; HeaderValue = "{{apiKey}}"; VarName = "apiKey" }
-                else None
+                    Some
+                        { HeaderName = scheme.Name
+                          HeaderValue = "{{apiKey}}"
+                          VarName = "apiKey" }
+                else
+                    None
             | _ -> None
 
 let private resolveAuth (doc: OpenApiDocument) (op: OpenApiOperation) : AuthHeader list =
@@ -232,6 +268,7 @@ let private resolveAuth (doc: OpenApiDocument) (op: OpenApiOperation) : AuthHead
         match box doc.Components with
         | null -> null
         | _ -> doc.Components.SecuritySchemes
+
     match box schemes with
     | null -> []
     | _ when schemes.Count = 0 -> []
@@ -239,8 +276,9 @@ let private resolveAuth (doc: OpenApiDocument) (op: OpenApiOperation) : AuthHead
         let opSec = safeList op.Security
         let globalSec = safeList doc.Security
         let reqs = if not (List.isEmpty opSec) then opSec else globalSec
-        reqs |> List.collect (fun req ->
-            req |> Seq.choose (fun kv -> resolveScheme kv.Key) |> Seq.toList)
+
+        reqs
+        |> List.collect (fun req -> req |> Seq.choose (fun kv -> resolveScheme kv.Key) |> Seq.toList)
 
 // --- Base URL extraction ---
 
@@ -249,56 +287,88 @@ let private extractBaseUrl (doc: OpenApiDocument) : string =
     | first :: _ when not (String.IsNullOrEmpty(first.Url)) -> first.Url
     | _ -> DefaultBaseUrl
 
-let private methodHasBody (m: string) : bool =
-    m = "post" || m = "put" || m = "patch"
+let private methodHasBody (m: string) : bool = m = "post" || m = "put" || m = "patch"
 
 let private padIndex (idx: int) (total: int) : string =
-    let digits = if total >= PadLargeThreshold then PadDigitsLarge else PadDigitsDefault
+    let digits =
+        if total >= PadLargeThreshold then
+            PadDigitsLarge
+        else
+            PadDigitsDefault
+
     (string (idx + 1)).PadLeft(digits, '0')
 
 // --- .nap content builders ---
 
 let private buildMeta (ep: EndpointInfo) : string list =
     let name =
-        if not (String.IsNullOrEmpty(ep.Operation.Summary)) then ep.Operation.Summary
-        elif not (String.IsNullOrEmpty(ep.Operation.OperationId)) then ep.Operation.OperationId
-        else pathToSlug ep.Method ep.UrlPath
-    let lines = [ SectionMeta; sprintf "%s = %s" KeyName name; sprintf "%s = %s" KeyGenerated ValueTrue ]
+        if not (String.IsNullOrEmpty(ep.Operation.Summary)) then
+            ep.Operation.Summary
+        elif not (String.IsNullOrEmpty(ep.Operation.OperationId)) then
+            ep.Operation.OperationId
+        else
+            pathToSlug ep.Method ep.UrlPath
+
+    let lines =
+        [ SectionMeta
+          sprintf "%s = %s" KeyName name
+          sprintf "%s = %s" KeyGenerated ValueTrue ]
+
     if not (String.IsNullOrEmpty(ep.Operation.Description)) then
         lines @ [ sprintf "%s = %s" KeyDescription ep.Operation.Description; "" ]
-    else lines @ [ "" ]
+    else
+        lines @ [ "" ]
 
 let private buildVars (ep: EndpointInfo) : string list =
     let pathP = extractPathParams ep.UrlPath
     let authV = ep.AuthHeaders |> List.map (fun a -> a.VarName)
     let all = pathP @ ep.QueryParams @ authV
-    if List.isEmpty all then []
+
+    if List.isEmpty all then
+        []
     else
         let seen = Collections.Generic.HashSet<string>()
         let unique = all |> List.filter (fun v -> seen.Add(v))
-        [ SectionVars ] @ (unique |> List.map (fun v -> sprintf "%s = \"%s\"" v VarsPlaceholder)) @ [ "" ]
+
+        [ SectionVars ]
+        @ (unique |> List.map (fun v -> sprintf "%s = \"%s\"" v VarsPlaceholder))
+        @ [ "" ]
 
 let private buildQuery (qp: string list) : string =
-    if List.isEmpty qp then ""
-    else sprintf "?%s" (qp |> List.map (fun p -> sprintf "%s={{%s}}" p p) |> String.concat "&")
+    if List.isEmpty qp then
+        ""
+    else
+        sprintf "?%s" (qp |> List.map (fun p -> sprintf "%s={{%s}}" p p) |> String.concat "&")
 
 let private buildRequest (ep: EndpointInfo) : string list =
-    let url = sprintf "%s%s%s" BaseUrlVar (convertPathParams ep.UrlPath) (buildQuery ep.QueryParams)
+    let url =
+        sprintf "%s%s%s" BaseUrlVar (convertPathParams ep.UrlPath) (buildQuery ep.QueryParams)
+
     [ SectionRequest; sprintf "%s %s" (ep.Method.ToUpperInvariant()) url; "" ]
 
 let private buildHeaders (ep: EndpointInfo) : string list =
     let hasBody = methodHasBody ep.Method
     let hasAuth = not (List.isEmpty ep.AuthHeaders)
-    if not hasBody && not hasAuth then []
+
+    if not hasBody && not hasAuth then
+        []
     else
         let body =
-            if hasBody then [ sprintf "%s = %s" HeaderContentType ContentTypeJson; sprintf "%s = %s" HeaderAccept ContentTypeJson ]
-            else []
-        let auth = ep.AuthHeaders |> List.map (fun a -> sprintf "%s = %s" a.HeaderName a.HeaderValue)
+            if hasBody then
+                [ sprintf "%s = %s" HeaderContentType ContentTypeJson
+                  sprintf "%s = %s" HeaderAccept ContentTypeJson ]
+            else
+                []
+
+        let auth =
+            ep.AuthHeaders
+            |> List.map (fun a -> sprintf "%s = %s" a.HeaderName a.HeaderValue)
+
         [ SectionRequestHeaders ] @ body @ auth @ [ "" ]
 
 let private buildBody (ep: EndpointInfo) : string list =
-    if not (methodHasBody ep.Method) then []
+    if not (methodHasBody ep.Method) then
+        []
     else
         match extractRequestBody ep.Operation with
         | None -> []
@@ -306,16 +376,23 @@ let private buildBody (ep: EndpointInfo) : string list =
 
 let private buildAssertions (op: OpenApiOperation) : string list =
     let status = sprintf "%s%d" AssertStatusPrefix (findSuccessStatus op.Responses)
+
     let bodyAsserts =
         match extractResponseSchema op.Responses with
         | None -> []
         | Some schema ->
             safeDict schema.Properties
             |> List.map (fun (k, _) -> sprintf "%s%s%s" AssertBodyPrefix k AssertBodyExistsSuffix)
+
     [ SectionAssert; status ] @ bodyAsserts @ [ "" ]
 
 let private buildNapContent (ep: EndpointInfo) : string =
-    (buildMeta ep @ buildVars ep @ buildRequest ep @ buildHeaders ep @ buildBody ep @ buildAssertions ep.Operation)
+    (buildMeta ep
+     @ buildVars ep
+     @ buildRequest ep
+     @ buildHeaders ep
+     @ buildBody ep
+     @ buildAssertions ep.Operation)
     |> String.concat "\n"
 
 // --- Collectors ---
@@ -327,80 +404,115 @@ let private collectEndpoints (doc: OpenApiDocument) : EndpointInfo list =
         doc.Paths
         |> Seq.collect (fun pathKv ->
             let pathItem = pathKv.Value
+
             match box pathItem.Operations with
             | null -> Seq.empty
             | _ ->
-                methodOrder |> Seq.choose (fun httpMethod ->
+                methodOrder
+                |> Seq.choose (fun httpMethod ->
                     match pathItem.Operations.TryGetValue(httpMethod) with
                     | true, op ->
                         let method = httpMethod.Method.ToLowerInvariant()
-                        Some {
-                            Method = method; UrlPath = pathKv.Key; Operation = op
-                            QueryParams = extractQueryParams op; AuthHeaders = resolveAuth doc op
-                        }
+
+                        Some
+                            { Method = method
+                              UrlPath = pathKv.Key
+                              Operation = op
+                              QueryParams = extractQueryParams op
+                              AuthHeaders = resolveAuth doc op }
                     | _ -> None))
         |> Seq.toList
 
 let private groupByTag (eps: EndpointInfo list) : TagGroup list =
     let groups = Collections.Generic.Dictionary<string, EndpointInfo list>()
+
     for ep in eps do
         let tag =
             match safeSeq ep.Operation.Tags with
             | first :: _ when not (String.IsNullOrEmpty(first.Name)) -> first.Name
             | _ -> ""
+
         match groups.TryGetValue(tag) with
         | true, existing -> groups.[tag] <- existing @ [ ep ]
         | _ -> groups.[tag] <- [ ep ]
-    [ for kv in groups -> { Tag = (if kv.Key = "" then None else Some kv.Key); Endpoints = kv.Value } ]
+
+    [ for kv in groups ->
+          { Tag = (if kv.Key = "" then None else Some kv.Key)
+            Endpoints = kv.Value } ]
 
 let private genGroupFiles (group: TagGroup) (idx: int ref) (total: int) : GeneratedFile list =
-    group.Endpoints |> List.map (fun ep ->
+    group.Endpoints
+    |> List.map (fun ep ->
         let slug =
-            if not (String.IsNullOrEmpty(ep.Operation.OperationId)) then ep.Operation.OperationId
-            else pathToSlug ep.Method ep.UrlPath
+            if not (String.IsNullOrEmpty(ep.Operation.OperationId)) then
+                ep.Operation.OperationId
+            else
+                pathToSlug ep.Method ep.UrlPath
+
         let prefix = padIndex idx.Value total
         idx.Value <- idx.Value + 1
         let baseName = sprintf "%s_%s%s" prefix slug NapExtension
-        let fileName = match group.Tag with Some t -> sprintf "%s/%s" (titleToSlug t) baseName | None -> baseName
-        { FileName = fileName; Content = buildNapContent ep })
+
+        let fileName =
+            match group.Tag with
+            | Some t -> sprintf "%s/%s" (titleToSlug t) baseName
+            | None -> baseName
+
+        { FileName = fileName
+          Content = buildNapContent ep })
 
 let private buildPlaylist (title: string) (files: string list) : string =
-    ([ SectionMeta; sprintf "%s = %s" KeyName title; ""; SectionSteps ] @ (files |> List.map (sprintf "./%s")) @ [ "" ])
+    ([ SectionMeta; sprintf "%s = %s" KeyName title; ""; SectionSteps ]
+     @ (files |> List.map (sprintf "./%s"))
+     @ [ "" ])
     |> String.concat "\n"
 
-let private buildEnv (baseUrl: string) : string =
-    sprintf "%s = %s\n" BaseUrlKey baseUrl
+let private buildEnv (baseUrl: string) : string = sprintf "%s = %s\n" BaseUrlKey baseUrl
 
 // --- Main entry point ---
 
 let generate (jsonText: string) : Result<GenerationResult, string> =
     try
         let result = OpenApiDocument.Parse(jsonText)
+
         match box result.Document with
         | null -> Error ParseError
         | _ ->
             let doc = result.Document
+
             match box doc.Paths with
             | null -> Error InvalidSpecError
             | _ ->
                 let endpoints = collectEndpoints doc
-                if List.isEmpty endpoints then Error NoEndpointsError
+
+                if List.isEmpty endpoints then
+                    Error NoEndpointsError
                 else
                     let baseUrl = extractBaseUrl doc
+
                     let title =
                         match box doc.Info with
                         | null -> DefaultTitle
                         | _ when String.IsNullOrEmpty(doc.Info.Title) -> DefaultTitle
                         | _ -> doc.Info.Title
+
                     let idx = ref 0
+
                     let napFiles =
                         groupByTag endpoints
                         |> List.collect (fun g -> genGroupFiles g idx endpoints.Length)
+
                     let playlist =
                         { FileName = sprintf "%s%s" (titleToSlug title) NaplistExtension
                           Content = buildPlaylist title (napFiles |> List.map (fun f -> f.FileName)) }
+
                     let environment =
                         { FileName = NapenvExtension
                           Content = buildEnv baseUrl }
-                    Ok { NapFiles = napFiles; Playlist = playlist; Environment = environment }
-    with _ -> Error ParseError
+
+                    Ok
+                        { NapFiles = napFiles
+                          Playlist = playlist
+                          Environment = environment }
+    with _ ->
+        Error ParseError

@@ -2,7 +2,7 @@
 // CodeLens provider for .nap and .naplist files
 // Shows "Run" and "Copy as curl" actions above key sections
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import {
   CMD_CONVERT_HTTP_FILE,
   CMD_COPY_CURL,
@@ -15,111 +15,95 @@ import {
   REST_FILE_EXTENSION,
   SECTION_META,
   SECTION_REQUEST,
-} from "./constants";
+} from './constants';
 
-const RUN_LENS_TITLE = "$(play) Run",
- COPY_CURL_TITLE = "$(clippy) Copy as curl",
- RUN_PLAYLIST_TITLE = "$(play) Run Playlist",
+const RUN_LENS_TITLE = '$(play) Run',
+  COPY_CURL_TITLE = '$(clippy) Copy as curl',
+  RUN_PLAYLIST_TITLE = '$(play) Run Playlist',
+  makeRunLens = (range: vscode.Range, uri: vscode.Uri): vscode.CodeLens =>
+    new vscode.CodeLens(range, {
+      title: RUN_LENS_TITLE,
+      command: CMD_RUN_FILE,
+      arguments: [uri],
+    }),
+  makeCurlLens = (range: vscode.Range, uri: vscode.Uri): vscode.CodeLens =>
+    new vscode.CodeLens(range, {
+      title: COPY_CURL_TITLE,
+      command: CMD_COPY_CURL,
+      arguments: [uri],
+    }),
+  isShorthandMethod = (line: string): boolean => HTTP_METHODS.some((m) => line.startsWith(`${m} `)),
+  buildRequestLenses = (document: vscode.TextDocument): vscode.CodeLens[] => {
+    const lenses: vscode.CodeLens[] = [],
+      firstLine = document.lineAt(0).text.trim();
 
- makeRunLens = (
-  range: vscode.Range,
-  uri: vscode.Uri
-): vscode.CodeLens =>
-  new vscode.CodeLens(range, {
-    title: RUN_LENS_TITLE,
-    command: CMD_RUN_FILE,
-    arguments: [uri],
-  }),
-
- makeCurlLens = (
-  range: vscode.Range,
-  uri: vscode.Uri
-): vscode.CodeLens =>
-  new vscode.CodeLens(range, {
-    title: COPY_CURL_TITLE,
-    command: CMD_COPY_CURL,
-    arguments: [uri],
-  }),
-
- isShorthandMethod = (line: string): boolean =>
-  HTTP_METHODS.some((m) => line.startsWith(`${m} `)),
-
- buildRequestLenses = (
-  document: vscode.TextDocument
-): vscode.CodeLens[] => {
-  const lenses: vscode.CodeLens[] = [],
-   firstLine = document.lineAt(0).text.trim();
-
-  if (isShorthandMethod(firstLine)) {
-    const range = new vscode.Range(0, 0, 0, firstLine.length);
-    lenses.push(makeRunLens(range, document.uri));
-    lenses.push(makeCurlLens(range, document.uri));
-  }
-
-  for (let i = 0; i < document.lineCount; i++) {
-    const line = document.lineAt(i).text.trim();
-    if (line === SECTION_REQUEST) {
-      const range = new vscode.Range(i, 0, i, line.length);
+    if (isShorthandMethod(firstLine)) {
+      const range = new vscode.Range(0, 0, 0, firstLine.length);
       lenses.push(makeRunLens(range, document.uri));
       lenses.push(makeCurlLens(range, document.uri));
     }
-  }
 
-  return lenses;
-},
-
- isHttpFile = (fileName: string): boolean =>
-  fileName.endsWith(HTTP_FILE_EXTENSION) ||
-  fileName.endsWith(REST_FILE_EXTENSION),
-
- buildHttpLenses = (
-  document: vscode.TextDocument
-): vscode.CodeLens[] => {
-  const range = new vscode.Range(0, 0, 0, 0);
-  return [
-    new vscode.CodeLens(range, {
-      title: CONVERT_HTTP_CODELENS_TITLE,
-      command: CMD_CONVERT_HTTP_FILE,
-      arguments: [document.uri],
-    }),
-  ];
-},
-
- buildPlaylistLenses = (
-  document: vscode.TextDocument
-): vscode.CodeLens[] => {
-  const lenses: vscode.CodeLens[] = [];
-
-  for (let i = 0; i < document.lineCount; i++) {
-    const line = document.lineAt(i).text.trim();
-    if (line === SECTION_META) {
-      const range = new vscode.Range(i, 0, i, line.length);
-      lenses.push(
-        new vscode.CodeLens(range, {
-          title: RUN_PLAYLIST_TITLE,
-          command: CMD_RUN_FILE,
-          arguments: [document.uri],
-        })
-      );
+    for (let i = 0; i < document.lineCount; i++) {
+      const line = document.lineAt(i).text.trim();
+      if (line === SECTION_REQUEST) {
+        const range = new vscode.Range(i, 0, i, line.length);
+        lenses.push(makeRunLens(range, document.uri));
+        lenses.push(makeCurlLens(range, document.uri));
+      }
     }
-  }
 
-  return lenses;
-};
+    return lenses;
+  },
+  isHttpFile = (fileName: string): boolean =>
+    fileName.endsWith(HTTP_FILE_EXTENSION) || fileName.endsWith(REST_FILE_EXTENSION),
+  buildHttpLenses = (document: vscode.TextDocument): vscode.CodeLens[] => {
+    const range = new vscode.Range(0, 0, 0, 0);
+    return [
+      new vscode.CodeLens(range, {
+        title: CONVERT_HTTP_CODELENS_TITLE,
+        command: CMD_CONVERT_HTTP_FILE,
+        arguments: [document.uri],
+      }),
+    ];
+  },
+  buildPlaylistLenses = (document: vscode.TextDocument): vscode.CodeLens[] => {
+    const lenses: vscode.CodeLens[] = [];
+
+    for (let i = 0; i < document.lineCount; i++) {
+      const line = document.lineAt(i).text.trim();
+      if (line === SECTION_META) {
+        const range = new vscode.Range(i, 0, i, line.length);
+        lenses.push(
+          new vscode.CodeLens(range, {
+            title: RUN_PLAYLIST_TITLE,
+            command: CMD_RUN_FILE,
+            arguments: [document.uri],
+          }),
+        );
+      }
+    }
+
+    return lenses;
+  };
 
 export class CodeLensProvider implements vscode.CodeLensProvider {
-  private readonly _onDidChangeCodeLenses =
-    new vscode.EventEmitter<void>();
+  private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>();
   readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
 
   provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
     const isNap = document.fileName.endsWith(NAP_EXTENSION),
-     isNapList = document.fileName.endsWith(NAPLIST_EXTENSION),
-     isHttp = isHttpFile(document.fileName);
+      isNapList = document.fileName.endsWith(NAPLIST_EXTENSION),
+      isHttp = isHttpFile(document.fileName);
 
-    if (isNap) {return buildRequestLenses(document);}
-    if (isNapList) {return buildPlaylistLenses(document);}
-    if (isHttp) {return buildHttpLenses(document);}
+    if (isNap) {
+      return buildRequestLenses(document);
+    }
+    if (isNapList) {
+      return buildPlaylistLenses(document);
+    }
+    if (isHttp) {
+      return buildHttpLenses(document);
+    }
     return [];
   }
 }

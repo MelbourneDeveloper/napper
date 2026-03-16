@@ -2,7 +2,7 @@
 // Tree data provider for the Explorer view
 // Shows .nap and .naplist files in workspace folder structure
 
-import * as path from "path";
+import * as path from 'path';
 import {
   CONTEXT_FOLDER,
   CONTEXT_PLAYLIST,
@@ -19,8 +19,8 @@ import {
   NAP_NAME_KEY_SUFFIX,
   PLAYLIST_SECTION_LABEL,
   SECTION_STEPS,
-} from "./constants";
-import { type RunResult, RunState } from "./types";
+} from './constants';
+import { type RunResult, RunState } from './types';
 
 // Decoupled node type — no vscode dependency
 export interface TreeNode {
@@ -34,78 +34,66 @@ export interface TreeNode {
 }
 
 const isScriptFile = (filePath: string): boolean =>
-  filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION),
-
- getContextValue = (filePath: string): string => {
-  if (filePath.endsWith(NAPLIST_EXTENSION)) {
-    return CONTEXT_PLAYLIST;
-  }
-  if (isScriptFile(filePath)) {
-    return CONTEXT_SCRIPT_FILE;
-  }
-  return CONTEXT_REQUEST_FILE;
-},
-
- isMethodLine = (trimmed: string, method: string): boolean =>
-  trimmed.startsWith(`${method} `) ||
-  trimmed === `${NAP_KEY_METHOD}  = ${method}` ||
-  trimmed === `${NAP_KEY_METHOD} = ${method}`,
-
- extractHttpMethod = (fileContent: string): string | undefined => {
-  const lines = fileContent.split("\n");
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.length === 0 || trimmed.startsWith("#")) {
-      continue;
+    filePath.endsWith(FSX_EXTENSION) || filePath.endsWith(CSX_EXTENSION),
+  getContextValue = (filePath: string): string => {
+    if (filePath.endsWith(NAPLIST_EXTENSION)) {
+      return CONTEXT_PLAYLIST;
     }
-    for (const method of HTTP_METHODS) {
-      if (isMethodLine(trimmed, method)) {
-        return method;
+    if (isScriptFile(filePath)) {
+      return CONTEXT_SCRIPT_FILE;
+    }
+    return CONTEXT_REQUEST_FILE;
+  },
+  isMethodLine = (trimmed: string, method: string): boolean =>
+    trimmed.startsWith(`${method} `) ||
+    trimmed === `${NAP_KEY_METHOD}  = ${method}` ||
+    trimmed === `${NAP_KEY_METHOD} = ${method}`,
+  extractHttpMethod = (fileContent: string): string | undefined => {
+    const lines = fileContent.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0 || trimmed.startsWith('#')) {
+        continue;
+      }
+      for (const method of HTTP_METHODS) {
+        if (isMethodLine(trimmed, method)) {
+          return method;
+        }
       }
     }
-  }
-  return undefined;
-},
-
- getRunState = (
-  filePath: string,
-  results: ReadonlyMap<string, RunResult>
-): RunState => {
-  const result = results.get(filePath);
-  if (result === undefined) {
-    return RunState.Idle;
-  }
-  if (result.error !== undefined) {
-    return RunState.Error;
-  }
-  return result.passed ? RunState.Passed : RunState.Failed;
-};
+    return undefined;
+  },
+  getRunState = (filePath: string, results: ReadonlyMap<string, RunResult>): RunState => {
+    const result = results.get(filePath);
+    if (result === undefined) {
+      return RunState.Idle;
+    }
+    if (result.error !== undefined) {
+      return RunState.Error;
+    }
+    return result.passed ? RunState.Passed : RunState.Failed;
+  };
 
 export const createFileNode = (
   filePath: string,
   fileContent: string,
   results: ReadonlyMap<string, RunResult>,
 ): TreeNode => {
-  const method = filePath.endsWith(NAP_EXTENSION)
-    ? extractHttpMethod(fileContent)
-    : undefined,
-   base = {
-    label: path.basename(filePath, path.extname(filePath)),
-    filePath,
-    isDirectory: false as const,
-    contextValue: getContextValue(filePath),
-    runState: getRunState(filePath, results),
-  };
+  const method = filePath.endsWith(NAP_EXTENSION) ? extractHttpMethod(fileContent) : undefined,
+    base = {
+      label: path.basename(filePath, path.extname(filePath)),
+      filePath,
+      isDirectory: false as const,
+      contextValue: getContextValue(filePath),
+      runState: getRunState(filePath, results),
+    };
   if (method !== undefined) {
     return { ...base, httpMethod: method };
   }
   return base;
 };
 
-export const createFolderNode = (
-  folderPath: string,
-  children: readonly TreeNode[]
-): TreeNode => ({
+export const createFolderNode = (folderPath: string, children: readonly TreeNode[]): TreeNode => ({
   label: path.basename(folderPath),
   filePath: folderPath,
   isDirectory: true,
@@ -115,10 +103,10 @@ export const createFolderNode = (
 });
 
 const isSectionHeader = (trimmed: string): boolean =>
-  trimmed.startsWith("[") && trimmed.endsWith("]");
+  trimmed.startsWith('[') && trimmed.endsWith(']');
 
 export const parsePlaylistStepPaths = (content: string): readonly string[] => {
-  const lines = content.split("\n");
+  const lines = content.split('\n');
   let inSteps = false;
   const steps: string[] = [];
   for (const line of lines) {
@@ -127,7 +115,7 @@ export const parsePlaylistStepPaths = (content: string): readonly string[] => {
       inSteps = trimmed === SECTION_STEPS;
       continue;
     }
-    if (!inSteps || trimmed.length === 0 || trimmed.startsWith("#")) {
+    if (!inSteps || trimmed.length === 0 || trimmed.startsWith('#')) {
       continue;
     }
     steps.push(trimmed);
@@ -138,7 +126,7 @@ export const parsePlaylistStepPaths = (content: string): readonly string[] => {
 export const createPlaylistNode = (
   filePath: string,
   results: ReadonlyMap<string, RunResult>,
-  stepChildren: readonly TreeNode[]
+  stepChildren: readonly TreeNode[],
 ): TreeNode => ({
   label: path.basename(filePath, path.extname(filePath)),
   filePath,
@@ -148,11 +136,9 @@ export const createPlaylistNode = (
   children: stepChildren,
 });
 
-export const createPlaylistSectionNode = (
-  children: readonly TreeNode[]
-): TreeNode => ({
+export const createPlaylistSectionNode = (children: readonly TreeNode[]): TreeNode => ({
   label: PLAYLIST_SECTION_LABEL,
-  filePath: "",
+  filePath: '',
   isDirectory: false,
   contextValue: CONTEXT_PLAYLIST_SECTION,
   runState: RunState.Idle,
@@ -160,12 +146,14 @@ export const createPlaylistSectionNode = (
 });
 
 const findStepsInsertIndex = (
-  lines: readonly string[]
+  lines: readonly string[],
 ): { readonly inSteps: boolean; readonly index: number } => {
   let inSteps = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line === undefined) { continue; }
+    if (line === undefined) {
+      continue;
+    }
     const trimmed = line.trim();
     if (trimmed === SECTION_STEPS) {
       inSteps = true;
@@ -178,28 +166,22 @@ const findStepsInsertIndex = (
   return { inSteps, index: lines.length };
 };
 
-export const appendStepToPlaylist = (
-  content: string,
-  stepPath: string
-): string => {
-  const lines = content.split("\n"),
-   result = findStepsInsertIndex(lines);
+export const appendStepToPlaylist = (content: string, stepPath: string): string => {
+  const lines = content.split('\n'),
+    result = findStepsInsertIndex(lines);
   if (!result.inSteps) {
     return `${content}\n${SECTION_STEPS}\n${stepPath}\n`;
   }
   lines.splice(result.index, 0, stepPath);
-  return lines.join("\n");
+  return lines.join('\n');
 };
 
-export const updatePlaylistName = (
-  content: string,
-  newName: string
-): string => {
-  const lines = content.split("\n"),
-   updated = lines.map((line) =>
-    line.trim().startsWith(NAP_NAME_KEY_PREFIX)
-      ? `${NAP_NAME_KEY_PREFIX}${newName}${NAP_NAME_KEY_SUFFIX}`
-      : line
-  );
-  return updated.join("\n");
+export const updatePlaylistName = (content: string, newName: string): string => {
+  const lines = content.split('\n'),
+    updated = lines.map((line) =>
+      line.trim().startsWith(NAP_NAME_KEY_PREFIX)
+        ? `${NAP_NAME_KEY_PREFIX}${newName}${NAP_NAME_KEY_SUFFIX}`
+        : line,
+    );
+  return updated.join('\n');
 };

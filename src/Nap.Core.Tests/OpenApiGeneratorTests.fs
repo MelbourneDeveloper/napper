@@ -20,12 +20,15 @@ let private firstFile (gen: GenerationResult) : GeneratedFile =
     | [] -> failwith "Expected at least one generated nap file"
 
 let private fileAt (gen: GenerationResult) (index: int) : GeneratedFile =
-    if index < gen.NapFiles.Length then gen.NapFiles[index]
-    else failwith $"Expected nap file at index {index}"
+    if index < gen.NapFiles.Length then
+        gen.NapFiles[index]
+    else
+        failwith $"Expected nap file at index {index}"
 
 // --- Minimal specs ---
 
-let private minimalOas3 = """
+let private minimalOas3 =
+    """
 {
   "openapi": "3.0.0",
   "info": { "title": "Test API" },
@@ -40,7 +43,8 @@ let private minimalOas3 = """
   }
 }"""
 
-let private minimalSwagger2 = """
+let private minimalSwagger2 =
+    """
 {
   "swagger": "2.0",
   "info": { "title": "Legacy API" },
@@ -57,7 +61,8 @@ let private minimalSwagger2 = """
   }
 }"""
 
-let private multiMethodSpec = """
+let private multiMethodSpec =
+    """
 {
   "openapi": "3.0.0",
   "info": { "title": "CRUD API" },
@@ -174,6 +179,7 @@ let ``OAS3 playlist has naplist extension`` () =
 [<Fact>]
 let ``OAS3 playlist references generated files`` () =
     let gen = unwrap minimalOas3
+
     for f in gen.NapFiles do
         Assert.Contains(f.FileName, gen.Playlist.Content)
 
@@ -213,30 +219,32 @@ let ``Files are numbered sequentially`` () =
 [<Fact>]
 let ``Path params converted from single to double braces`` () =
     let gen = unwrap multiMethodSpec
-    let petFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("getPetById"))
+    let petFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("getPetById"))
     Assert.Contains("{{petId}}", petFile.Content)
     Assert.DoesNotContain("/pets/{petId}", petFile.Content)
 
 [<Fact>]
 let ``POST gets status 201 assertion`` () =
     let gen = unwrap multiMethodSpec
-    let postFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
     Assert.Contains("status = 201", postFile.Content)
 
 [<Fact>]
 let ``DELETE gets status 204 assertion`` () =
     let gen = unwrap multiMethodSpec
+
     let deleteFile =
         gen.NapFiles |> List.find (fun f -> f.Content.Contains("Delete pet"))
+
     Assert.Contains("status = 204", deleteFile.Content)
 
 [<Fact>]
 let ``Uses operationId for file name`` () =
     let gen = unwrap multiMethodSpec
+
     let opIdFile =
         gen.NapFiles |> List.tryFind (fun f -> f.FileName.Contains("getPetById"))
+
     Assert.True(opIdFile.IsSome, "must use operationId in filename")
 
 // --- Request bodies --- Spec: openapi-body-gen, nap-headers, nap-body
@@ -244,8 +252,7 @@ let ``Uses operationId for file name`` () =
 [<Fact>]
 let ``POST includes Content-Type and Accept headers`` () =
     let gen = unwrap multiMethodSpec
-    let postFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
     Assert.Contains("[request.headers]", postFile.Content)
     Assert.Contains("Content-Type = application/json", postFile.Content)
     Assert.Contains("Accept = application/json", postFile.Content)
@@ -258,8 +265,7 @@ let ``GET does not get request headers section`` () =
 [<Fact>]
 let ``POST generates request body from schema`` () =
     let gen = unwrap multiMethodSpec
-    let postFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
     Assert.Contains("[request.body]", postFile.Content)
     Assert.Contains("\"\"\"", postFile.Content)
 
@@ -268,8 +274,7 @@ let ``POST generates request body from schema`` () =
 [<Fact>]
 let ``Path with params generates vars section`` () =
     let gen = unwrap multiMethodSpec
-    let petFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("getPetById"))
+    let petFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("getPetById"))
     Assert.Contains("[vars]", petFile.Content)
     Assert.Contains("petId = \"REPLACE_ME\"", petFile.Content)
 
@@ -280,7 +285,8 @@ let ``Path without params has no vars section`` () =
 
 [<Fact>]
 let ``Multiple path params each get a var entry`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Multi Param" },
@@ -293,6 +299,7 @@ let ``Multiple path params each get a var entry`` () =
         }
       }
     }"""
+
     let gen = unwrap spec
     let content = (firstFile gen).Content
     Assert.Contains("orgId = \"REPLACE_ME\"", content)
@@ -302,7 +309,8 @@ let ``Multiple path params each get a var entry`` () =
 
 [<Fact>]
 let ``OAS3 response schema generates body field assertions`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Schema API" },
@@ -332,6 +340,7 @@ let ``OAS3 response schema generates body field assertions`` () =
         }
       }
     }"""
+
     let gen = unwrap spec
     let content = (firstFile gen).Content
     Assert.Contains("body.id exists", content)
@@ -345,7 +354,8 @@ let ``No body assertions when response has no schema`` () =
 
 // --- Tag-based folders --- Spec: openapi-tag-dirs
 
-let private taggedSpec = """
+let private taggedSpec =
+    """
 {
   "openapi": "3.0.0",
   "info": { "title": "Tagged API" },
@@ -389,7 +399,10 @@ let private taggedSpec = """
 [<Fact>]
 let ``Tagged operations get tag subdirectory`` () =
     let gen = unwrap taggedSpec
-    let userFiles = gen.NapFiles |> List.filter (fun f -> f.FileName.StartsWith("users/"))
+
+    let userFiles =
+        gen.NapFiles |> List.filter (fun f -> f.FileName.StartsWith("users/"))
+
     Assert.Equal(2, userFiles.Length)
 
 [<Fact>]
@@ -401,7 +414,10 @@ let ``Different tags create different subdirectories`` () =
 [<Fact>]
 let ``Untagged operations stay in root`` () =
     let gen = unwrap taggedSpec
-    let healthFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Health check"))
+
+    let healthFile =
+        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Health check"))
+
     Assert.DoesNotContain("/", healthFile.FileName)
 
 [<Fact>]
@@ -414,7 +430,8 @@ let ``Playlist references files with subdirectory paths`` () =
 
 [<Fact>]
 let ``Query params appended to URL`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Query API" },
@@ -431,12 +448,14 @@ let ``Query params appended to URL`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("?q={{q}}&limit={{limit}}", content)
 
 [<Fact>]
 let ``Query params added to vars section`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Query API" },
@@ -452,6 +471,7 @@ let ``Query params added to vars section`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("[vars]", content)
     Assert.Contains("q = \"REPLACE_ME\"", content)
@@ -460,7 +480,8 @@ let ``Query params added to vars section`` () =
 
 [<Fact>]
 let ``Bearer auth adds Authorization header`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Auth API" },
@@ -479,6 +500,7 @@ let ``Bearer auth adds Authorization header`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("[request.headers]", content)
     Assert.Contains("Authorization = Bearer {{token}}", content)
@@ -486,7 +508,8 @@ let ``Bearer auth adds Authorization header`` () =
 
 [<Fact>]
 let ``API key auth adds custom header`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "API Key API" },
@@ -505,13 +528,15 @@ let ``API key auth adds custom header`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("X-API-Key = {{apiKey}}", content)
     Assert.Contains("apiKey = \"REPLACE_ME\"", content)
 
 [<Fact>]
 let ``Global security applies to all operations`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Global Auth" },
@@ -530,6 +555,7 @@ let ``Global security applies to all operations`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("Authorization = Bearer {{token}}", content)
 
@@ -540,7 +566,8 @@ let ``No auth headers when no security defined`` () =
 
 [<Fact>]
 let ``Basic auth adds Authorization header with Basic prefix`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Basic Auth API" },
@@ -559,6 +586,7 @@ let ``Basic auth adds Authorization header with Basic prefix`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("[request.headers]", content)
     Assert.Contains("Authorization = Basic {{basicAuth}}", content)
@@ -570,8 +598,7 @@ let ``Basic auth adds Authorization header with Basic prefix`` () =
 [<Fact>]
 let ``POST body contains actual JSON from schema`` () =
     let gen = unwrap multiMethodSpec
-    let postFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
     Assert.Contains("[request.body]", postFile.Content)
     Assert.Contains("\"\"\"", postFile.Content)
     Assert.Contains("\"name\"", postFile.Content)
@@ -579,7 +606,8 @@ let ``POST body contains actual JSON from schema`` () =
 
 [<Fact>]
 let ``Nested object schema generates nested JSON body`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "Nested API" },
@@ -612,6 +640,7 @@ let ``Nested object schema generates nested JSON body`` () =
         }
       }
     }"""
+
     let content = (unwrap spec |> firstFile).Content
     Assert.Contains("[request.body]", content)
     Assert.Contains("\"item\"", content)
@@ -623,9 +652,12 @@ let ``Nested object schema generates nested JSON body`` () =
 [<Fact>]
 let ``Every endpoint with path params has vars section`` () =
     let gen = unwrap multiMethodSpec
+
     let paramFiles =
         gen.NapFiles |> List.filter (fun f -> f.Content.Contains("{{petId}}"))
+
     Assert.True(paramFiles.Length >= 2, $"Must have at least 2 petId endpoints, got {paramFiles.Length}")
+
     for f in paramFiles do
         Assert.Contains("[vars]", f.Content)
         Assert.Contains("petId = \"REPLACE_ME\"", f.Content)
@@ -645,8 +677,7 @@ let ``Generated nap file has correct section ordering`` () =
 [<Fact>]
 let ``POST nap file has full section chain`` () =
     let gen = unwrap multiMethodSpec
-    let postFile =
-        gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
     let content = postFile.Content
     let metaIdx = content.IndexOf("[meta]")
     let requestIdx = content.IndexOf("[request]")
@@ -671,6 +702,7 @@ let ``Playlist has meta section with API title`` () =
 let ``Playlist steps reference files with relative paths`` () =
     let gen = unwrap minimalOas3
     Assert.Contains("[steps]", gen.Playlist.Content)
+
     for f in gen.NapFiles do
         Assert.Contains($"./{f.FileName}", gen.Playlist.Content)
 
@@ -686,7 +718,8 @@ let ``Environment file has baseUrl key-value pair`` () =
 
 [<Fact>]
 let ``Falls back to default URL when no servers or host`` () =
-    let spec = """
+    let spec =
+        """
     {
       "openapi": "3.0.0",
       "info": { "title": "No Servers" },
@@ -699,5 +732,6 @@ let ``Falls back to default URL when no servers or host`` () =
         }
       }
     }"""
+
     let gen = unwrap spec
     Assert.Contains("https://api.example.com", gen.Environment.Content)

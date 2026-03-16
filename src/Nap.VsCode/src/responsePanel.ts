@@ -2,14 +2,14 @@
 // Response webview panel — shows HTTP response after running a .nap file
 // Uses minimal vanilla HTML/CSS — no framework dependency
 
-import * as vscode from "vscode";
-import type { RunResult } from "./types";
+import * as vscode from 'vscode';
+import type { RunResult } from './types';
 import {
   HTTP_STATUS_CLIENT_ERROR_MIN,
   RESPONSE_PANEL_TITLE,
   RESPONSE_PANEL_VIEW_TYPE,
-} from "./constants";
-import { escapeHtml, buildResultDetailHtml, SHARED_SECTION_STYLES } from "./htmlUtils";
+} from './constants';
+import { escapeHtml, buildResultDetailHtml, SHARED_SECTION_STYLES } from './htmlUtils';
 
 const RESPONSE_PANEL_STYLES = `
   body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 16px; margin: 0; }
@@ -22,31 +22,27 @@ const RESPONSE_PANEL_STYLES = `
   .duration { color: var(--vscode-descriptionForeground); }
   .passed-badge { color: var(--vscode-testing-iconPassed); font-weight: bold; }
   .failed-badge { color: var(--vscode-testing-iconFailed); font-weight: bold; }`,
+  buildStatusLine = (result: RunResult): string => {
+    if (result.statusCode === undefined) {
+      return '';
+    }
+    const statusClass =
+      result.statusCode < HTTP_STATUS_CLIENT_ERROR_MIN ? 'status-ok' : 'status-error';
+    return `<span class="${statusClass}">${result.statusCode}</span>`;
+  },
+  buildResponseBody = (result: RunResult): string => {
+    const durationLine = result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : '';
 
- buildStatusLine = (result: RunResult): string => {
-  if (result.statusCode === undefined) {return "";}
-  const statusClass =
-    result.statusCode < HTTP_STATUS_CLIENT_ERROR_MIN
-      ? "status-ok"
-      : "status-error";
-  return `<span class="${statusClass}">${result.statusCode}</span>`;
-},
-
- buildResponseBody = (result: RunResult): string => {
-  const durationLine =
-    result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : "";
-
-  return `
+    return `
   <h2>${escapeHtml(result.file)}</h2>
   <div class="summary">
     ${buildStatusLine(result)}
     <span class="duration">${durationLine}</span>
-    <span class="${result.passed ? "passed-badge" : "failed-badge"}">${result.passed ? "PASSED" : "FAILED"}</span>
+    <span class="${result.passed ? 'passed-badge' : 'failed-badge'}">${result.passed ? 'PASSED' : 'FAILED'}</span>
   </div>
   ${buildResultDetailHtml(result)}`;
-},
-
- buildHtml = (result: RunResult): string => `<!DOCTYPE html>
+  },
+  buildHtml = (result: RunResult): string => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -70,7 +66,7 @@ export class ResponsePanel implements vscode.Disposable {
       RESPONSE_PANEL_VIEW_TYPE,
       RESPONSE_PANEL_TITLE,
       viewColumn,
-      { enableScripts: false, retainContextWhenHidden: true }
+      { enableScripts: false, retainContextWhenHidden: true },
     );
 
     this._panel.webview.html = buildHtml(result);

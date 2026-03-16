@@ -20,8 +20,10 @@ let private firstRequest (f: HttpFile) : HttpRequest =
     | [] -> failwith "Expected at least one request"
 
 let private requestAt (f: HttpFile) (index: int) : HttpRequest =
-    if index < f.Requests.Length then f.Requests[index]
-    else failwith $"Expected request at index {index}"
+    if index < f.Requests.Length then
+        f.Requests[index]
+    else
+        failwith $"Expected request at index {index}"
 
 // ─── Single request ────────────────────────────────────────────
 
@@ -39,7 +41,8 @@ let ``parse minimal GET request`` () =
 
 [<Fact>]
 let ``parse POST with headers and body`` () =
-    let input = """POST https://api.example.com/users
+    let input =
+        """POST https://api.example.com/users
 Content-Type: application/json
 Accept: application/json
 
@@ -48,6 +51,7 @@ Accept: application/json
   "email": "alice@example.com"
 }
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal("POST", req.Method)
@@ -79,7 +83,8 @@ let ``parse request with HTTP/2`` () =
 
 [<Fact>]
 let ``parse multiple requests separated by ###`` () =
-    let input = """GET https://api.example.com/users
+    let input =
+        """GET https://api.example.com/users
 
 ###
 
@@ -92,6 +97,7 @@ Content-Type: application/json
 
 DELETE https://api.example.com/users/1
 """
+
     let f = unwrap input
     Assert.Equal(3, f.Requests.Length)
 
@@ -114,9 +120,11 @@ DELETE https://api.example.com/users/1
 
 [<Fact>]
 let ``parse separator name becomes request name`` () =
-    let input = """### Get all users
+    let input =
+        """### Get all users
 GET https://api.example.com/users
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal(Some "Get all users", req.Name)
@@ -126,9 +134,11 @@ GET https://api.example.com/users
 
 [<Fact>]
 let ``parse hash comments`` () =
-    let input = """# This is a comment
+    let input =
+        """# This is a comment
 GET https://api.example.com/users
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal("GET", req.Method)
@@ -136,9 +146,11 @@ GET https://api.example.com/users
 
 [<Fact>]
 let ``parse double-slash comments`` () =
-    let input = """// Another comment
+    let input =
+        """// Another comment
 GET https://api.example.com/users
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Contains("Another comment", req.Comments)
@@ -147,12 +159,14 @@ GET https://api.example.com/users
 
 [<Fact>]
 let ``parse Microsoft file-level variable declarations`` () =
-    let input = """@host = api.example.com
+    let input =
+        """@host = api.example.com
 @token = abc123
 
 GET https://{{host}}/users
 Authorization: Bearer {{token}}
 """
+
     let f = unwrap input
     Assert.Equal(Microsoft, f.Dialect)
     Assert.Equal(2, f.FileVariables.Length)
@@ -170,9 +184,11 @@ Authorization: Bearer {{token}}
 
 [<Fact>]
 let ``parse Microsoft name directive`` () =
-    let input = """# @name GetUsers
+    let input =
+        """# @name GetUsers
 GET https://api.example.com/users
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal(Microsoft, f.Dialect)
@@ -182,7 +198,8 @@ GET https://api.example.com/users
 
 [<Fact>]
 let ``parse JetBrains inline post-response script`` () =
-    let input = """GET https://api.example.com/users
+    let input =
+        """GET https://api.example.com/users
 
 > {%
     client.test("status", function() {
@@ -190,6 +207,7 @@ let ``parse JetBrains inline post-response script`` () =
     });
 %}
 """
+
     let f = unwrap input
     Assert.Equal(JetBrains, f.Dialect)
     let req = firstRequest f
@@ -198,12 +216,14 @@ let ``parse JetBrains inline post-response script`` () =
 
 [<Fact>]
 let ``parse JetBrains inline pre-request script`` () =
-    let input = """< {% request.variables.set("ts", Date.now()) %}
+    let input =
+        """< {% request.variables.set("ts", Date.now()) %}
 POST https://api.example.com/data
 Content-Type: application/json
 
 {"timestamp": "{{ts}}"}
 """
+
     let f = unwrap input
     Assert.Equal(JetBrains, f.Dialect)
     let req = firstRequest f
@@ -212,10 +232,12 @@ Content-Type: application/json
 
 [<Fact>]
 let ``parse JetBrains file script references`` () =
-    let input = """< scripts/setup.js
+    let input =
+        """< scripts/setup.js
 GET https://api.example.com/users
 > scripts/validate.js
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.True(req.PreScript.IsSome)
@@ -234,10 +256,12 @@ let ``variable interpolation syntax preserved in URL`` () =
 
 [<Fact>]
 let ``variable interpolation preserved in headers`` () =
-    let input = """GET https://api.example.com
+    let input =
+        """GET https://api.example.com
 Authorization: Bearer {{token}}
 X-Request-Id: {{requestId}}
 """
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal(2, req.Headers.Length)
@@ -291,7 +315,8 @@ let ``request without body has None body`` () =
 
 [<Fact>]
 let ``multiple blank lines between requests handled`` () =
-    let input = """GET https://example.com/a
+    let input =
+        """GET https://example.com/a
 
 
 
@@ -301,6 +326,7 @@ let ``multiple blank lines between requests handled`` () =
 
 GET https://example.com/b
 """
+
     let f = unwrap input
     Assert.Equal(2, f.Requests.Length)
     Assert.Equal("https://example.com/a", (requestAt f 0).Url)
@@ -310,7 +336,8 @@ GET https://example.com/b
 
 [<Fact>]
 let ``file with only standard features detected as Common`` () =
-    let input = """### Request 1
+    let input =
+        """### Request 1
 GET https://example.com
 
 ### Request 2
@@ -319,6 +346,7 @@ Content-Type: application/json
 
 {"key": "value"}
 """
+
     let f = unwrap input
     Assert.Equal(Common, f.Dialect)
 
@@ -329,9 +357,11 @@ let ``file with file-level variables detected as Microsoft`` () =
 
 [<Fact>]
 let ``file with script blocks detected as JetBrains`` () =
-    let input = """GET https://example.com
+    let input =
+        """GET https://example.com
 > {% client.log("done") %}
 """
+
     let f = unwrap input
     Assert.Equal(JetBrains, f.Dialect)
 
@@ -339,7 +369,8 @@ let ``file with script blocks detected as JetBrains`` () =
 
 [<Fact>]
 let ``parse realistic REST API file`` () =
-    let input = """### List all users
+    let input =
+        """### List all users
 GET https://api.example.com/v1/users
 Accept: application/json
 Authorization: Bearer {{token}}
@@ -364,6 +395,7 @@ Authorization: Bearer {{token}}
 DELETE https://api.example.com/v1/users/{{userId}}
 Authorization: Bearer {{token}}
 """
+
     let f = unwrap input
     Assert.Equal(4, f.Requests.Length)
 
@@ -396,7 +428,9 @@ Authorization: Bearer {{token}}
 
 [<Fact>]
 let ``body preserves internal blank lines`` () =
-    let input = "POST https://example.com\nContent-Type: text/plain\n\nline 1\n\nline 2\n\nline 3\n"
+    let input =
+        "POST https://example.com\nContent-Type: text/plain\n\nline 1\n\nline 2\n\nline 3\n"
+
     let f = unwrap input
     let req = firstRequest f
     Assert.True(req.Body.IsSome)
@@ -411,7 +445,9 @@ let ``body preserves internal blank lines`` () =
 
 [<Fact>]
 let ``CRLF line endings parsed correctly`` () =
-    let input = "GET https://example.com/crlf HTTP/1.1\r\nAccept: text/html\r\nHost: example.com\r\n\r\n"
+    let input =
+        "GET https://example.com/crlf HTTP/1.1\r\nAccept: text/html\r\nHost: example.com\r\n\r\n"
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal("GET", req.Method)
@@ -427,7 +463,9 @@ let ``CRLF line endings parsed correctly`` () =
 
 [<Fact>]
 let ``header values may contain colons`` () =
-    let input = "GET https://example.com\nX-Forwarded-For: http://proxy.internal:8080\nAuthorization: Basic dXNlcjpwYXNz\n"
+    let input =
+        "GET https://example.com\nX-Forwarded-For: http://proxy.internal:8080\nAuthorization: Basic dXNlcjpwYXNz\n"
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal(2, req.Headers.Length)
@@ -440,7 +478,9 @@ let ``header values may contain colons`` () =
 
 [<Fact>]
 let ``URL with complex query parameters preserved`` () =
-    let input = "GET https://api.example.com/search?q=hello+world&page=2&filter=status%3Aactive&sort=name:asc\n"
+    let input =
+        "GET https://api.example.com/search?q=hello+world&page=2&filter=status%3Aactive&sort=name:asc\n"
+
     let f = unwrap input
     let req = firstRequest f
     Assert.Equal("GET", req.Method)
@@ -457,7 +497,8 @@ let ``URL with complex query parameters preserved`` () =
 
 [<Fact>]
 let ``real-world: Stripe-style payment API`` () =
-    let input = """@baseUrl = https://api.stripe.com/v1
+    let input =
+        """@baseUrl = https://api.stripe.com/v1
 @secretKey = sk_test_abc123
 
 ### Create a customer
@@ -480,6 +521,7 @@ amount=2000&currency=usd&customer={{CreateCustomer.response.body.id}}&payment_me
 GET https://{{baseUrl}}/charges?limit=10&starting_after={{lastChargeId}}
 Authorization: Bearer {{secretKey}}
 """
+
     let f = unwrap input
     Assert.Equal(Microsoft, f.Dialect)
     Assert.Equal(3, f.Requests.Length)
@@ -520,7 +562,8 @@ Authorization: Bearer {{secretKey}}
 
 [<Fact>]
 let ``real-world: OAuth2 authorization code flow`` () =
-    let input = """### Exchange authorization code for tokens
+    let input =
+        """### Exchange authorization code for tokens
 # @name TokenExchange
 POST https://auth.example.com/oauth/token
 Content-Type: application/x-www-form-urlencoded
@@ -540,6 +583,7 @@ GET https://api.example.com/me
 Authorization: Bearer {{TokenExchange.response.body.access_token}}
 Accept: application/json
 """
+
     let f = unwrap input
     Assert.Equal(Microsoft, f.Dialect)
     Assert.Equal(3, f.Requests.Length)
@@ -570,7 +614,8 @@ Accept: application/json
 
 [<Fact>]
 let ``real-world: GraphQL query and mutation over HTTP`` () =
-    let input = """### GraphQL query - list repositories
+    let input =
+        """### GraphQL query - list repositories
 POST https://api.github.com/graphql
 Authorization: Bearer {{githubToken}}
 Content-Type: application/json
@@ -597,6 +642,7 @@ User-Agent: MyApp/1.0
   }
 }
 """
+
     let f = unwrap input
     Assert.Equal(Common, f.Dialect)
     Assert.Equal(2, f.Requests.Length)
@@ -625,7 +671,8 @@ User-Agent: MyApp/1.0
 
 [<Fact>]
 let ``real-world: SOAP XML web service`` () =
-    let input = """### GetWeather SOAP call
+    let input =
+        """### GetWeather SOAP call
 POST https://www.w3schools.com/xml/tempconvert.asmx HTTP/1.1
 Content-Type: text/xml; charset=utf-8
 SOAPAction: "https://www.w3schools.com/xml/CelsiusToFahrenheit"
@@ -641,6 +688,7 @@ SOAPAction: "https://www.w3schools.com/xml/CelsiusToFahrenheit"
   </soap:Body>
 </soap:Envelope>
 """
+
     let f = unwrap input
     Assert.Equal(Common, f.Dialect)
     Assert.Equal(1, f.Requests.Length)
@@ -666,7 +714,8 @@ SOAPAction: "https://www.w3schools.com/xml/CelsiusToFahrenheit"
 
 [<Fact>]
 let ``real-world: JetBrains test suite with response handlers`` () =
-    let input = """### Login and capture token
+    let input =
+        """### Login and capture token
 POST https://api.example.com/auth/login
 Content-Type: application/json
 
@@ -706,6 +755,7 @@ Content-Type: application/json
     });
 %}
 """
+
     let f = unwrap input
     Assert.Equal(JetBrains, f.Dialect)
     Assert.Equal(3, f.Requests.Length)
@@ -744,7 +794,8 @@ Content-Type: application/json
 
 [<Fact>]
 let ``real-world: Microsoft REST Client full featured`` () =
-    let input = """@hostname = localhost
+    let input =
+        """@hostname = localhost
 @port = 3000
 @host = {{hostname}}:{{port}}
 @contentType = application/json
@@ -785,6 +836,7 @@ Content-Type: {{contentType}}
     "priority": 2
 }
 """
+
     let f = unwrap input
     Assert.Equal(Microsoft, f.Dialect)
     Assert.Equal(4, f.Requests.Length)
@@ -831,7 +883,8 @@ Content-Type: {{contentType}}
 
 [<Fact>]
 let ``real-world: Kubernetes API requests`` () =
-    let input = """### List pods in default namespace
+    let input =
+        """### List pods in default namespace
 GET https://kubernetes.default.svc/api/v1/namespaces/default/pods
 Authorization: Bearer {{k8sToken}}
 Accept: application/json
@@ -891,6 +944,7 @@ Content-Type: application/strategic-merge-patch+json
 DELETE https://kubernetes.default.svc/apis/apps/v1/namespaces/default/deployments/nginx-deployment
 Authorization: Bearer {{k8sToken}}
 """
+
     let f = unwrap input
     Assert.Equal(Common, f.Dialect)
     Assert.Equal(4, f.Requests.Length)
@@ -928,7 +982,8 @@ Authorization: Bearer {{k8sToken}}
 
 [<Fact>]
 let ``real-world: AWS-style requests with complex headers`` () =
-    let input = """### Upload object to S3
+    let input =
+        """### Upload object to S3
 PUT https://my-bucket.s3.us-east-1.amazonaws.com/photos/2024/vacation.jpg
 Host: my-bucket.s3.us-east-1.amazonaws.com
 Content-Type: image/jpeg
@@ -943,6 +998,7 @@ x-amz-content-sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b78
 x-amz-date: 20240115T120000Z
 Authorization: AWS4-HMAC-SHA256 Credential={{accessKey}}/20240115/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature={{listSig}}
 """
+
     let f = unwrap input
     Assert.Equal(2, f.Requests.Length)
 
@@ -968,7 +1024,8 @@ Authorization: AWS4-HMAC-SHA256 Credential={{accessKey}}/20240115/us-east-1/s3/a
 
 [<Fact>]
 let ``real-world: JetBrains pre and post scripts with file refs`` () =
-    let input = """### Create signed webhook
+    let input =
+        """### Create signed webhook
 < scripts/generate-hmac.js
 POST https://api.example.com/webhooks
 Content-Type: application/json
@@ -994,6 +1051,7 @@ Authorization: Bearer {{apiKey}}
     });
 %}
 """
+
     let f = unwrap input
     Assert.Equal(JetBrains, f.Dialect)
     Assert.Equal(2, f.Requests.Length)
@@ -1024,7 +1082,8 @@ Authorization: Bearer {{apiKey}}
 
 [<Fact>]
 let ``real-world: Elasticsearch bulk and NDJSON body`` () =
-    let input = """### Create index with mappings
+    let input =
+        """### Create index with mappings
 PUT https://elasticsearch.local:9200/products
 Content-Type: application/json
 
@@ -1078,6 +1137,7 @@ Content-Type: application/json
 
 {"query": {"range": {"created_at": {"lt": "2023-01-01"}}}}
 """
+
     let f = unwrap input
     Assert.Equal(Common, f.Dialect)
     Assert.Equal(3, f.Requests.Length)
@@ -1111,7 +1171,8 @@ Content-Type: application/json
 
 [<Fact>]
 let ``real-world: Azure DevOps API with mixed comments`` () =
-    let input = """# Azure DevOps REST API examples
+    let input =
+        """# Azure DevOps REST API examples
 # Base URL: https://dev.azure.com/{org}/{project}/_apis
 
 @org = mycompany
@@ -1137,6 +1198,7 @@ Authorization: Basic {{pat}}
   {"op": "add", "path": "/fields/System.Tags", "value": "bug; safari; auth"}
 ]
 """
+
     let f = unwrap input
     Assert.Equal(Microsoft, f.Dialect)
     Assert.Equal(2, f.Requests.Length)
@@ -1177,7 +1239,8 @@ Authorization: Basic {{pat}}
 
 [<Fact>]
 let ``real-world: multipart form data file upload`` () =
-    let input = """### Upload document with metadata
+    let input =
+        """### Upload document with metadata
 POST https://api.example.com/documents/upload
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 Authorization: Bearer {{token}}
@@ -1197,6 +1260,7 @@ Content-Type: application/pdf
 <binary content placeholder>
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 """
+
     let f = unwrap input
     Assert.Equal(1, f.Requests.Length)
 
@@ -1229,7 +1293,8 @@ let ``edge case: request without trailing newline`` () =
 
 [<Fact>]
 let ``unsupported JetBrains methods are silently skipped`` () =
-    let input = """### Normal request
+    let input =
+        """### Normal request
 GET https://example.com/api
 
 ### WebSocket (unsupported)
@@ -1241,6 +1306,7 @@ Content-Type: application/json
 
 {"key": "value"}
 """
+
     let f = unwrap input
     // WebSocket request is skipped, only 2 real HTTP requests
     Assert.Equal(2, f.Requests.Length)

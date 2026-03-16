@@ -2,8 +2,8 @@
 // VSCode adapter for the environment switcher
 // Status bar item and quick pick integration
 
-import * as vscode from "vscode";
-import { detectEnvironments } from "./environmentSwitcher";
+import * as vscode from 'vscode';
+import { detectEnvironments } from './environmentSwitcher';
 import {
   CMD_SWITCH_ENV,
   CONFIG_DEFAULT_ENV,
@@ -13,7 +13,7 @@ import {
   STATUS_BAR_NO_ENV,
   STATUS_BAR_PREFIX,
   STATUS_BAR_PRIORITY,
-} from "./constants";
+} from './constants';
 
 export class EnvironmentStatusBar implements vscode.Disposable {
   private readonly _statusBarItem: vscode.StatusBarItem;
@@ -23,12 +23,12 @@ export class EnvironmentStatusBar implements vscode.Disposable {
   constructor() {
     this._statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Left,
-      STATUS_BAR_PRIORITY
+      STATUS_BAR_PRIORITY,
     );
     this._statusBarItem.command = CMD_SWITCH_ENV;
 
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    this._currentEnv = config.get<string>(CONFIG_DEFAULT_ENV, "");
+    this._currentEnv = config.get<string>(CONFIG_DEFAULT_ENV, '');
 
     this._updateLabel();
     this._statusBarItem.show();
@@ -37,10 +37,10 @@ export class EnvironmentStatusBar implements vscode.Disposable {
       vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_DEFAULT_ENV}`)) {
           const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-          this._currentEnv = cfg.get<string>(CONFIG_DEFAULT_ENV, "");
+          this._currentEnv = cfg.get<string>(CONFIG_DEFAULT_ENV, '');
           this._updateLabel();
         }
-      })
+      }),
     );
   }
 
@@ -49,20 +49,15 @@ export class EnvironmentStatusBar implements vscode.Disposable {
   }
 
   async showPicker(): Promise<void> {
-    const files = await vscode.workspace.findFiles(
-      NAPENV_GLOB,
-      "**/node_modules/**"
-    ),
-
-     envNames = detectEnvironments(files.map((f) => f.fsPath)),
-     items = envNames.map((name) => ({
-      label: name,
-      picked: name === this._currentEnv,
-    })),
-
-     selected = await vscode.window.showQuickPick(items, {
-      placeHolder: PROMPT_SELECT_ENV,
-    });
+    const files = await vscode.workspace.findFiles(NAPENV_GLOB, '**/node_modules/**'),
+      envNames = detectEnvironments(files.map((f) => f.fsPath)),
+      items = envNames.map((name) => ({
+        label: name,
+        picked: name === this._currentEnv,
+      })),
+      selected = await vscode.window.showQuickPick(items, {
+        placeHolder: PROMPT_SELECT_ENV,
+      });
 
     if (selected) {
       await this._applySelection(selected.label);
@@ -74,11 +69,7 @@ export class EnvironmentStatusBar implements vscode.Disposable {
     this._updateLabel();
 
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    await config.update(
-      CONFIG_DEFAULT_ENV,
-      this._currentEnv,
-      vscode.ConfigurationTarget.Workspace
-    );
+    await config.update(CONFIG_DEFAULT_ENV, this._currentEnv, vscode.ConfigurationTarget.Workspace);
   }
 
   private _updateLabel(): void {

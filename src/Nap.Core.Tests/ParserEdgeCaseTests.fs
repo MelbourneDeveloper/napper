@@ -77,7 +77,8 @@ let ``Shorthand has empty meta and no assertions`` () =
 
 [<Fact>]
 let ``Parse meta with description`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "My Request"
 description = "A detailed description"
@@ -86,6 +87,7 @@ description = "A detailed description"
 method = GET
 url = https://example.com
 """
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.Equal(Some "My Request", nap.Meta.Name)
@@ -94,7 +96,8 @@ url = https://example.com
 
 [<Fact>]
 let ``Parse meta with empty tags`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "No tags"
 
@@ -102,17 +105,20 @@ name = "No tags"
 method = GET
 url = https://example.com
 """
+
     match Parser.parseNapFile input with
     | Ok nap -> Assert.Empty(nap.Meta.Tags)
     | Error e -> failwith e
 
 [<Fact>]
 let ``Parse without meta block`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = POST
 url = https://example.com/create
 """
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.Equal(None, nap.Meta.Name)
@@ -121,10 +127,12 @@ url = https://example.com/create
 
 [<Fact>]
 let ``Request defaults to GET when method missing`` () =
-    let input = """
+    let input =
+        """
 [request]
 url = https://example.com
 """
+
     match Parser.parseNapFile input with
     | Ok nap -> Assert.Equal(GET, nap.Request.Method)
     | Error e -> failwith e
@@ -134,14 +142,18 @@ url = https://example.com
 [<Fact>]
 let ``Body without content-type defaults to application/json`` () =
     let tq = "\"\"\""
+
     let input =
-        "[request]\n" +
-        "method = POST\n" +
-        "url = https://example.com\n\n" +
-        "[request.body]\n" +
-        tq + "\n" +
-        "{\"key\": \"value\"}\n" +
-        tq + "\n"
+        "[request]\n"
+        + "method = POST\n"
+        + "url = https://example.com\n\n"
+        + "[request.body]\n"
+        + tq
+        + "\n"
+        + "{\"key\": \"value\"}\n"
+        + tq
+        + "\n"
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.True(nap.Request.Body.IsSome)
@@ -150,7 +162,8 @@ let ``Body without content-type defaults to application/json`` () =
 
 [<Fact>]
 let ``Body with inline content (not triple-quoted)`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = POST
 url = https://example.com
@@ -159,6 +172,7 @@ url = https://example.com
 content-type = text/plain
 content = Hello world
 """
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.True(nap.Request.Body.IsSome)
@@ -168,11 +182,13 @@ content = Hello world
 
 [<Fact>]
 let ``No body block yields None`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = https://example.com
 """
+
     match Parser.parseNapFile input with
     | Ok nap -> Assert.True(nap.Request.Body.IsNone)
     | Error e -> failwith e
@@ -182,41 +198,45 @@ url = https://example.com
 [<Fact>]
 let ``Full format with all sections`` () =
     let tq = "\"\"\""
+
     let input =
-        "# File-level comment\n\n" +
-        "[meta]\n" +
-        "name = \"Full test\"\n" +
-        "description = \"Everything\"\n" +
-        "tags = [\"smoke\", \"integration\"]\n\n" +
-        "# Vars comment\n" +
-        "[vars]\n" +
-        "baseUrl = \"https://api.example.com\"\n" +
-        "userId = \"42\"\n\n" +
-        "[request]\n" +
-        "method = POST\n" +
-        "url = {{baseUrl}}/users/{{userId}}\n\n" +
-        "[request.headers]\n" +
-        "Authorization = Bearer token123\n" +
-        "Accept = application/json\n\n" +
-        "[request.body]\n" +
-        "content-type = application/json\n" +
-        tq + "\n" +
-        "{ \"name\": \"test\" }\n" +
-        tq + "\n\n" +
-        "[assert]\n" +
-        "status = 201\n" +
-        "body.id exists\n" +
-        "headers.Content-Type contains \"json\"\n" +
-        "duration < 1000ms\n" +
-        "body.name = test\n\n" +
-        "[script]\n" +
-        "pre = ./setup.fsx\n" +
-        "post = ./teardown.fsx\n"
+        "# File-level comment\n\n"
+        + "[meta]\n"
+        + "name = \"Full test\"\n"
+        + "description = \"Everything\"\n"
+        + "tags = [\"smoke\", \"integration\"]\n\n"
+        + "# Vars comment\n"
+        + "[vars]\n"
+        + "baseUrl = \"https://api.example.com\"\n"
+        + "userId = \"42\"\n\n"
+        + "[request]\n"
+        + "method = POST\n"
+        + "url = {{baseUrl}}/users/{{userId}}\n\n"
+        + "[request.headers]\n"
+        + "Authorization = Bearer token123\n"
+        + "Accept = application/json\n\n"
+        + "[request.body]\n"
+        + "content-type = application/json\n"
+        + tq
+        + "\n"
+        + "{ \"name\": \"test\" }\n"
+        + tq
+        + "\n\n"
+        + "[assert]\n"
+        + "status = 201\n"
+        + "body.id exists\n"
+        + "headers.Content-Type contains \"json\"\n"
+        + "duration < 1000ms\n"
+        + "body.name = test\n\n"
+        + "[script]\n"
+        + "pre = ./setup.fsx\n"
+        + "post = ./teardown.fsx\n"
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.Equal(Some "Full test", nap.Meta.Name)
         Assert.Equal(Some "Everything", nap.Meta.Description)
-        Assert.Equal<string list>(["smoke"; "integration"], nap.Meta.Tags)
+        Assert.Equal<string list>([ "smoke"; "integration" ], nap.Meta.Tags)
         Assert.Equal("https://api.example.com", nap.Vars["baseUrl"])
         Assert.Equal("42", nap.Vars["userId"])
         Assert.Equal(POST, nap.Request.Method)
@@ -231,7 +251,8 @@ let ``Full format with all sections`` () =
 
 [<Fact>]
 let ``Parse all assertion operators`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = https://example.com
@@ -244,22 +265,44 @@ body.pattern matches "^\\d+$"
 duration < 500ms
 body.count > 10
 """
+
     match Parser.parseNapFile input with
     | Ok nap ->
         Assert.Equal(6, nap.Assertions.Length)
         Assert.Equal({ Target = "status"; Op = Equals "200" }, nap.Assertions[0])
         Assert.Equal({ Target = "body.id"; Op = Exists }, nap.Assertions[1])
-        Assert.Equal({ Target = "headers.Content-Type"; Op = Contains "json" }, nap.Assertions[2])
-        Assert.Equal({ Target = "body.pattern"; Op = Matches "^\\\\d+$" }, nap.Assertions[3])
-        Assert.Equal({ Target = "duration"; Op = LessThan "500ms" }, nap.Assertions[4])
-        Assert.Equal({ Target = "body.count"; Op = GreaterThan "10" }, nap.Assertions[5])
+
+        Assert.Equal(
+            { Target = "headers.Content-Type"
+              Op = Contains "json" },
+            nap.Assertions[2]
+        )
+
+        Assert.Equal(
+            { Target = "body.pattern"
+              Op = Matches "^\\\\d+$" },
+            nap.Assertions[3]
+        )
+
+        Assert.Equal(
+            { Target = "duration"
+              Op = LessThan "500ms" },
+            nap.Assertions[4]
+        )
+
+        Assert.Equal(
+            { Target = "body.count"
+              Op = GreaterThan "10" },
+            nap.Assertions[5]
+        )
     | Error e -> failwith e
 
 // ─── Naplist variations ──────────────────── Spec: naplist-file, naplist-meta, naplist-vars, naplist-steps, naplist-nap-step, naplist-folder-step, naplist-script-step
 
 [<Fact>]
 let ``Naplist with folder refs`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "With folders"
 
@@ -267,6 +310,7 @@ name = "With folders"
 auth
 ./tests/01_basic.nap
 """
+
     match Parser.parseNapList input with
     | Ok pl ->
         Assert.Equal(2, pl.Steps.Length)
@@ -276,13 +320,15 @@ auth
 
 [<Fact>]
 let ``Naplist with comments between steps`` () =
-    let input = """
+    let input =
+        """
 [steps]
 # First step
 ./01_login.nap
 # Second step
 ./02_get-user.nap
 """
+
     match Parser.parseNapList input with
     | Ok pl ->
         Assert.Equal(2, pl.Steps.Length)
@@ -292,20 +338,23 @@ let ``Naplist with comments between steps`` () =
 
 [<Fact>]
 let ``Naplist with no env defaults to None`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "No env"
 
 [steps]
 ./test.nap
 """
+
     match Parser.parseNapList input with
     | Ok pl -> Assert.Equal(None, pl.Env)
     | Error e -> failwith e
 
 [<Fact>]
 let ``Naplist with env set`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "Staging"
 env = staging
@@ -313,13 +362,15 @@ env = staging
 [steps]
 ./test.nap
 """
+
     match Parser.parseNapList input with
     | Ok pl -> Assert.Equal(Some "staging", pl.Env)
     | Error e -> failwith e
 
 [<Fact>]
 let ``Naplist with vars`` () =
-    let input = """
+    let input =
+        """
 [vars]
 timeout = "5000"
 baseUrl = "https://staging.example.com"
@@ -327,6 +378,7 @@ baseUrl = "https://staging.example.com"
 [steps]
 ./test.nap
 """
+
     match Parser.parseNapList input with
     | Ok pl ->
         Assert.Equal("5000", pl.Vars["timeout"])
@@ -335,7 +387,8 @@ baseUrl = "https://staging.example.com"
 
 [<Fact>]
 let ``Naplist with mixed step types`` () =
-    let input = """
+    let input =
+        """
 [steps]
 ./scripts/setup.fsx
 ./auth/login.nap
@@ -343,6 +396,7 @@ crud
 ./regression.naplist
 ./scripts/teardown.fsx
 """
+
     match Parser.parseNapList input with
     | Ok pl ->
         Assert.Equal(5, pl.Steps.Length)
@@ -355,12 +409,14 @@ crud
 
 [<Fact>]
 let ``Naplist empty steps section`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "Empty"
 
 [steps]
 """
+
     match Parser.parseNapList input with
     | Ok pl -> Assert.Empty(pl.Steps)
     | Error e -> failwith e
@@ -374,11 +430,13 @@ let ``Parse error on completely invalid input`` () =
 
 [<Fact>]
 let ``Parse quoted values preserve spaces`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = "https://example.com/path with spaces"
 """
+
     match Parser.parseNapFile input with
     | Ok nap -> Assert.Equal("https://example.com/path with spaces", nap.Request.Url)
     | Error e -> failwith e

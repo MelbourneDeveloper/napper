@@ -13,6 +13,7 @@ open Nap.Core
 [<Fact>]
 let ``Parse shorthand GET request`` () =
     let result = Parser.parseNapFile "GET https://example.com/api"
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(GET, nap.Request.Method)
@@ -23,6 +24,7 @@ let ``Parse shorthand GET request`` () =
 [<Fact>]
 let ``Parse shorthand POST request`` () =
     let result = Parser.parseNapFile "POST https://example.com/api"
+
     match result with
     | Result.Ok nap -> Assert.Equal(POST, nap.Request.Method)
     | Result.Error e -> failwith e
@@ -31,7 +33,8 @@ let ``Parse shorthand POST request`` () =
 
 [<Fact>]
 let ``Parse full format with meta and request`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "Test request"
 tags = ["smoke", "users"]
@@ -40,18 +43,21 @@ tags = ["smoke", "users"]
 method = GET
 url = https://example.com/users
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(Some "Test request", nap.Meta.Name)
-        Assert.Equal<string list>(["smoke"; "users"], nap.Meta.Tags)
+        Assert.Equal<string list>([ "smoke"; "users" ], nap.Meta.Tags)
         Assert.Equal(GET, nap.Request.Method)
         Assert.Equal("https://example.com/users", nap.Request.Url)
     | Result.Error e -> failwith e
 
 [<Fact>]
 let ``Parse full format with comments`` () =
-    let input = """
+    let input =
+        """
 # This is a comment
 [meta]
 name = "Commented request"
@@ -61,7 +67,9 @@ name = "Commented request"
 method = POST
 url = https://example.com/create
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(Some "Commented request", nap.Meta.Name)
@@ -70,7 +78,8 @@ url = https://example.com/create
 
 [<Fact>]
 let ``Parse full format with headers`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = https://example.com
@@ -79,7 +88,9 @@ url = https://example.com
 Authorization = Bearer mytoken
 Accept = application/json
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal("Bearer mytoken", nap.Request.Headers["Authorization"])
@@ -88,7 +99,8 @@ Accept = application/json
 
 [<Fact>]
 let ``Parse full format with assertions`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = https://example.com
@@ -99,19 +111,32 @@ body.id exists
 headers.Content-Type contains "json"
 duration < 500ms
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(4, nap.Assertions.Length)
         Assert.Equal({ Target = "status"; Op = Equals "200" }, nap.Assertions[0])
         Assert.Equal({ Target = "body.id"; Op = Exists }, nap.Assertions[1])
-        Assert.Equal({ Target = "headers.Content-Type"; Op = Contains "json" }, nap.Assertions[2])
-        Assert.Equal({ Target = "duration"; Op = LessThan "500ms" }, nap.Assertions[3])
+
+        Assert.Equal(
+            { Target = "headers.Content-Type"
+              Op = Contains "json" },
+            nap.Assertions[2]
+        )
+
+        Assert.Equal(
+            { Target = "duration"
+              Op = LessThan "500ms" },
+            nap.Assertions[3]
+        )
     | Result.Error e -> failwith e
 
 [<Fact>]
 let ``Parse full format with vars`` () =
-    let input = """
+    let input =
+        """
 [vars]
 userId = "42"
 baseUrl = "https://example.com"
@@ -120,7 +145,9 @@ baseUrl = "https://example.com"
 method = GET
 url = {{baseUrl}}/users/{{userId}}
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal("42", nap.Vars["userId"])
@@ -130,7 +157,8 @@ url = {{baseUrl}}/users/{{userId}}
 
 [<Fact>]
 let ``Parse full format with script block`` () =
-    let input = """
+    let input =
+        """
 [request]
 method = GET
 url = https://example.com
@@ -139,7 +167,9 @@ url = https://example.com
 pre = ./scripts/auth.fsx
 post = ./scripts/validate.fsx
 """
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(Some "./scripts/auth.fsx", nap.Script.Pre)
@@ -149,20 +179,25 @@ post = ./scripts/validate.fsx
 [<Fact>]
 let ``Parse full format with request body`` () =
     let tq = "\"\"\""
+
     let input =
-        "[request]\n" +
-        "method = POST\n" +
-        "url = https://example.com/api\n" +
-        "\n" +
-        "[request.body]\n" +
-        "content-type = application/json\n" +
-        tq + "\n" +
-        "{ \"name\": \"test\" }\n" +
-        tq + "\n" +
-        "\n" +
-        "[assert]\n" +
-        "status = 201\n"
+        "[request]\n"
+        + "method = POST\n"
+        + "url = https://example.com/api\n"
+        + "\n"
+        + "[request.body]\n"
+        + "content-type = application/json\n"
+        + tq
+        + "\n"
+        + "{ \"name\": \"test\" }\n"
+        + tq
+        + "\n"
+        + "\n"
+        + "[assert]\n"
+        + "status = 201\n"
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal(POST, nap.Request.Method)
@@ -176,20 +211,25 @@ let ``Parse full format with request body`` () =
 [<Fact>]
 let ``Parse full format with headers and body`` () =
     let tq = "\"\"\""
+
     let input =
-        "[request]\n" +
-        "method = POST\n" +
-        "url = https://example.com/api\n" +
-        "\n" +
-        "[request.headers]\n" +
-        "Accept = application/json\n" +
-        "\n" +
-        "[request.body]\n" +
-        "content-type = application/json\n" +
-        tq + "\n" +
-        "{ \"key\": \"value\" }\n" +
-        tq + "\n"
+        "[request]\n"
+        + "method = POST\n"
+        + "url = https://example.com/api\n"
+        + "\n"
+        + "[request.headers]\n"
+        + "Accept = application/json\n"
+        + "\n"
+        + "[request.body]\n"
+        + "content-type = application/json\n"
+        + tq
+        + "\n"
+        + "{ \"key\": \"value\" }\n"
+        + tq
+        + "\n"
+
     let result = Parser.parseNapFile input
+
     match result with
     | Result.Ok nap ->
         Assert.Equal("application/json", nap.Request.Headers["Accept"])
@@ -200,7 +240,8 @@ let ``Parse full format with headers and body`` () =
 
 [<Fact>]
 let ``Parse naplist with steps`` () =
-    let input = """
+    let input =
+        """
 [meta]
 name = "Smoke Suite"
 env = staging
@@ -214,7 +255,9 @@ timeout = "5000"
 ./regression.naplist
 ./scripts/setup.fsx
 """
+
     let result = Parser.parseNapList input
+
     match result with
     | Result.Ok playlist ->
         Assert.Equal(Some "Smoke Suite", playlist.Meta.Name)
@@ -231,31 +274,33 @@ timeout = "5000"
 
 [<Fact>]
 let ``Parse env file`` () =
-    let content = """
+    let content =
+        """
 baseUrl = "https://example.com"
 token = "abc123"
 # comment
 empty =
 """
+
     let vars = Environment.parseEnvFile content
     Assert.Equal("https://example.com", vars["baseUrl"])
     Assert.Equal("abc123", vars["token"])
 
 [<Fact>]
 let ``Resolve variables in string`` () =
-    let vars = Map.ofList [("baseUrl", "https://example.com"); ("id", "42")]
+    let vars = Map.ofList [ ("baseUrl", "https://example.com"); ("id", "42") ]
     Assert.Equal("https://example.com/users/42", Environment.resolveVars vars "{{baseUrl}}/users/{{id}}")
 
 [<Fact>]
 let ``Unresolved variables remain`` () =
-    let vars = Map.ofList [("baseUrl", "https://example.com")]
+    let vars = Map.ofList [ ("baseUrl", "https://example.com") ]
     Assert.Equal("https://example.com/{{unknown}}", Environment.resolveVars vars "{{baseUrl}}/{{unknown}}")
 
 [<Fact>]
 let ``CLI vars override file vars`` () =
     let dir = System.IO.Path.GetTempPath()
-    let fileVars = Map.ofList [("key", "file-value")]
-    let cliVars = Map.ofList [("key", "cli-value")]
+    let fileVars = Map.ofList [ ("key", "file-value") ]
+    let cliVars = Map.ofList [ ("key", "cli-value") ]
     let result = Environment.loadEnvironment dir None cliVars fileVars
     Assert.Equal("cli-value", result["key"])
 
@@ -263,56 +308,62 @@ let ``CLI vars override file vars`` () =
 
 [<Fact>]
 let ``Assert status equals`` () =
-    let response: NapResponse = {
-        StatusCode = 200
-        Headers = Map.ofList [("Content-Type", "application/json")]
-        Body = """{"id": 42, "name": "Alice"}"""
-        Duration = TimeSpan.FromMilliseconds(100.0)
-    }
-    let assertions = [
-        { Target = "status"; Op = Equals "200" }
-        { Target = "body.id"; Op = Exists }
-        { Target = "body.name"; Op = Equals "Alice" }
-        { Target = "headers.Content-Type"; Op = Contains "json" }
-        { Target = "duration"; Op = LessThan "500ms" }
-    ]
+    let response: NapResponse =
+        { StatusCode = 200
+          Headers = Map.ofList [ ("Content-Type", "application/json") ]
+          Body = """{"id": 42, "name": "Alice"}"""
+          Duration = TimeSpan.FromMilliseconds(100.0) }
+
+    let assertions =
+        [ { Target = "status"; Op = Equals "200" }
+          { Target = "body.id"; Op = Exists }
+          { Target = "body.name"
+            Op = Equals "Alice" }
+          { Target = "headers.Content-Type"
+            Op = Contains "json" }
+          { Target = "duration"
+            Op = LessThan "500ms" } ]
+
     let results = Runner.evaluateAssertions assertions response
     Assert.All(results, fun r -> Assert.True(r.Passed, $"{r.Assertion.Target}: expected {r.Expected}, got {r.Actual}"))
 
 [<Fact>]
 let ``Assert status fails on mismatch`` () =
-    let response: NapResponse = {
-        StatusCode = 404
-        Headers = Map.empty
-        Body = ""
-        Duration = TimeSpan.FromMilliseconds(50.0)
-    }
-    let assertions = [{ Target = "status"; Op = Equals "200" }]
+    let response: NapResponse =
+        { StatusCode = 404
+          Headers = Map.empty
+          Body = ""
+          Duration = TimeSpan.FromMilliseconds(50.0) }
+
+    let assertions = [ { Target = "status"; Op = Equals "200" } ]
     let results = Runner.evaluateAssertions assertions response
     Assert.False(results[0].Passed)
     Assert.Equal("404", results[0].Actual)
 
 [<Fact>]
 let ``Assert body path missing`` () =
-    let response: NapResponse = {
-        StatusCode = 200
-        Headers = Map.empty
-        Body = """{"name": "test"}"""
-        Duration = TimeSpan.FromMilliseconds(50.0)
-    }
-    let assertions = [{ Target = "body.missing"; Op = Exists }]
+    let response: NapResponse =
+        { StatusCode = 200
+          Headers = Map.empty
+          Body = """{"name": "test"}"""
+          Duration = TimeSpan.FromMilliseconds(50.0) }
+
+    let assertions = [ { Target = "body.missing"; Op = Exists } ]
     let results = Runner.evaluateAssertions assertions response
     Assert.False(results[0].Passed)
 
 [<Fact>]
 let ``Assert duration greater than`` () =
-    let response: NapResponse = {
-        StatusCode = 200
-        Headers = Map.empty
-        Body = ""
-        Duration = TimeSpan.FromMilliseconds(600.0)
-    }
-    let assertions = [{ Target = "duration"; Op = LessThan "500ms" }]
+    let response: NapResponse =
+        { StatusCode = 200
+          Headers = Map.empty
+          Body = ""
+          Duration = TimeSpan.FromMilliseconds(600.0) }
+
+    let assertions =
+        [ { Target = "duration"
+            Op = LessThan "500ms" } ]
+
     let results = Runner.evaluateAssertions assertions response
     Assert.False(results[0].Passed)
 
@@ -323,6 +374,7 @@ let ``runScript executes fsx and captures stdout`` () =
     let dir = System.IO.Path.GetTempPath()
     let scriptPath = System.IO.Path.Combine(dir, "nap-test-script.fsx")
     System.IO.File.WriteAllText(scriptPath, "printfn \"[test] hello from script\"\nprintfn \"[test] done\"")
+
     try
         let result = Runner.runScript scriptPath |> Async.RunSynchronously
         Assert.True(result.Passed, $"Script should pass, but got error: {result.Error}")
@@ -345,6 +397,7 @@ let ``runScript reports failure for invalid script`` () =
     let dir = System.IO.Path.GetTempPath()
     let scriptPath = System.IO.Path.Combine(dir, "nap-test-bad-script.fsx")
     System.IO.File.WriteAllText(scriptPath, "let x: int = \"not an int\"")
+
     try
         let result = Runner.runScript scriptPath |> Async.RunSynchronously
         Assert.False(result.Passed, "Invalid script should fail")
@@ -361,15 +414,19 @@ let ``runScript reports failure for invalid script`` () =
 
 [<Fact>]
 let ``JSON output includes log field for script results`` () =
-    let result: NapResult = {
-        File = "setup.fsx"
-        Request = { Method = GET; Url = ""; Headers = Map.empty; Body = None }
-        Response = None
-        Assertions = []
-        Passed = true
-        Error = None
-        Log = ["[setup] Seeded data"; "[setup] Done"]
-    }
+    let result: NapResult =
+        { File = "setup.fsx"
+          Request =
+            { Method = GET
+              Url = ""
+              Headers = Map.empty
+              Body = None }
+          Response = None
+          Assertions = []
+          Passed = true
+          Error = None
+          Log = [ "[setup] Seeded data"; "[setup] Done" ] }
+
     let json = Output.formatJson result
     let doc = System.Text.Json.JsonDocument.Parse(json)
     let root = doc.RootElement
@@ -389,15 +446,24 @@ let ``JSON output includes log field for script results`` () =
 
 [<Fact>]
 let ``JSON output omits log field when empty`` () =
-    let result: NapResult = {
-        File = "test.nap"
-        Request = { Method = GET; Url = "https://example.com"; Headers = Map.empty; Body = None }
-        Response = Some { StatusCode = 200; Headers = Map.empty; Body = ""; Duration = TimeSpan.FromMilliseconds(50.0) }
-        Assertions = []
-        Passed = true
-        Error = None
-        Log = []
-    }
+    let result: NapResult =
+        { File = "test.nap"
+          Request =
+            { Method = GET
+              Url = "https://example.com"
+              Headers = Map.empty
+              Body = None }
+          Response =
+            Some
+                { StatusCode = 200
+                  Headers = Map.empty
+                  Body = ""
+                  Duration = TimeSpan.FromMilliseconds(50.0) }
+          Assertions = []
+          Passed = true
+          Error = None
+          Log = [] }
+
     let json = Output.formatJson result
     let doc = System.Text.Json.JsonDocument.Parse(json)
     let root = doc.RootElement
@@ -414,16 +480,29 @@ let ``JSON output omits log field when empty`` () =
 
 [<Fact>]
 let ``JUnit output is valid XML`` () =
-    let result: NapResult = {
-        File = "test.nap"
-        Request = { Method = GET; Url = "https://example.com"; Headers = Map.empty; Body = None }
-        Response = Some { StatusCode = 200; Headers = Map.empty; Body = ""; Duration = TimeSpan.FromMilliseconds(50.0) }
-        Assertions = [{ Assertion = { Target = "status"; Op = Equals "200" }; Passed = true; Expected = "200"; Actual = "200" }]
-        Passed = true
-        Error = None
-        Log = []
-    }
-    let xml = Output.formatJUnit [result]
+    let result: NapResult =
+        { File = "test.nap"
+          Request =
+            { Method = GET
+              Url = "https://example.com"
+              Headers = Map.empty
+              Body = None }
+          Response =
+            Some
+                { StatusCode = 200
+                  Headers = Map.empty
+                  Body = ""
+                  Duration = TimeSpan.FromMilliseconds(50.0) }
+          Assertions =
+            [ { Assertion = { Target = "status"; Op = Equals "200" }
+                Passed = true
+                Expected = "200"
+                Actual = "200" } ]
+          Passed = true
+          Error = None
+          Log = [] }
+
+    let xml = Output.formatJUnit [ result ]
     Assert.Contains("<?xml", xml)
     Assert.Contains("testsuites", xml)
     Assert.Contains("testcase", xml)
@@ -434,15 +513,24 @@ let ``JUnit output is valid XML`` () =
 
 [<Fact>]
 let ``JSON output is parseable`` () =
-    let result: NapResult = {
-        File = "test.nap"
-        Request = { Method = GET; Url = "https://example.com"; Headers = Map.empty; Body = None }
-        Response = Some { StatusCode = 200; Headers = Map.empty; Body = """{"ok":true}"""; Duration = TimeSpan.FromMilliseconds(50.0) }
-        Assertions = []
-        Passed = true
-        Error = None
-        Log = []
-    }
+    let result: NapResult =
+        { File = "test.nap"
+          Request =
+            { Method = GET
+              Url = "https://example.com"
+              Headers = Map.empty
+              Body = None }
+          Response =
+            Some
+                { StatusCode = 200
+                  Headers = Map.empty
+                  Body = """{"ok":true}"""
+                  Duration = TimeSpan.FromMilliseconds(50.0) }
+          Assertions = []
+          Passed = true
+          Error = None
+          Log = [] }
+
     let json = Output.formatJson result
     let doc = System.Text.Json.JsonDocument.Parse(json)
     let root = doc.RootElement

@@ -2,9 +2,9 @@
 // VSCode adapter for the Explorer tree view
 // This is the only file that touches the vscode SDK for the explorer
 
-import * as vscode from "vscode";
-import * as path from "path";
-import * as fs from "fs";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import {
   type TreeNode,
   createFileNode,
@@ -12,8 +12,8 @@ import {
   createPlaylistNode,
   createPlaylistSectionNode,
   parsePlaylistStepPaths,
-} from "./explorerProvider";
-import { type RunResult, RunState } from "./types";
+} from './explorerProvider';
+import { type RunResult, RunState } from './types';
 import {
   BADGE_ERROR,
   BADGE_FAILED,
@@ -35,72 +35,57 @@ import {
   THEME_COLOR_ERROR,
   THEME_COLOR_FAILED,
   THEME_COLOR_PASSED,
-} from "./constants";
+} from './constants';
 
-const OPEN_COMMAND_TITLE = "Open",
- EMPTY_STRING = "",
-
- RUN_STATE_ICONS: Record<RunState, string> = {
-  [RunState.Idle]: ICON_IDLE,
-  [RunState.Running]: ICON_RUNNING,
-  [RunState.Passed]: ICON_PASSED,
-  [RunState.Failed]: ICON_FAILED,
-  [RunState.Error]: ICON_ERROR,
-},
-
- RUN_STATE_COLORS: Record<RunState, string | undefined> = {
-  [RunState.Idle]: undefined,
-  [RunState.Running]: undefined,
-  [RunState.Passed]: THEME_COLOR_PASSED,
-  [RunState.Failed]: THEME_COLOR_FAILED,
-  [RunState.Error]: THEME_COLOR_ERROR,
-},
-
- hasChildren = (node: TreeNode): boolean =>
-  node.isDirectory || (node.children !== undefined && node.children.length > 0),
-
- applyPlaylistSectionStyle = (
-  item: vscode.TreeItem,
-): void => {
-  item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_SECTION);
-},
-
- applyDirectoryStyle = (
-  item: vscode.TreeItem,
-  node: TreeNode,
-): void => {
-  item.resourceUri = vscode.Uri.file(node.filePath);
-  item.iconPath = vscode.ThemeIcon.Folder;
-},
-
- runStateIcon = (state: RunState): vscode.ThemeIcon => {
-  const color = RUN_STATE_COLORS[state];
-  return new vscode.ThemeIcon(
-    RUN_STATE_ICONS[state],
-    color !== undefined ? new vscode.ThemeColor(color) : undefined,
-  );
-},
-
- applyFileStyle = (
-  item: vscode.TreeItem,
-  node: TreeNode,
-): void => {
-  item.resourceUri = vscode.Uri.file(node.filePath);
-  item.command = {
-    command: CMD_VSCODE_OPEN,
-    title: OPEN_COMMAND_TITLE,
-    arguments: [vscode.Uri.file(node.filePath)],
+const OPEN_COMMAND_TITLE = 'Open',
+  EMPTY_STRING = '',
+  RUN_STATE_ICONS: Record<RunState, string> = {
+    [RunState.Idle]: ICON_IDLE,
+    [RunState.Running]: ICON_RUNNING,
+    [RunState.Passed]: ICON_PASSED,
+    [RunState.Failed]: ICON_FAILED,
+    [RunState.Error]: ICON_ERROR,
+  },
+  RUN_STATE_COLORS: Record<RunState, string | undefined> = {
+    [RunState.Idle]: undefined,
+    [RunState.Running]: undefined,
+    [RunState.Passed]: THEME_COLOR_PASSED,
+    [RunState.Failed]: THEME_COLOR_FAILED,
+    [RunState.Error]: THEME_COLOR_ERROR,
+  },
+  hasChildren = (node: TreeNode): boolean =>
+    node.isDirectory || (node.children !== undefined && node.children.length > 0),
+  applyPlaylistSectionStyle = (item: vscode.TreeItem): void => {
+    item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_SECTION);
+  },
+  applyDirectoryStyle = (item: vscode.TreeItem, node: TreeNode): void => {
+    item.resourceUri = vscode.Uri.file(node.filePath);
+    item.iconPath = vscode.ThemeIcon.Folder;
+  },
+  runStateIcon = (state: RunState): vscode.ThemeIcon => {
+    const color = RUN_STATE_COLORS[state];
+    return new vscode.ThemeIcon(
+      RUN_STATE_ICONS[state],
+      color !== undefined ? new vscode.ThemeColor(color) : undefined,
+    );
+  },
+  applyFileStyle = (item: vscode.TreeItem, node: TreeNode): void => {
+    item.resourceUri = vscode.Uri.file(node.filePath);
+    item.command = {
+      command: CMD_VSCODE_OPEN,
+      title: OPEN_COMMAND_TITLE,
+      arguments: [vscode.Uri.file(node.filePath)],
+    };
+    if (node.contextValue === CONTEXT_PLAYLIST) {
+      item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_FILE);
+      return;
+    }
+    if (node.contextValue === CONTEXT_SCRIPT_FILE) {
+      return;
+    }
+    item.description = node.httpMethod ?? EMPTY_STRING;
+    item.iconPath = runStateIcon(node.runState);
   };
-  if (node.contextValue === CONTEXT_PLAYLIST) {
-    item.iconPath = new vscode.ThemeIcon(ICON_PLAYLIST_FILE);
-    return;
-  }
-  if (node.contextValue === CONTEXT_SCRIPT_FILE) {
-    return;
-  }
-  item.description = node.httpMethod ?? EMPTY_STRING;
-  item.iconPath = runStateIcon(node.runState);
-};
 
 class ExplorerTreeItem extends vscode.TreeItem {
   constructor(node: TreeNode) {
@@ -141,9 +126,9 @@ function buildPlaylistStepNodes(
   results: ReadonlyMap<string, RunResult>,
 ): TreeNode[] {
   const content = fs.readFileSync(naplistPath, ENCODING_UTF8),
-   stepRelPaths = parsePlaylistStepPaths(content),
-   basePath = path.dirname(naplistPath),
-   stepNodes: TreeNode[] = [];
+    stepRelPaths = parsePlaylistStepPaths(content),
+    basePath = path.dirname(naplistPath),
+    stepNodes: TreeNode[] = [];
   for (const rel of stepRelPaths) {
     const node = buildStepNode(path.resolve(basePath, rel), results);
     if (node !== undefined) {
@@ -153,35 +138,26 @@ function buildPlaylistStepNodes(
   return stepNodes;
 }
 
-const makeDecoration = (
-  badge: string,
-  color: string,
-  tooltip?: string,
-): vscode.FileDecoration =>
-  new vscode.FileDecoration(badge, tooltip, new vscode.ThemeColor(color)),
-
- runStateBadge = (
-  result: RunResult,
-): vscode.FileDecoration | undefined => {
-  if (result.error !== undefined) {
-    return makeDecoration(BADGE_ERROR, THEME_COLOR_ERROR, result.error);
-  }
-  return result.passed
-    ? makeDecoration(BADGE_PASSED, THEME_COLOR_PASSED)
-    : makeDecoration(BADGE_FAILED, THEME_COLOR_FAILED);
-};
+const makeDecoration = (badge: string, color: string, tooltip?: string): vscode.FileDecoration =>
+    new vscode.FileDecoration(badge, tooltip, new vscode.ThemeColor(color)),
+  runStateBadge = (result: RunResult): vscode.FileDecoration | undefined => {
+    if (result.error !== undefined) {
+      return makeDecoration(BADGE_ERROR, THEME_COLOR_ERROR, result.error);
+    }
+    return result.passed
+      ? makeDecoration(BADGE_PASSED, THEME_COLOR_PASSED)
+      : makeDecoration(BADGE_FAILED, THEME_COLOR_FAILED);
+  };
 
 export class ExplorerAdapter
-  implements
-    vscode.TreeDataProvider<TreeNode>,
-    vscode.FileDecorationProvider
+  implements vscode.TreeDataProvider<TreeNode>, vscode.FileDecorationProvider
 {
-  private readonly _onDidChangeTreeData =
-    new vscode.EventEmitter<TreeNode | undefined>();
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<TreeNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  private readonly _onDidChangeFileDecorations =
-    new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>();
+  private readonly _onDidChangeFileDecorations = new vscode.EventEmitter<
+    vscode.Uri | vscode.Uri[] | undefined
+  >();
   readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
 
   private readonly _results = new Map<string, RunResult>();
@@ -216,15 +192,15 @@ export class ExplorerAdapter
 
   getChildren(element?: TreeNode): TreeNode[] {
     const folders = vscode.workspace.workspaceFolders,
-     firstFolder = folders?.[0];
+      firstFolder = folders?.[0];
     if (firstFolder === undefined) {
       return [];
     }
 
     if (element === undefined) {
       const root = firstFolder.uri.fsPath,
-       fileTree = this._buildTree(root),
-       playlistSection = this._buildPlaylistSection(root);
+        fileTree = this._buildTree(root),
+        playlistSection = this._buildPlaylistSection(root);
       return [...fileTree, playlistSection];
     }
 
@@ -237,10 +213,10 @@ export class ExplorerAdapter
 
   private _buildPlaylistSection(rootPath: string): TreeNode {
     const naplistPaths = this._collectNaplistFiles(rootPath),
-     playlistNodes = naplistPaths.map((fp) => {
-      const stepNodes = buildPlaylistStepNodes(fp, this._results);
-      return createPlaylistNode(fp, this._results, stepNodes);
-    });
+      playlistNodes = naplistPaths.map((fp) => {
+        const stepNodes = buildPlaylistStepNodes(fp, this._results);
+        return createPlaylistNode(fp, this._results, stepNodes);
+      });
     return createPlaylistSectionNode(playlistNodes);
   }
 
@@ -249,9 +225,9 @@ export class ExplorerAdapter
       return [];
     }
     const entries = fs.readdirSync(dirPath, { withFileTypes: true }),
-     results: string[] = [];
+      results: string[] = [];
     for (const entry of entries) {
-      if (entry.name.startsWith(".")) {
+      if (entry.name.startsWith('.')) {
         continue;
       }
       const fullPath = path.join(dirPath, entry.name);
@@ -277,7 +253,7 @@ export class ExplorerAdapter
   private _sortedVisibleEntries(dirPath: string): fs.Dirent[] {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
     return entries
-      .filter((e) => !e.name.startsWith("."))
+      .filter((e) => !e.name.startsWith('.'))
       .sort((a, b) => {
         if (a.isDirectory() && !b.isDirectory()) {
           return -1;
@@ -289,15 +265,10 @@ export class ExplorerAdapter
       });
   }
 
-  private _buildEntryNode(
-    entry: fs.Dirent,
-    fullPath: string,
-  ): TreeNode | undefined {
+  private _buildEntryNode(entry: fs.Dirent, fullPath: string): TreeNode | undefined {
     if (entry.isDirectory()) {
       const children = this._buildTree(fullPath);
-      return children.length > 0
-        ? createFolderNode(fullPath, children)
-        : undefined;
+      return children.length > 0 ? createFolderNode(fullPath, children) : undefined;
     }
     if (entry.name.endsWith(NAPLIST_EXTENSION)) {
       return this._buildNaplistNode(fullPath);
@@ -313,12 +284,9 @@ export class ExplorerAdapter
       return [];
     }
     const sorted = this._sortedVisibleEntries(dirPath),
-     nodes: TreeNode[] = [];
+      nodes: TreeNode[] = [];
     for (const entry of sorted) {
-      const node = this._buildEntryNode(
-        entry,
-        path.join(dirPath, entry.name),
-      );
+      const node = this._buildEntryNode(entry, path.join(dirPath, entry.name));
       if (node !== undefined) {
         nodes.push(node);
       }
