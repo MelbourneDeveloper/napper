@@ -39,9 +39,14 @@ echo "==> All projects bumped to v${VERSION}"
 # --- Commit + push if requested ---
 if [ "$COMMIT" = "--commit" ]; then
   echo "==> Committing and pushing version bump..."
+  # Set git identity in CI if not already configured
+  if [ -n "${CI:-}" ]; then
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+  fi
   git add Directory.Build.props src/Nap.VsCode/package.json src/Nap.VsCode/package-lock.json
   [ -f Cargo.toml ] && git add Cargo.toml
-  git commit -m "chore: bump version to ${VERSION}"
+  git commit -m "release: update version to v${VERSION}"
   git push
   echo "==> Committed and pushed v${VERSION}"
 fi
