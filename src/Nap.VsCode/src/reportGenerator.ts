@@ -144,27 +144,19 @@ const buildReportAssertionRow = (a: {
       open: false,
     });
   },
+  collectResponseParts = (result: RunResult): readonly string[] => {
+    const assertionsPart = result.assertions.length > 0 ? buildReportAssertions(result) : undefined,
+      headersPart = buildReportHeadersSection(SECTION_LABEL_RESPONSE_HEADERS, result.headers),
+      bodyPart = buildReportBody(result.body);
+    return [assertionsPart, headersPart, bodyPart].filter(
+      (p): p is string => p !== undefined && p !== '',
+    );
+  },
   buildReportResponseGroup = (result: RunResult): string => {
-    const parts: string[] = [];
-
-    if (result.assertions.length > 0) {
-      parts.push(buildReportAssertions(result));
-    }
-
-    const headersHtml = buildReportHeadersSection(SECTION_LABEL_RESPONSE_HEADERS, result.headers);
-    if (headersHtml !== '') {
-      parts.push(headersHtml);
-    }
-
-    const bodyHtml = buildReportBody(result.body);
-    if (bodyHtml !== '') {
-      parts.push(bodyHtml);
-    }
-
+    const parts = collectResponseParts(result);
     if (parts.length === 0) {
       return '';
     }
-
     return buildReportCollapsibleGroup({
       title: SECTION_LABEL_RESPONSE,
       content: parts.join('\n'),
@@ -277,34 +269,37 @@ const buildReportAssertionRow = (a: {
     readonly sub: string;
   }): string =>
     `<div class="stat-card"><div class="stat-label">${opts.label}</div><div class="stat-value ${opts.valueCls}">${opts.value}</div><div class="stat-sub">${opts.sub}</div></div>`,
+  buildPassRateCard = (stats: ReturnType<typeof computeReportStats>): string =>
+    buildStatCard({
+      label: 'Pass Rate',
+      valueCls: stats.allPassed ? 'pass' : 'fail',
+      value: `${stats.passRate}%`,
+      sub: `${stats.passedCount} of ${stats.totalCount} steps`,
+    }),
+  buildPassedCard = (count: number): string =>
+    buildStatCard({ label: 'Passed', valueCls: 'pass', value: `${count}`, sub: 'steps succeeded' }),
+  buildFailedCard = (count: number): string =>
+    buildStatCard({
+      label: 'Failed',
+      valueCls: count > 0 ? 'fail' : 'neutral',
+      value: `${count}`,
+      sub: 'steps failed',
+    }),
+  buildDurationCard = (duration: number): string =>
+    buildStatCard({
+      label: 'Duration',
+      valueCls: 'neutral',
+      value: `${duration.toFixed(0)}<span style="font-size: 16px; font-weight: 400;">ms</span>`,
+      sub: 'total execution time',
+    }),
   buildReportStatsGrid = (stats: ReturnType<typeof computeReportStats>): string => {
-    const passRateCard = buildStatCard({
-        label: 'Pass Rate',
-        valueCls: stats.allPassed ? 'pass' : 'fail',
-        value: `${stats.passRate}%`,
-        sub: `${stats.passedCount} of ${stats.totalCount} steps`,
-      }),
-      passedCard = buildStatCard({
-        label: 'Passed',
-        valueCls: 'pass',
-        value: `${stats.passedCount}`,
-        sub: 'steps succeeded',
-      }),
-      failedCls = stats.failedCount > 0 ? 'fail' : 'neutral',
-      failedCard = buildStatCard({
-        label: 'Failed',
-        valueCls: failedCls,
-        value: `${stats.failedCount}`,
-        sub: 'steps failed',
-      }),
-      durationVal = `${stats.totalDuration.toFixed(0)}<span style="font-size: 16px; font-weight: 400;">ms</span>`,
-      durationCard = buildStatCard({
-        label: 'Duration',
-        valueCls: 'neutral',
-        value: durationVal,
-        sub: 'total execution time',
-      });
-    return `<div class="stats-grid">${passRateCard}${passedCard}${failedCard}${durationCard}</div>`;
+    const cards = [
+      buildPassRateCard(stats),
+      buildPassedCard(stats.passedCount),
+      buildFailedCard(stats.failedCount),
+      buildDurationCard(stats.totalDuration),
+    ].join('');
+    return `<div class="stats-grid">${cards}</div>`;
   },
   buildReportProgressBar = (passRate: string, allPassed: boolean): string => `
     <div class="progress-container">

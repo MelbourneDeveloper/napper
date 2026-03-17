@@ -20,6 +20,30 @@ Nap is a developer-first HTTP testing tool. It is as simple as curl for one-off 
 
 ---
 
+## Installation
+
+The Napper CLI is distributed as a **dotnet tool** via NuGet. This is the primary distribution channel — it avoids code-signing requirements (no Windows SmartScreen warnings), works cross-platform, and integrates with existing .NET toolchains.
+
+```sh
+# Install globally
+dotnet tool install -g napper
+
+# Install a specific version
+dotnet tool install -g napper --version 0.6.0
+
+# Update to latest
+dotnet tool update -g napper
+```
+
+The VSIX extension installs the CLI automatically via `dotnet tool install` on activation, using the extension's own version to determine which CLI version to install. Users with the CLI already on PATH (or configured via `nap.cliPath`) skip the auto-install.
+
+**Future channels** (not yet implemented):
+- Homebrew formula (`brew install napper`)
+- Winget / Chocolatey / Scoop packages
+- Standalone native binary (NativeAOT single-file publish)
+
+---
+
 ## Usage
 
 ### `cli-run` — Run Command

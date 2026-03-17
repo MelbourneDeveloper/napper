@@ -9,8 +9,6 @@ import { execFile } from 'child_process';
 import type { ExplorerAdapter } from './explorerAdapter';
 import type { Logger } from './logger';
 import { type Result, err, ok } from './types';
-import * as https from 'https';
-import type { IncomingMessage } from 'http';
 import {
   CLI_CMD_GENERATE,
   CLI_FLAG_OUTPUT,
@@ -22,20 +20,16 @@ import {
   CONFIG_CLI_PATH,
   CONFIG_SECTION,
   DEFAULT_CLI_PATH,
-  HTTP_STATUS_CLIENT_ERROR_MIN,
-  HTTP_STATUS_REDIRECT_MIN,
   LOG_MSG_OPENAPI_AI_CHOICE,
   LOG_MSG_OPENAPI_AI_MODEL_SELECTED,
   LOG_MSG_OPENAPI_AI_NO_MODEL,
   LOG_MSG_OPENAPI_GENERATE_CLI,
-  LOG_MSG_OPENAPI_GENERATE_RESULT,
   LOG_MSG_OPENAPI_IMPORT,
   LOG_MSG_OPENAPI_SPEC_SAVED,
   LOG_MSG_OPENAPI_URL_DOWNLOAD_FAIL,
   LOG_MSG_OPENAPI_URL_DOWNLOAD_OK,
   LOG_MSG_OPENAPI_URL_FETCH,
   NAPLIST_EXTENSION,
-  NAP_EXTENSION,
   OPENAPI_AI_CHOICE_BASIC,
   OPENAPI_AI_CHOICE_ENHANCED,
   OPENAPI_AI_CHOICE_TITLE,
@@ -46,7 +40,6 @@ import {
   OPENAPI_AI_PROGRESS_TITLE,
   OPENAPI_AI_REORDERING_PLAYLIST,
   OPENAPI_DOWNLOADING,
-  OPENAPI_DOWNLOAD_FAILED_PREFIX,
   OPENAPI_ERROR_PREFIX,
   OPENAPI_FILE_EXTENSIONS,
   OPENAPI_FILTER_LABEL,
@@ -56,8 +49,8 @@ import {
   OPENAPI_SUCCESS_SUFFIX,
   OPENAPI_URL_PLACEHOLDER,
   OPENAPI_URL_PROMPT,
-  SECTION_REQUEST_BODY,
 } from './constants';
+import { downloadSpec, saveTempSpec } from './openApiDownloader';
 import {
   type GeneratedFile,
   type OperationSummary,
@@ -66,12 +59,14 @@ import {
   buildAssertionPrompt,
   buildPlaylistOrderPrompt,
   buildTestDataPrompt,
+  extractSummary,
   getAssertionSystemPrompt,
   getPlaylistSystemPrompt,
   getTestDataSystemPrompt,
   parseAssertionResponse,
   parsePlaylistOrderResponse,
   parseTestDataResponse,
+  readGeneratedFiles,
   reorderPlaylistSteps,
 } from './openApiAiEnhancer';
 
@@ -109,9 +104,6 @@ interface EnrichmentContext {
 }
 
 const MAX_PREVIEW_LENGTH = 200,
-  NAME_PREFIX = 'name = ',
-  BODY_PREFIX = 'body.',
-  EXISTS_SUFFIX = ' exists',
   resolveCliPath = (): string => {
     const configured = vscode.workspace
       .getConfiguration(CONFIG_SECTION)
@@ -161,33 +153,40 @@ const MAX_PREVIEW_LENGTH = 200,
       return err(`${CLI_PARSE_FAILED_PREFIX}${stdout.slice(0, MAX_PREVIEW_LENGTH)}`);
     }
   },
+  buildCliErrorMsg = (cliPath: string, stderr: string): string => {
+    const suffix = stderr.length > 0 ? ` — ${stderr}` : '';
+    return `${CLI_SPAWN_FAILED_PREFIX}${cliPath}${suffix}`;
+  },
+  spawnGenerate = (
+    cliPath: string,
+    args: readonly string[],
+    resolve: (r: Result<GenerateResult, string>) => void,
+  ): void => {
+    execFile(
+      cliPath,
+      [...args],
+      { timeout: 30_000, env: { ...process.env } },
+      (error, stdout, stderr) => {
+        if (error !== null && stdout.length === 0) {
+          resolve(err(buildCliErrorMsg(cliPath, stderr)));
+          return;
+        }
+        resolve(parseGenerateOutput(stdout));
+      },
+    );
+  },
   callCliGenerate = async (
     specPath: string,
     outDir: string,
     logger: Logger,
-  ): Promise<Result<GenerateResult, string>> =>
-    new Promise((resolve) => {
-      const cliPath = resolveCliPath();
-      logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
-      execFile(
-        cliPath,
-        [...buildGenerateArgs(specPath, outDir)],
-        { timeout: 30_000, env: { ...process.env } },
-        (error, stdout, stderr) => {
-          if (error !== null && stdout.length === 0) {
-            const msg = stderr.length > 0 ? ` — ${stderr}` : '';
-            logger.error(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`);
-            resolve(err(`${CLI_SPAWN_FAILED_PREFIX}${cliPath}${msg}`));
-            return;
-          }
-          const result = parseGenerateOutput(stdout);
-          (result.ok ? logger.info : logger.error)(
-            `${LOG_MSG_OPENAPI_GENERATE_RESULT} ${result.ok ? `${result.value.files} files` : result.error}`,
-          );
-          resolve(result);
-        },
-      );
-    }),
+  ): Promise<Result<GenerateResult, string>> => {
+    const cliPath = resolveCliPath(),
+      args = buildGenerateArgs(specPath, outDir);
+    logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
+    return new Promise((resolve) => {
+      spawnGenerate(cliPath, args, resolve);
+    });
+  },
   handleSuccess = async (
     outDir: string,
     generated: GenerateResult,
@@ -223,51 +222,6 @@ const MAX_PREVIEW_LENGTH = 200,
       parts.push(chunk);
     }
     return parts.join('');
-  },
-  collectNapFiles = (dir: string, baseDir: string, out: GeneratedFile[]): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        collectNapFiles(full, baseDir, out);
-      } else if (entry.name.endsWith(NAP_EXTENSION)) {
-        out.push({
-          fileName: path.relative(baseDir, full),
-          content: fs.readFileSync(full, 'utf-8'),
-        });
-      }
-    }
-  },
-  readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
-    const files: GeneratedFile[] = [];
-    collectNapFiles(outDir, outDir, files);
-    return files;
-  },
-  HTTP_METHOD_PREFIXES = [
-    'GET ',
-    'POST ',
-    'PUT ',
-    'PATCH ',
-    'DELETE ',
-    'HEAD ',
-    'OPTIONS ',
-  ] as const,
-  isRequestLine = (line: string): boolean =>
-    HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix)),
-  extractSummary = (file: GeneratedFile): OperationSummary => {
-    const lines = file.content.split('\n'),
-      nameLine = lines.find((l) => l.startsWith(NAME_PREFIX)),
-      requestLine = lines.find(isRequestLine),
-      name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
-    return {
-      operationId: name,
-      method: requestLine?.split(' ')[0] ?? 'GET',
-      path: requestLine?.split(' ')[1] ?? '',
-      summary: name,
-      responseFields: lines
-        .filter((l) => l.startsWith(BODY_PREFIX) && l.includes(EXISTS_SUFFIX))
-        .map((l) => l.slice(BODY_PREFIX.length, l.indexOf(EXISTS_SUFFIX))),
-      hasRequestBody: file.content.includes(SECTION_REQUEST_BODY),
-    };
   },
   enrichAssertionStep = async (
     step: EnrichStepParams,
@@ -305,31 +259,37 @@ const MAX_PREVIEW_LENGTH = 200,
     }
     return applyTestDataEnrichments(step.files, result.value);
   },
+  findFirstNaplist = (outDir: string): string | undefined => {
+    const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION));
+    return naplists[0];
+  },
+  fetchPlaylistOrder = async (
+    params: LmRequestParams,
+    fileNames: readonly string[],
+  ): Promise<Result<readonly string[], string>> => {
+    const response = await sendLmRequest({
+      ...params,
+      systemPrompt: getPlaylistSystemPrompt(),
+      userPrompt: buildPlaylistOrderPrompt(fileNames),
+    });
+    return parsePlaylistOrderResponse(response);
+  },
   reorderPlaylistStep = async (
     params: LmRequestParams,
     outDir: string,
     fileNames: readonly string[],
   ): Promise<void> => {
-    const naplists = fs.readdirSync(outDir).filter((f) => f.endsWith(NAPLIST_EXTENSION)),
-      [first] = naplists;
+    const first = findFirstNaplist(outDir);
     if (first === undefined) {
       return;
     }
     const playlistPath = path.join(outDir, first),
-      response = await sendLmRequest({
-        ...params,
-        systemPrompt: getPlaylistSystemPrompt(),
-        userPrompt: buildPlaylistOrderPrompt(fileNames),
-      }),
-      result = parsePlaylistOrderResponse(response);
+      result = await fetchPlaylistOrder(params, fileNames);
     if (!result.ok) {
       return;
     }
-    fs.writeFileSync(
-      playlistPath,
-      reorderPlaylistSteps(fs.readFileSync(playlistPath, 'utf-8'), result.value),
-      'utf-8',
-    );
+    const content = reorderPlaylistSteps(fs.readFileSync(playlistPath, 'utf-8'), result.value);
+    fs.writeFileSync(playlistPath, content, 'utf-8');
   },
   writeEnrichedFiles = (outDir: string, files: readonly GeneratedFile[]): void => {
     for (const file of files) {
@@ -380,46 +340,7 @@ export const runAiEnrichment = async (outDir: string, logger: Logger): Promise<v
   );
 };
 
-const isRedirect = (code: number): boolean =>
-    code >= HTTP_STATUS_REDIRECT_MIN && code < HTTP_STATUS_CLIENT_ERROR_MIN,
-  isClientError = (code: number): boolean => code >= HTTP_STATUS_CLIENT_ERROR_MIN,
-  collectBody = (res: IncomingMessage, resolve: (r: Result<string, string>) => void): void => {
-    const chunks: Buffer[] = [];
-    res.on('data', (chunk: Buffer) => {
-      chunks.push(chunk);
-    });
-    res.on('end', () => {
-      resolve(ok(Buffer.concat(chunks).toString('utf-8')));
-    });
-    res.on('error', (e) => {
-      resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`));
-    });
-  };
-
-export async function downloadSpec(url: string): Promise<Result<string, string>> {
-  return new Promise((resolve) => {
-    https
-      .get(url, (res) => {
-        const status = res.statusCode ?? 0;
-        if (isRedirect(status) && res.headers.location !== undefined) {
-          downloadSpec(res.headers.location)
-            .then(resolve)
-            .catch(() => {
-              resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}redirect`));
-            });
-          return;
-        }
-        if (isClientError(status)) {
-          resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}HTTP ${status}`));
-          return;
-        }
-        collectBody(res, resolve);
-      })
-      .on('error', (e) => {
-        resolve(err(`${OPENAPI_DOWNLOAD_FAILED_PREFIX}${e.message}`));
-      });
-  });
-}
+export { downloadSpec, saveTempSpec } from './openApiDownloader';
 
 const askForUrl = async (): Promise<string | undefined> =>
   vscode.window.showInputBox({
@@ -427,12 +348,6 @@ const askForUrl = async (): Promise<string | undefined> =>
     placeHolder: OPENAPI_URL_PLACEHOLDER,
     ignoreFocusOut: true,
   });
-
-export const saveTempSpec = (content: string, outDir: string): string => {
-  const specPath = path.join(outDir, '.openapi-spec.json');
-  fs.writeFileSync(specPath, content, 'utf-8');
-  return specPath;
-};
 
 const generateAndEnrich = async (
   specPath: string,
@@ -455,30 +370,39 @@ const generateAndEnrich = async (
   await handleSuccess(outDir, result.value, ctx);
 };
 
-const fetchAndSaveSpec = async (
-  url: string,
-  outDir: string,
-  logger: Logger,
-): Promise<string | undefined> => {
-  logger.info(`${LOG_MSG_OPENAPI_URL_FETCH} ${url}`);
-  const specResult = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: OPENAPI_DOWNLOADING,
-      cancellable: false,
-    },
-    async () => downloadSpec(url),
-  );
-  if (!specResult.ok) {
-    logger.error(`${LOG_MSG_OPENAPI_URL_DOWNLOAD_FAIL} ${specResult.error}`);
-    await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${specResult.error}`);
-    return undefined;
-  }
-  logger.info(`${LOG_MSG_OPENAPI_URL_DOWNLOAD_OK} ${specResult.value.length}`);
-  const specPath = saveTempSpec(specResult.value, outDir);
-  logger.info(`${LOG_MSG_OPENAPI_SPEC_SAVED} ${specPath}`);
-  return specPath;
-};
+const downloadWithProgress = async (url: string): Promise<Result<string, string>> =>
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: OPENAPI_DOWNLOADING,
+        cancellable: false,
+      },
+      async () => downloadSpec(url),
+    ),
+  handleDownloadResult = async (
+    specResult: Result<string, string>,
+    outDir: string,
+    logger: Logger,
+  ): Promise<string | undefined> => {
+    if (!specResult.ok) {
+      logger.error(`${LOG_MSG_OPENAPI_URL_DOWNLOAD_FAIL} ${specResult.error}`);
+      await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${specResult.error}`);
+      return undefined;
+    }
+    logger.info(`${LOG_MSG_OPENAPI_URL_DOWNLOAD_OK} ${specResult.value.length}`);
+    const specPath = saveTempSpec(specResult.value, outDir);
+    logger.info(`${LOG_MSG_OPENAPI_SPEC_SAVED} ${specPath}`);
+    return specPath;
+  },
+  fetchAndSaveSpec = async (
+    url: string,
+    outDir: string,
+    logger: Logger,
+  ): Promise<string | undefined> => {
+    logger.info(`${LOG_MSG_OPENAPI_URL_FETCH} ${url}`);
+    const specResult = await downloadWithProgress(url);
+    return handleDownloadResult(specResult, outDir, logger);
+  };
 
 export const importOpenApiFromUrl = async (
   explorer: ExplorerAdapter,

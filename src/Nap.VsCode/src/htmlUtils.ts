@@ -199,32 +199,29 @@ export const buildRequestGroupHtml = (result: RunResult): string => {
 const buildResponseSubsection = (title: string, content: string): string =>
   `<div class="subsection"><h4 class="subsection-title">${title}</h4>${content}</div>`;
 
-const buildResponseParts = (result: RunResult): readonly string[] => {
-  const parts: string[] = [],
-    assertionsHtml = buildAssertionRowsHtml(result.assertions);
-
-  if (assertionsHtml !== '') {
-    parts.push(buildResponseSubsection(SECTION_LABEL_ASSERTIONS, assertionsHtml));
-  }
-
-  const headersRows = buildHeadersTableRows(result.headers);
-  if (headersRows !== '') {
-    parts.push(
-      buildResponseSubsection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${headersRows}</table>`),
+const buildAssertionsPart = (result: RunResult): string | undefined => {
+    const assertionsHtml = buildAssertionRowsHtml(result.assertions);
+    return assertionsHtml !== ''
+      ? buildResponseSubsection(SECTION_LABEL_ASSERTIONS, assertionsHtml)
+      : undefined;
+  },
+  buildHeadersPart = (result: RunResult): string | undefined => {
+    const headersRows = buildHeadersTableRows(result.headers);
+    return headersRows !== ''
+      ? buildResponseSubsection(SECTION_LABEL_RESPONSE_HEADERS, `<table>${headersRows}</table>`)
+      : undefined;
+  },
+  buildBodyPart = (result: RunResult): string | undefined =>
+    result.body !== undefined && result.body !== ''
+      ? buildResponseSubsection(
+          SECTION_LABEL_BODY,
+          `<pre class="body">${formatBodyHtml(result.body)}</pre>`,
+        )
+      : undefined,
+  buildResponseParts = (result: RunResult): readonly string[] =>
+    [buildAssertionsPart(result), buildHeadersPart(result), buildBodyPart(result)].filter(
+      (p): p is string => p !== undefined,
     );
-  }
-
-  if (result.body !== undefined && result.body !== '') {
-    parts.push(
-      buildResponseSubsection(
-        SECTION_LABEL_BODY,
-        `<pre class="body">${formatBodyHtml(result.body)}</pre>`,
-      ),
-    );
-  }
-
-  return parts;
-};
 
 export const buildResponseGroupHtml = (result: RunResult): string => {
   const parts = buildResponseParts(result);

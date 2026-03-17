@@ -53,27 +53,34 @@ const promptMethod = (): Thenable<string | undefined> =>
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-export const newRequest = async (explorer: ExplorerAdapter): Promise<void> => {
+const promptRequestDetails = async (): Promise<
+  | { readonly method: string; readonly url: string; readonly name: string; readonly cwd: string }
+  | undefined
+> => {
   const method = await promptMethod();
   if (method === undefined) {
-    return;
+    return undefined;
   }
   const url = await promptUrl();
   if (url === undefined) {
-    return;
+    return undefined;
   }
   const cwd = getWorkspacePath();
   if (cwd === undefined) {
-    return;
+    return undefined;
   }
   const defaultName = `${method.toLowerCase()}${REQUEST_NAME_SUFFIX}`,
     name = await promptFileName(defaultName);
-  if (name === undefined) {
+  return name !== undefined ? { method, url, name, cwd } : undefined;
+};
+
+export const newRequest = async (explorer: ExplorerAdapter): Promise<void> => {
+  const details = await promptRequestDetails();
+  if (details === undefined) {
     return;
   }
-
-  const filePath = path.join(cwd, `${name}${NAP_EXTENSION}`);
-  await writeAndOpen(filePath, `${method} ${url}\n`, explorer);
+  const filePath = path.join(details.cwd, `${details.name}${NAP_EXTENSION}`);
+  await writeAndOpen(filePath, `${details.method} ${details.url}\n`, explorer);
 };
 
 export const newPlaylist = async (explorer: ExplorerAdapter): Promise<void> => {

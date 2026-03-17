@@ -158,25 +158,31 @@ const attachDataListeners = (ctx: StreamListenerContext): void => {
       ctx.state.stderrOutput += chunk.toString();
     });
   },
+  handleClose = (ctx: StreamListenerContext): void => {
+    if (ctx.state.finished) {
+      return;
+    }
+    ctx.state.finished = true;
+    flushAndFinish({
+      buffer: ctx.state.buffer,
+      onResult: ctx.options.onResult,
+      stderrOutput: ctx.state.stderrOutput,
+      onDone: ctx.options.onDone,
+    });
+  },
+  handleError = (ctx: StreamListenerContext, error: Error): void => {
+    if (ctx.state.finished) {
+      return;
+    }
+    ctx.state.finished = true;
+    ctx.options.onDone(`${CLI_SPAWN_FAILED_PREFIX}${ctx.cliPath} — ${error.message}`);
+  },
   attachLifecycleListeners = (ctx: StreamListenerContext): void => {
     ctx.child.on('close', () => {
-      if (ctx.state.finished) {
-        return;
-      }
-      ctx.state.finished = true;
-      flushAndFinish({
-        buffer: ctx.state.buffer,
-        onResult: ctx.options.onResult,
-        stderrOutput: ctx.state.stderrOutput,
-        onDone: ctx.options.onDone,
-      });
+      handleClose(ctx);
     });
     ctx.child.on('error', (error) => {
-      if (ctx.state.finished) {
-        return;
-      }
-      ctx.state.finished = true;
-      ctx.options.onDone(`${CLI_SPAWN_FAILED_PREFIX}${ctx.cliPath} — ${error.message}`);
+      handleError(ctx, error);
     });
   };
 

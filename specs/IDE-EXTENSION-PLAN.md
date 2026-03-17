@@ -38,6 +38,7 @@ This phase **deletes duplicated TypeScript parsing code** and replaces it with L
 
 ### Phase 4 — Polish & Distribution
 
+- **CLI installation via `dotnet tool install`** — replace raw binary download with `dotnet tool install -g napper --version X.X.X`. Version is read from the extension's own `package.json`. Eliminates Windows SmartScreen warnings and custom HTTP download code.
 - Split editor layout (request panel webview)
 - New request guided flow
 - OpenAPI generation command
@@ -72,6 +73,8 @@ This phase **deletes duplicated TypeScript parsing code** and replaces it with L
 - [ ] Run ALL existing VSIX e2e tests — must pass
 
 ### Phase 4 — Polish & Distribution
+- [ ] Replace raw binary download with `dotnet tool install -g napper --version X.X.X`
+- [ ] Delete custom HTTP download code (`cliInstaller.ts` download/redirect logic)
 - [ ] Split editor layout (request panel webview)
 - [ ] New request guided flow
 - [ ] OpenAPI generation command

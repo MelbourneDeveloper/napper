@@ -16,7 +16,6 @@ import {
   CLI_BIN_DIR,
   CLI_DOWNLOAD_ERROR_PREFIX,
   CLI_DOWNLOAD_HOST,
-  CLI_DOWNLOAD_PATH_PREFIX,
   CLI_FILE_MODE_EXECUTABLE,
   CLI_MAX_REDIRECTS,
   CLI_PLATFORM_DARWIN,
@@ -36,6 +35,7 @@ import {
   HTTP_STATUS_CLIENT_ERROR_MIN,
   HTTP_STATUS_OK,
   HTTP_STATUS_REDIRECT_MIN,
+  cliDownloadPath,
 } from './constants';
 
 const PLATFORM_RID_MAP: ReadonlyMap<string, string> = new Map([
@@ -167,9 +167,10 @@ async function followRedirect(
 export const downloadBinary = async (
   rid: string,
   destPath: string,
+  version: string,
 ): Promise<Result<void, string>> => {
   const asset = assetName(rid),
-    url = `https://${CLI_DOWNLOAD_HOST}${CLI_DOWNLOAD_PATH_PREFIX}${asset}`,
+    url = `https://${CLI_DOWNLOAD_HOST}${cliDownloadPath(version)}${asset}`,
     dir = path.dirname(destPath);
 
   if (!fs.existsSync(dir)) {
@@ -189,22 +190,27 @@ export interface InstallResult {
   readonly cliPath: string;
 }
 
+export interface InstallCliParams {
+  readonly storageDir: string;
+  readonly platform: string;
+  readonly arch: string;
+  readonly version: string;
+}
+
 export const installCli = async (
-  storageDir: string,
-  platform: string,
-  arch: string,
+  params: InstallCliParams,
 ): Promise<Result<InstallResult, string>> => {
-  const ridResult = platformToRid(platform, arch);
+  const ridResult = platformToRid(params.platform, params.arch);
   if (!ridResult.ok) {
     return err(ridResult.error);
   }
 
-  const destPath = installedCliPath(storageDir, platform),
-    downloadResult = await downloadBinary(ridResult.value, destPath);
+  const destPath = installedCliPath(params.storageDir, params.platform),
+    downloadResult = await downloadBinary(ridResult.value, destPath, params.version);
   if (!downloadResult.ok) {
     return err(downloadResult.error);
   }
 
-  makeExecutable(destPath, platform);
+  makeExecutable(destPath, params.platform);
   return ok({ cliPath: destPath });
 };

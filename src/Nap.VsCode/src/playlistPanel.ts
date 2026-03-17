@@ -15,27 +15,28 @@ import {
 } from './constants';
 import { escapeHtml, buildResultDetailHtml, SHARED_SECTION_STYLES } from './htmlUtils';
 
-const buildStepMetadata = (
-    result: RunResult,
-  ): {
-    readonly icon: string;
-    readonly statusCls: string;
-    readonly fileName: string;
-    readonly statusCode: number | string;
-    readonly duration: string;
-    readonly assertionSummary: string;
-  } => {
+interface StepMetadata {
+  readonly icon: string;
+  readonly statusCls: string;
+  readonly fileName: string;
+  readonly statusCode: number | string;
+  readonly duration: string;
+  readonly assertionSummary: string;
+}
+
+const formatAssertionSummary = (result: RunResult): string => {
     const assertionCount = result.assertions.length,
       passedCount = result.assertions.filter((a) => a.passed).length;
-    return {
-      icon: result.passed ? '&#x2713;' : '&#x2717;',
-      statusCls: result.passed ? 'pass' : 'fail',
-      fileName: path.basename(result.file),
-      statusCode: result.statusCode ?? '',
-      duration: result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : '',
-      assertionSummary: assertionCount > 0 ? `${passedCount}/${assertionCount}` : '',
-    };
+    return assertionCount > 0 ? `${passedCount}/${assertionCount}` : '';
   },
+  buildStepMetadata = (result: RunResult): StepMetadata => ({
+    icon: result.passed ? '&#x2713;' : '&#x2717;',
+    statusCls: result.passed ? 'pass' : 'fail',
+    fileName: path.basename(result.file),
+    statusCode: result.statusCode ?? '',
+    duration: result.duration !== undefined ? `${result.duration.toFixed(0)}ms` : '',
+    assertionSummary: formatAssertionSummary(result),
+  }),
   buildCompletedStepRow = (result: RunResult, index: number): string => {
     const meta = buildStepMetadata(result);
 

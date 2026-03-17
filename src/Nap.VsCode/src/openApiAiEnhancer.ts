@@ -2,8 +2,16 @@
 // AI enrichment for OpenAPI-generated .nap files
 // Pure functions — NO VS Code SDK dependency — fully testable
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { type Result, err, ok } from './types';
-import { NAP_TRIPLE_QUOTE, SECTION_ASSERT, SECTION_REQUEST_BODY, SECTION_STEPS } from './constants';
+import {
+  NAP_EXTENSION,
+  NAP_TRIPLE_QUOTE,
+  SECTION_ASSERT,
+  SECTION_REQUEST_BODY,
+  SECTION_STEPS,
+} from './constants';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -170,30 +178,35 @@ export const enrichAssertions = (napContent: string, newAssertions: readonly str
   return [...before, ...newAssertions, ...after].join('\n');
 };
 
+const findTripleQuoteBounds = (
+  lines: readonly string[],
+  startIdx: number,
+): { readonly start: number; readonly end: number } | undefined => {
+  let startQuote = -1;
+  for (let i = startIdx; i < lines.length; i++) {
+    if ((lines[i] ?? '').trim() === NAP_TRIPLE_QUOTE) {
+      if (startQuote < 0) {
+        startQuote = i;
+      } else {
+        return { start: startQuote, end: i };
+      }
+    }
+  }
+  return undefined;
+};
+
 export const enrichRequestBody = (napContent: string, newBody: string): string => {
   const lines = napContent.split('\n'),
     bodyIdx = lines.indexOf(SECTION_REQUEST_BODY);
   if (bodyIdx < 0) {
     return napContent;
   }
-  // Find the triple-quote delimited body and replace it
-  let startQuote = -1,
-    endQuote = -1;
-  for (let i = bodyIdx + 1; i < lines.length; i++) {
-    if ((lines[i] ?? '').trim() === NAP_TRIPLE_QUOTE) {
-      if (startQuote < 0) {
-        startQuote = i;
-      } else {
-        endQuote = i;
-        break;
-      }
-    }
-  }
-  if (startQuote < 0 || endQuote < 0) {
+  const bounds = findTripleQuoteBounds(lines, bodyIdx + 1);
+  if (bounds === undefined) {
     return napContent;
   }
-  const before = lines.slice(0, startQuote + 1),
-    after = lines.slice(endQuote);
+  const before = lines.slice(0, bounds.start + 1),
+    after = lines.slice(bounds.end);
   return [...before, newBody, ...after].join('\n');
 };
 
@@ -248,3 +261,57 @@ export const applyTestDataEnrichments = (
       content: enrichRequestBody(file.content, match.requestBody),
     };
   });
+
+// ─── File scanning & summary extraction ─────────────────────
+
+const NAME_PREFIX = 'name = ',
+  BODY_PREFIX = 'body.',
+  EXISTS_SUFFIX = ' exists',
+  HTTP_METHOD_PREFIXES = [
+    'GET ',
+    'POST ',
+    'PUT ',
+    'PATCH ',
+    'DELETE ',
+    'HEAD ',
+    'OPTIONS ',
+  ] as const,
+  isRequestLine = (line: string): boolean =>
+    HTTP_METHOD_PREFIXES.some((prefix) => line.startsWith(prefix));
+
+export const extractSummary = (file: GeneratedFile): OperationSummary => {
+  const lines = file.content.split('\n'),
+    nameLine = lines.find((l) => l.startsWith(NAME_PREFIX)),
+    requestLine = lines.find(isRequestLine),
+    name = nameLine?.slice(NAME_PREFIX.length) ?? file.fileName;
+  return {
+    operationId: name,
+    method: requestLine?.split(' ')[0] ?? 'GET',
+    path: requestLine?.split(' ')[1] ?? '',
+    summary: name,
+    responseFields: lines
+      .filter((l) => l.startsWith(BODY_PREFIX) && l.includes(EXISTS_SUFFIX))
+      .map((l) => l.slice(BODY_PREFIX.length, l.indexOf(EXISTS_SUFFIX))),
+    hasRequestBody: file.content.includes(SECTION_REQUEST_BODY),
+  };
+};
+
+const collectNapFiles = (dir: string, baseDir: string, out: GeneratedFile[]): void => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectNapFiles(full, baseDir, out);
+    } else if (entry.name.endsWith(NAP_EXTENSION)) {
+      out.push({
+        fileName: path.relative(baseDir, full),
+        content: fs.readFileSync(full, 'utf-8'),
+      });
+    }
+  }
+};
+
+export const readGeneratedFiles = (outDir: string): readonly GeneratedFile[] => {
+  const files: GeneratedFile[] = [];
+  collectNapFiles(outDir, outDir, files);
+  return files;
+};

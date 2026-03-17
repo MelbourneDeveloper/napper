@@ -51,3 +51,5 @@ src/Nap.Zed/grammars/nap.wasm
 src/Nap.Zed/grammars/napenv.wasm
 
 *.wasm
+
+scripts/logs/

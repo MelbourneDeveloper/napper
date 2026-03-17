@@ -36,7 +36,6 @@ import {
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_INSTALL_MSG,
-  CLI_REQUIRED_VERSION,
   CLI_VERSION_MISMATCH_MSG,
   CMD_COPY_CURL,
   CMD_ENRICH_AI,
@@ -83,6 +82,7 @@ import {
 
 let bundledCliPath: string | undefined,
   envStatusBar: EnvironmentStatusBar,
+  extensionVersion: string,
   explorerProvider: ExplorerAdapter,
   installedPath: string | undefined,
   lastPlaylistReport: (() => void) | undefined,
@@ -117,12 +117,30 @@ const getCliPath = (): string => {
   },
   isVersionMatch = async (candidate: string): Promise<boolean> => {
     const versionResult = await getCliVersion(candidate);
-    if (versionResult.ok && versionResult.value === CLI_REQUIRED_VERSION) {
+    if (versionResult.ok && versionResult.value === extensionVersion) {
       installedPath = candidate;
       return true;
     }
     logger.info(CLI_VERSION_MISMATCH_MSG);
     return false;
+  },
+  performInstall = async (storagePath: string): Promise<void> => {
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: CLI_INSTALL_MSG,
+        cancellable: false,
+      },
+      async () => {
+        const result = await installCli({
+          storageDir: storagePath,
+          platform: process.platform,
+          arch: process.arch,
+          version: extensionVersion,
+        });
+        handleInstallResult(result);
+      },
+    );
   },
   ensureCliInstalled = async (storageUri: vscode.Uri | undefined): Promise<void> => {
     if (storageUri === undefined) {
@@ -133,17 +151,7 @@ const getCliPath = (): string => {
     if (isCliInstalled(candidate) && (await isVersionMatch(candidate))) {
       return;
     }
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: CLI_INSTALL_MSG,
-        cancellable: false,
-      },
-      async () => {
-        const result = await installCli(storagePath, process.platform, process.arch);
-        handleInstallResult(result);
-      },
-    );
+    await performInstall(storagePath);
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   getResponseColumn = (): vscode.ViewColumn => {
@@ -345,6 +353,14 @@ const collectResult = (state: StreamState, result: RunResult): void => {
       }),
     );
   },
+  handleEnrichAi = async (arg?: { readonly filePath?: string }): Promise<void> => {
+    const fp = arg?.filePath;
+    if (fp === undefined) {
+      return;
+    }
+    await runAiEnrichment(path.dirname(fp), logger);
+    explorerProvider.refresh();
+  },
   registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
     context.subscriptions.push(
       vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
@@ -353,17 +369,7 @@ const collectResult = (state: StreamState, result: RunResult): void => {
       vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
         await importOpenApiFromFile(explorerProvider, logger);
       }),
-      vscode.commands.registerCommand(
-        CMD_ENRICH_AI,
-        async (arg?: { readonly filePath?: string }) => {
-          const fp = arg?.filePath;
-          if (fp === undefined) {
-            return;
-          }
-          await runAiEnrichment(path.dirname(fp), logger);
-          explorerProvider.refresh();
-        },
-      ),
+      vscode.commands.registerCommand(CMD_ENRICH_AI, handleEnrichAi),
     );
   },
   initProviders = (): void => {
@@ -393,6 +399,8 @@ const collectResult = (state: StreamState, result: RunResult): void => {
       outputChannel.appendLine(msg);
     });
     logger.info(LOG_MSG_ACTIVATED);
+    extensionVersion = (context.extension.packageJSON as { version: string }).version;
+    logger.info(`Extension version: ${extensionVersion}`);
     bundledCliPath = path.join(
       context.extensionPath,
       CLI_BIN_DIR,

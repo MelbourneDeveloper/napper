@@ -354,6 +354,7 @@ These settings apply across all IDEs where the extension supports configuration.
 - Built in **TypeScript** using the VSCode Extension API.
 - The response panel webview uses a minimal framework (Lit or vanilla TS + CSS) — no heavy UI library.
 - The extension shells out to the **Nap CLI** (`nap run --output json`) for all HTTP execution.
+- **CLI acquisition:** The VSIX installs the CLI via `dotnet tool install -g napper --version X.X.X` on activation, where `X.X.X` is the extension's own `package.json` version. This avoids raw binary downloads (which trigger Windows SmartScreen warnings on unsigned binaries) and leverages NuGet as a trusted distribution channel. If the CLI is already on PATH at the correct version, installation is skipped.
 - File watching via `vscode.workspace.createFileSystemWatcher` keeps the panel tree up to date without polling.
 - The `.nap` language grammar (TextMate `.tmLanguage.json`) is generated from the ANTLR grammar to avoid drift.
 - Published to the **VS Code Marketplace** and the **Open VSX Registry** (for VSCodium / Cursor / Windsurf users).

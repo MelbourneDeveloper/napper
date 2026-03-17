@@ -144,8 +144,9 @@ export const CLI_REPO_NAME = 'napper';
 export const CLI_BINARY_NAME = 'napper';
 export const CLI_BIN_DIR = 'bin';
 export const CLI_DOWNLOAD_HOST = 'github.com';
-export const CLI_REQUIRED_VERSION = '0.1.0';
-export const CLI_DOWNLOAD_PATH_PREFIX = `/MelbourneDeveloper/napper/releases/download/v${CLI_REQUIRED_VERSION}/`;
+export const CLI_DOWNLOAD_PATH_BASE = '/MelbourneDeveloper/napper/releases/download/v';
+export const cliDownloadPath = (version: string): string =>
+  `${CLI_DOWNLOAD_PATH_BASE}${version}/`;
 export const CLI_ASSET_PREFIX = 'napper-';
 export const CLI_WIN_EXE_SUFFIX = '.exe';
 export const CLI_MAX_REDIRECTS = 5;

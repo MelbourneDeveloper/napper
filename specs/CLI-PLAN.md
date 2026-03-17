@@ -77,9 +77,10 @@ nap/
 
 ### Phase 4 — Polish & Distribution
 
-- Standalone native binary (NativeAOT or single-file publish)
-- NuGet package for `dotnet tool install`
+- **NuGet package for `dotnet tool install` (PRIMARY channel)** — set `<PackAsTool>true</PackAsTool>` and `<ToolCommandName>napper</ToolCommandName>` in `Nap.Cli.fsproj`, publish to nuget.org. This is the primary distribution method — no code signing needed, no SmartScreen warnings on Windows, immediate availability. The VSIX extension auto-installs via `dotnet tool install -g napper --version X.X.X`.
+- Standalone native binary (NativeAOT or single-file publish) — secondary channel for users without .NET SDK
 - Homebrew formula
+- Winget / Chocolatey / Scoop packages (future)
 - `nap new` scaffolding commands
 - Language-extensible script runner plugin model
 
@@ -119,8 +120,10 @@ nap/
 - [ ] `ctx.Set` for cross-step variable passing
 
 ### Phase 4 — Polish & Distribution
-- [ ] Standalone native binary (NativeAOT or single-file publish)
-- [ ] NuGet package for `dotnet tool install`
+- [ ] `dotnet tool install` — set `PackAsTool` in fsproj, publish to nuget.org (PRIMARY)
+- [ ] VSIX auto-installs CLI via `dotnet tool install -g napper --version X.X.X`
+- [ ] Standalone native binary (NativeAOT or single-file publish) — secondary
 - [ ] Homebrew formula
+- [ ] Winget / Chocolatey / Scoop packages
 - [ ] `nap new` scaffolding commands
 - [ ] Language-extensible script runner plugin model
