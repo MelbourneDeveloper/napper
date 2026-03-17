@@ -9,6 +9,7 @@ You are working with many other agents. Make sure there is effective cooperation
 ## Coding Rules
 
 - **Zero duplication - TOP PRIORITY** - Always search for existing code before adding. Move; don't copy files. Add assertions to tests rather than duplicating tests. AIM FOR LESS CODE!
+- **Maximum code reuse** - Move code to shared libraries and REUSE it
 - **No string literals** - Named constants only, and it ONE location
 - DO NOT USE GIT
 - **Functional style** - Prefer pure functions, avoid classes where possible
@@ -42,6 +43,7 @@ You are working with many other agents. Make sure there is effective cooperation
 
 - **⚠️ MAXIMUM CODE SHARING — NON-NEGOTIABLE** - All F# projects (Napper.Cli, Napper.Lsp, future consumers) MUST share logic through `Napper.Core`. If code could live in `Napper.Core`, it MUST live in `Napper.Core`. NEVER duplicate parsing, types, environment resolution, logging, or any domain logic across projects. Before writing ANY new module in a consumer project, check if it belongs in `Napper.Core` first.
 - **Idiomatic F#**
+- **Move content out of the fsproj files and into Directory.Build.props**
 - **Standard F# result types** - Use the standard F# built-in result types
 - **Turn on F# analyzers** - Strict rules to enforce F# best practice
 - **Prefer moving config from fsproj -> buildprops** avoid project config across projects
