@@ -138,35 +138,21 @@ export const NAP_NAME_KEY_SUFFIX = '"';
 // Property keys
 export const PROP_FILE_PATH = 'filePath';
 
-// CLI installer
-export const CLI_REPO_OWNER = 'MelbourneDeveloper';
-export const CLI_REPO_NAME = 'napper';
+// CLI installer (dotnet tool)
 export const CLI_BINARY_NAME = 'napper';
 export const CLI_BIN_DIR = 'bin';
-export const CLI_DOWNLOAD_HOST = 'github.com';
-export const CLI_DOWNLOAD_PATH_BASE = '/MelbourneDeveloper/napper/releases/download/v';
-export const cliDownloadPath = (version: string): string =>
-  `${CLI_DOWNLOAD_PATH_BASE}${version}/`;
-export const CLI_ASSET_PREFIX = 'napper-';
-export const CLI_WIN_EXE_SUFFIX = '.exe';
-export const CLI_MAX_REDIRECTS = 5;
-export const CLI_PLATFORM_DARWIN = 'darwin';
-export const CLI_PLATFORM_LINUX = 'linux';
-export const CLI_PLATFORM_WIN32 = 'win32';
-export const CLI_ARCH_ARM64 = 'arm64';
-export const CLI_ARCH_X64 = 'x64';
-export const CLI_RID_OSX_ARM64 = 'osx-arm64';
-export const CLI_RID_OSX_X64 = 'osx-x64';
-export const CLI_RID_LINUX_X64 = 'linux-x64';
-export const CLI_RID_WIN_X64 = 'win-x64';
-export const CLI_INSTALL_MSG = 'Installing Napper CLI...';
+export const CLI_DOTNET_CMD = 'dotnet';
+export const CLI_TOOL_ARG = 'tool';
+export const CLI_TOOL_INSTALL_ARG = 'install';
+export const CLI_TOOL_UPDATE_ARG = 'update';
+export const CLI_TOOL_LIST_ARG = 'list';
+export const CLI_TOOL_GLOBAL_FLAG = '-g';
+export const CLI_TOOL_VERSION_FLAG = '--version';
+export const CLI_DOTNET_TOOL_INSTALL_TIMEOUT = 60000;
+export const CLI_INSTALL_MSG = 'Installing Napper CLI via dotnet tool...';
 export const CLI_INSTALL_COMPLETE_MSG = 'Napper CLI installed successfully';
 export const CLI_INSTALL_FAILED_MSG = 'Failed to install Napper CLI: ';
-export const CLI_UNSUPPORTED_PLATFORM_MSG = 'Unsupported platform: ';
-export const CLI_DOWNLOAD_ERROR_PREFIX = 'Download failed: HTTP ';
-export const CLI_REDIRECT_ERROR = 'Redirect with no location header';
-export const CLI_TOO_MANY_REDIRECTS = 'Too many redirects';
-export const CLI_FILE_MODE_EXECUTABLE = 0o755;
+export const CLI_INSTALL_ERROR_PREFIX = 'dotnet tool install failed: ';
 export const CLI_VERSION_FLAG = '--version';
 export const CLI_VERSION_CHECK_TIMEOUT = 5000;
 export const CLI_VERSION_CHECK_ERROR = 'Failed to check CLI version: ';

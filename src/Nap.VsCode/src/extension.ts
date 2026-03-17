@@ -18,9 +18,6 @@ import { type Logger, createLogger } from './logger';
 import {
   getCliVersion,
   installCli,
-  installedCliPath,
-  isCliInstalled,
-  localBinaryName,
 } from './cliInstaller';
 import { newPlaylist, newRequest } from './fileCreation';
 import { copyAsCurl } from './curlCopy';
@@ -29,7 +26,7 @@ import { convertHttpFile, convertHttpDirectory } from './httpConvert';
 import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
 import {
-  CLI_BIN_DIR,
+  CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
   CMD_CONVERT_HTTP_DIR,
   CMD_CONVERT_HTTP_FILE,
@@ -80,11 +77,9 @@ import {
   VIEW_EXPLORER,
 } from './constants';
 
-let bundledCliPath: string | undefined,
-  envStatusBar: EnvironmentStatusBar,
+let envStatusBar: EnvironmentStatusBar,
   extensionVersion: string,
   explorerProvider: ExplorerAdapter,
-  installedPath: string | undefined,
   lastPlaylistReport: (() => void) | undefined,
   lastResult: RunResult | undefined,
   logger: Logger,
@@ -97,10 +92,7 @@ const getCliPath = (): string => {
     if (configured !== DEFAULT_CLI_PATH) {
       return configured;
     }
-    if (bundledCliPath !== undefined && isCliInstalled(bundledCliPath)) {
-      return bundledCliPath;
-    }
-    return installedPath ?? DEFAULT_CLI_PATH;
+    return CLI_BINARY_NAME;
   },
   handleInstallResult = (
     result:
@@ -108,23 +100,21 @@ const getCliPath = (): string => {
       | { readonly ok: false; readonly error: string },
   ): void => {
     if (result.ok) {
-      installedPath = result.value.cliPath;
       logger.info(CLI_INSTALL_COMPLETE_MSG);
       return;
     }
     logger.error(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
     void vscode.window.showErrorMessage(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
   },
-  isVersionMatch = async (candidate: string): Promise<boolean> => {
-    const versionResult = await getCliVersion(candidate);
+  isVersionMatch = async (): Promise<boolean> => {
+    const versionResult = await getCliVersion(CLI_BINARY_NAME);
     if (versionResult.ok && versionResult.value === extensionVersion) {
-      installedPath = candidate;
       return true;
     }
     logger.info(CLI_VERSION_MISMATCH_MSG);
     return false;
   },
-  performInstall = async (storagePath: string): Promise<void> => {
+  performInstall = async (): Promise<void> => {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -132,26 +122,16 @@ const getCliPath = (): string => {
         cancellable: false,
       },
       async () => {
-        const result = await installCli({
-          storageDir: storagePath,
-          platform: process.platform,
-          arch: process.arch,
-          version: extensionVersion,
-        });
+        const result = await installCli({ version: extensionVersion });
         handleInstallResult(result);
       },
     );
   },
-  ensureCliInstalled = async (storageUri: vscode.Uri | undefined): Promise<void> => {
-    if (storageUri === undefined) {
+  ensureCliInstalled = async (): Promise<void> => {
+    if (await isVersionMatch()) {
       return;
     }
-    const storagePath = storageUri.fsPath,
-      candidate = installedCliPath(storagePath, process.platform);
-    if (isCliInstalled(candidate) && (await isVersionMatch(candidate))) {
-      return;
-    }
-    await performInstall(storagePath);
+    await performInstall();
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   getResponseColumn = (): vscode.ViewColumn => {
@@ -401,12 +381,7 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     logger.info(LOG_MSG_ACTIVATED);
     extensionVersion = (context.extension.packageJSON as { version: string }).version;
     logger.info(`Extension version: ${extensionVersion}`);
-    bundledCliPath = path.join(
-      context.extensionPath,
-      CLI_BIN_DIR,
-      localBinaryName(process.platform),
-    );
-    ensureCliInstalled(context.globalStorageUri).catch(() => undefined);
+    ensureCliInstalled().catch(() => undefined);
   };
 
 export interface ExtensionApi {
