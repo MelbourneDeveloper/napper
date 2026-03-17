@@ -8,6 +8,7 @@ You are working with many other agents. Make sure there is effective cooperation
 ## Coding Rules
 
 - **Zero duplication - TOP PRIORITY** - Always search for existing code before adding. Move; don't copy files. Add assertions to tests rather than duplicating tests. AIM FOR LESS CODE!
+- **Maximum code reuse** - Move code to shared libraries and REUSE it
 - **No string literals** - Named constants only, and it ONE location
 - DO NOT USE GIT
 - **Functional style** - Prefer pure functions, avoid classes where possible
@@ -31,6 +32,7 @@ You are working with many other agents. Make sure there is effective cooperation
 
 ### F# 
 - **Idiomatic F#**
+- **Move content out of the fsproj files and into Directory.Build.props**
 - **Standard F# result types** - Use the standard F# built-in result types
 - **Turn on F# analyzers** - Strict rules to enforce F# best practice
 
