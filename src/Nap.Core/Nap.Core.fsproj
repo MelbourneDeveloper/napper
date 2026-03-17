@@ -13,11 +13,18 @@
     <Compile Include="Runner.fs" />
     <Compile Include="Output.fs" />
     <Compile Include="OpenApiGenerator.fs" />
+    <Compile Include="HttpToNapConverter.fs" />
+    <Compile Include="CurlGenerator.fs" />
+    <Compile Include="SectionScanner.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FParsec" Version="1.1.1" />
     <PackageReference Include="Microsoft.OpenApi" Version="3.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotHttp\DotHttp.fsproj" />
   </ItemGroup>
 
 </Project>

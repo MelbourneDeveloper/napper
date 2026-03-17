@@ -1,3 +1,4 @@
+// Specs: output-pretty, output-junit, output-json, output-ndjson
 module Nap.Core.Output
 
 open System
@@ -17,8 +18,7 @@ let formatPretty (result: NapResult) : string =
     appendLine $"\x1b[{statusColor}m[{status}]\x1b[0m {fileName}"
 
     match result.Error with
-    | Some err ->
-        appendLine $"  Error: {err}"
+    | Some err -> appendLine $"  Error: {err}"
     | None -> ()
 
     match result.Response with
@@ -27,12 +27,15 @@ let formatPretty (result: NapResult) : string =
             if resp.StatusCode >= 200 && resp.StatusCode < 300 then "32"
             elif resp.StatusCode >= 400 then "31"
             else "33"
-        appendLine $"  \x1b[{statusColor}m{resp.StatusCode}\x1b[0m {result.Request.Method} {result.Request.Url}  ({resp.Duration.TotalMilliseconds:F0}ms)"
+
+        appendLine
+            $"  \x1b[{statusColor}m{resp.StatusCode}\x1b[0m {result.Request.Method} {result.Request.Url}  ({resp.Duration.TotalMilliseconds:F0}ms)"
 
         // Assertions
         for a in result.Assertions do
             let icon = if a.Passed then "\x1b[32m✓\x1b[0m" else "\x1b[31m✗\x1b[0m"
             let target = a.Assertion.Target
+
             let opStr =
                 match a.Assertion.Op with
                 | Equals v -> $"= {v}"
@@ -41,6 +44,7 @@ let formatPretty (result: NapResult) : string =
                 | Matches v -> $"matches \"{v}\""
                 | LessThan v -> $"< {v}"
                 | GreaterThan v -> $"> {v}"
+
             if a.Passed then
                 appendLine $"  {icon} {target} {opStr}"
             else
@@ -70,19 +74,24 @@ let formatJUnit (results: NapResult list) : string =
 
     let totalTests = results.Length
     let failures = results |> List.filter (fun r -> not r.Passed) |> List.length
+
     let totalTime =
         results
         |> List.choose (fun r -> r.Response |> Option.map (fun resp -> resp.Duration.TotalSeconds))
         |> List.sum
 
-    sb.AppendLine($"<testsuites tests=\"{totalTests}\" failures=\"{failures}\" time=\"{totalTime:F3}\">") |> ignore
-    sb.AppendLine($"  <testsuite name=\"nap\" tests=\"{totalTests}\" failures=\"{failures}\" time=\"{totalTime:F3}\">") |> ignore
+    sb.AppendLine($"<testsuites tests=\"{totalTests}\" failures=\"{failures}\" time=\"{totalTime:F3}\">")
+    |> ignore
+
+    sb.AppendLine($"  <testsuite name=\"nap\" tests=\"{totalTests}\" failures=\"{failures}\" time=\"{totalTime:F3}\">")
+    |> ignore
 
     for result in results do
         let name =
             result.File
             |> System.IO.Path.GetFileNameWithoutExtension
             |> System.Security.SecurityElement.Escape
+
         let time =
             result.Response
             |> Option.map (fun r -> r.Duration.TotalSeconds)
@@ -92,16 +101,17 @@ let formatJUnit (results: NapResult list) : string =
             sb.AppendLine($"    <testcase name=\"{name}\" time=\"{time:F3}\" />") |> ignore
         else
             sb.AppendLine($"    <testcase name=\"{name}\" time=\"{time:F3}\">") |> ignore
+
             let failureMsg =
                 match result.Error with
                 | Some err -> err
                 | None ->
                     result.Assertions
                     |> List.filter (fun a -> not a.Passed)
-                    |> List.map (fun a ->
-                        $"{a.Assertion.Target}: expected {a.Expected}, got {a.Actual}")
+                    |> List.map (fun a -> $"{a.Assertion.Target}: expected {a.Expected}, got {a.Actual}")
                     |> String.concat "; "
                 |> System.Security.SecurityElement.Escape
+
             sb.AppendLine($"      <failure message=\"{failureMsg}\" />") |> ignore
             sb.AppendLine("    </testcase>") |> ignore
 
@@ -125,8 +135,10 @@ let formatJson (result: NapResult) : string =
     writer.WriteString("requestMethod", string result.Request.Method)
     writer.WriteString("requestUrl", result.Request.Url)
     writer.WriteStartObject("requestHeaders")
+
     for kv in result.Request.Headers do
         writer.WriteString(kv.Key, kv.Value)
+
     writer.WriteEndObject()
 
     match result.Request.Body with
@@ -142,12 +154,15 @@ let formatJson (result: NapResult) : string =
         writer.WriteNumber("bodyLength", resp.Body.Length)
         writer.WriteString("body", resp.Body)
         writer.WriteStartObject("headers")
+
         for kv in resp.Headers do
             writer.WriteString(kv.Key, kv.Value)
+
         writer.WriteEndObject()
     | None -> ()
 
     writer.WriteStartArray("assertions")
+
     for a in result.Assertions do
         writer.WriteStartObject()
         writer.WriteString("target", a.Assertion.Target)
@@ -155,12 +170,15 @@ let formatJson (result: NapResult) : string =
         writer.WriteString("expected", a.Expected)
         writer.WriteString("actual", a.Actual)
         writer.WriteEndObject()
+
     writer.WriteEndArray()
 
     if result.Log.Length > 0 then
         writer.WriteStartArray("log")
+
         for line in result.Log do
             writer.WriteStringValue(line)
+
         writer.WriteEndArray()
 
     writer.WriteEndObject()
@@ -172,9 +190,11 @@ let formatJsonArray (results: NapResult list) : string =
     use stream = new System.IO.MemoryStream()
     use writer = new System.Text.Json.Utf8JsonWriter(stream)
     writer.WriteStartArray()
+
     for result in results do
         let json = formatJson result
         writer.WriteRawValue(json)
+
     writer.WriteEndArray()
     writer.Flush()
     Encoding.UTF8.GetString(stream.ToArray())

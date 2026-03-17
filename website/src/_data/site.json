@@ -9,7 +9,9 @@
   "stylesheet": "/assets/css/styles.css",
   "github": "https://github.com/MelbourneDeveloper/napper",
   "ogImage": "/assets/images/logo.png",
-  "keywords": "API testing, HTTP client, VS Code extension, F# scripting, C# scripting, Postman alternative, Bruno alternative, CLI testing, REST API, test automation",
+  "ogImageWidth": "800",
+  "ogImageHeight": "800",
+  "keywords": "API testing, HTTP client, VS Code extension, F# scripting, C# scripting, Postman alternative, Bruno alternative, CLI testing, REST API, test automation, http file converter, dothttp migration",
   "company": {
     "name": "Nimblesite",
     "url": "https://nimblesite.co"

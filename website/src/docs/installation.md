@@ -29,7 +29,7 @@ The extension includes:
 - Environment switching via status bar
 - CodeLens actions (Run, Copy as curl)
 
-## CLI Binary
+## CLI Binary (spec: cli-run)
 
 For CI/CD pipelines or terminal-only workflows, install the standalone CLI.
 
@@ -47,19 +47,30 @@ Download the latest binary for your platform from [GitHub Releases](https://gith
 ### macOS / Linux
 
 ```bash
-# Download (replace with your platform)
-curl -L -o napper https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64
-
-# Make executable
-chmod +x napper
-
-# Move to PATH
-mv napper ~/.local/bin/
+curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash
 ```
+
+Or install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.2.0
+```
+
+The installer automatically detects your platform, downloads the binary, and verifies the SHA256 checksum.
 
 ### Windows
 
-Download `napper-win-x64.exe` from releases and add it to your PATH.
+```powershell
+irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.ps1 | iex
+```
+
+Or install a specific version:
+
+```powershell
+.\scripts\install.ps1 -Version 0.2.0
+```
+
+The installer downloads the binary, verifies the SHA256 checksum, and adds it to your PATH.
 
 ### Verify installation
 
@@ -67,7 +78,7 @@ Download `napper-win-x64.exe` from releases and add it to your PATH.
 napper --help
 ```
 
-## Requirements
+## Requirements (spec: script-fsx, script-csx)
 
 - **CLI**: Self-contained binary, no runtime dependencies
 - **VS Code Extension**: VS Code 1.100.0 or later

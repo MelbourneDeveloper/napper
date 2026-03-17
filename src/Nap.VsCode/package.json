@@ -2,7 +2,7 @@
   "name": "napper",
   "displayName": "Napper",
   "description": "CLI-first, test-oriented HTTP API testing tool. Send requests, run assertions, manage environments.",
-  "version": "0.9.0",
+  "version": "0.6.0",
   "publisher": "nimblesite",
   "license": "MIT",
   "repository": {
@@ -34,7 +34,8 @@
   "activationEvents": [
     "workspaceContains:**/*.nap",
     "workspaceContains:**/*.naplist",
-    "workspaceContains:**/*.napenv"
+    "workspaceContains:**/*.napenv",
+    "workspaceContains:**/*.http"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -189,6 +190,15 @@
         "command": "napper.enrichWithAi",
         "title": "Enrich with AI",
         "icon": "$(sparkle)"
+      },
+      {
+        "command": "napper.convertHttpFile",
+        "title": "Napper: Convert .http to .nap",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "napper.convertHttpDirectory",
+        "title": "Napper: Convert .http Directory to .nap"
       }
     ],
     "menus": {
@@ -270,6 +280,13 @@
           "when": "view == napperExplorer && viewItem =~ /scriptFile|playlist/",
           "group": "9_delete"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "napper.convertHttpFile",
+          "when": "resourceExtname == .http || resourceExtname == .rest",
+          "group": "navigation"
+        }
       ]
     },
     "configuration": {
@@ -317,6 +334,8 @@
     "test": "vscode-test",
     "test:unit": "npm run compile:tests && c8 mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
     "lint": "eslint src",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "package": "vsce package"
   },
   "devDependencies": {
@@ -331,6 +350,7 @@
     "eslint": "^10.0.2",
     "glob": "^13.0.6",
     "mocha": "^11.7.5",
+    "prettier": "^3.8.1",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",

@@ -1,0 +1,51 @@
+# Sample HTTP requests using vscode rest-client extension
+# Lines with ### serves as a marker for the extension to insert
+# links to send requests
+
+### A simple GET Request
+# Get list of sites supported by stackexchange APIs
+GET https://api.stackexchange.com/2.2/sites
+
+### Get list of tags by site
+GET https://api.stackexchange.com/2.2/tags?site=stackoverflow
+
+### Get details of a particular tag
+# Query parameters specified one per line.
+GET https://api.stackexchange.com/2.2/tags/vscode-extensions/info
+    ?site=stackoverflow
+
+### Name the request (using @name) and refer to it in a different request
+# @name tagsearch
+GET https://api.stackexchange.com/2.2/tags?site=askubuntu
+
+### Access values from a request or response in another request
+# The general syntax is
+# <request-name>.<request|response>.<body|headers>.<path>
+# For JSON response, JSONPath syntax (https://goessner.net/articles/JsonPath/)
+# is used.
+GET https://api.stackexchange.com/2.2/tags/{{tagsearch.response.body.$.items[0].name}}/info?site=askubuntu
+#Authorization: Basic base64-user-password
+
+### Supports different authentication options
+# Body can be specified separately from the request
+POST  https://example.com/posts
+Authorization: Basic username:password
+
+{
+    "id": 1,
+    "title": "My awesome post",
+    "timestamp": 1504932105
+}
+
+
+### Another example showing POST request, this
+# time with a file level variable
+@test_server = dummy.restapiexample.com
+POST http://{{test_server}}/api/v1/create
+Content-Type: application/json
+
+{
+    "name":"Joe",
+    "salary":"123456789",
+    "age":"23",
+}

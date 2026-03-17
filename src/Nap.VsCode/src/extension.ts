@@ -1,38 +1,38 @@
+// Specs: vscode-impl, vscode-commands
 // Napper VSCode Extension — main entry point
 // Registers all providers, commands, and file watchers
 
-import * as vscode from "vscode";
-import * as path from "path";
-import * as fs from "fs";
-import { ExplorerAdapter } from "./explorerAdapter";
-import { CodeLensProvider } from "./codeLensProvider";
-import { EnvironmentStatusBar } from "./environmentAdapter";
-import { ResponsePanel } from "./responsePanel";
-import { PlaylistPanel } from "./playlistPanel";
-import { runCli, streamCli } from "./cliRunner";
-import type { RunResult } from "./types";
-import { parsePlaylistStepPaths } from "./explorerProvider";
-import { generatePlaylistReport } from "./reportGenerator";
-import { type Logger, createLogger } from "./logger";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import { ExplorerAdapter } from './explorerAdapter';
+import { CodeLensProvider } from './codeLensProvider';
+import { EnvironmentStatusBar } from './environmentAdapter';
+import { ResponsePanel } from './responsePanel';
+import { PlaylistPanel } from './playlistPanel';
+import { runCli, streamCli } from './cliRunner';
+import type { RunResult } from './types';
+import { parsePlaylistStepPaths } from './explorerProvider';
+import { generatePlaylistReport } from './reportGenerator';
+import { type Logger, createLogger } from './logger';
 import {
   getCliVersion,
   installCli,
-  installedCliPath,
-  isCliInstalled,
-  localBinaryName,
-} from "./cliInstaller";
-import { newPlaylist, newRequest } from "./fileCreation";
-import { copyAsCurl } from "./curlCopy";
-import { importOpenApiFromFile, importOpenApiFromUrl, runAiEnrichment } from "./openApiImport";
-import { registerContextMenuCommands } from "./contextMenuCommands";
-import { registerAutoRun, registerWatchers } from "./watchers";
+} from './cliInstaller';
+import { newPlaylist, newRequest } from './fileCreation';
+import { copyAsCurl } from './curlCopy';
+import { importOpenApiFromFile, importOpenApiFromUrl, runAiEnrichment } from './openApiImport';
+import { convertHttpFile, convertHttpDirectory } from './httpConvert';
+import { registerContextMenuCommands } from './contextMenuCommands';
+import { registerAutoRun, registerWatchers } from './watchers';
 import {
-  CLI_BIN_DIR,
+  CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
+  CMD_CONVERT_HTTP_DIR,
+  CMD_CONVERT_HTTP_FILE,
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_INSTALL_MSG,
-  CLI_REQUIRED_VERSION,
   CLI_VERSION_MISMATCH_MSG,
   CMD_COPY_CURL,
   CMD_ENRICH_AI,
@@ -50,8 +50,10 @@ import {
   CONFIG_SPLIT_LAYOUT,
   DEFAULT_CLI_PATH,
   ENCODING_UTF8,
+  HTTP_FILE_EXTENSION,
   LANG_NAP,
   LANG_NAPLIST,
+  REST_FILE_EXTENSION,
   LAYOUT_BELOW,
   LAYOUT_BESIDE,
   LOG_CHANNEL_NAME,
@@ -73,135 +75,113 @@ import {
   STATUS_RUNNING_ICON,
   STATUS_RUNNING_SUFFIX,
   VIEW_EXPLORER,
-} from "./constants";
+} from './constants';
 
-let bundledCliPath: string | undefined,
- envStatusBar: EnvironmentStatusBar,
- explorerProvider: ExplorerAdapter,
- installedPath: string | undefined,
- lastPlaylistReport: (() => void) | undefined,
- lastResult: RunResult | undefined,
- logger: Logger,
-
- playlistPanel: PlaylistPanel,
- responsePanel: ResponsePanel;
+let envStatusBar: EnvironmentStatusBar,
+  extensionVersion: string,
+  explorerProvider: ExplorerAdapter,
+  lastPlaylistReport: (() => void) | undefined,
+  lastResult: RunResult | undefined,
+  logger: Logger,
+  playlistPanel: PlaylistPanel,
+  responsePanel: ResponsePanel;
 
 const getCliPath = (): string => {
-  const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-   configured = config.get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
-  if (configured !== DEFAULT_CLI_PATH) { return configured; }
-  if (bundledCliPath !== undefined && isCliInstalled(bundledCliPath)) {
-    return bundledCliPath;
-  }
-  return installedPath ?? DEFAULT_CLI_PATH;
-},
-
- handleInstallResult = (
-  result: { readonly ok: true; readonly value: { readonly cliPath: string } }
-    | { readonly ok: false; readonly error: string }
-): void => {
-  if (result.ok) {
-    installedPath = result.value.cliPath;
-    logger.info(CLI_INSTALL_COMPLETE_MSG);
-    return;
-  }
-  logger.error(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
-  void vscode.window.showErrorMessage(
-    `${CLI_INSTALL_FAILED_MSG}${result.error}`
-  );
-},
-
- isVersionMatch = async (candidate: string): Promise<boolean> => {
-  const versionResult = await getCliVersion(candidate);
-  if (versionResult.ok && versionResult.value === CLI_REQUIRED_VERSION) {
-    installedPath = candidate;
-    return true;
-  }
-  logger.info(CLI_VERSION_MISMATCH_MSG);
-  return false;
-},
-
- ensureCliInstalled = async (
-  storageUri: vscode.Uri | undefined
-): Promise<void> => {
-  if (storageUri === undefined) { return; }
-  const storagePath = storageUri.fsPath,
-   candidate = installedCliPath(storagePath, process.platform);
-  if (isCliInstalled(candidate) && await isVersionMatch(candidate)) {
-    return;
-  }
-  await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },
-    async () => {
-      const result = await installCli(storagePath, process.platform, process.arch);
-      handleInstallResult(result);
+    const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
+      configured = config.get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
+    if (configured !== DEFAULT_CLI_PATH) {
+      return configured;
     }
-  );
-},
-
- getWorkspacePath = (): string | undefined =>
-  vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-
- getResponseColumn = (): vscode.ViewColumn => {
-  const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-   layout = config.get<string>(CONFIG_SPLIT_LAYOUT, LAYOUT_BESIDE);
-  return layout === LAYOUT_BELOW
-    ? vscode.ViewColumn.Active
-    : vscode.ViewColumn.Beside;
-},
-
- resolveFileUri = (
-  arg?: vscode.Uri | { readonly filePath: string }
-): vscode.Uri | undefined => {
-  if (arg === undefined) { return vscode.window.activeTextEditor?.document.uri; }
-  if (arg instanceof vscode.Uri) { return arg; }
-  if (PROP_FILE_PATH in arg) { return vscode.Uri.file(arg.filePath); }
-  return undefined;
-},
-
- makeRunningStatus = (fsPath: string): vscode.Disposable =>
-  vscode.window.setStatusBarMessage(
-    `${STATUS_RUNNING_ICON}${path.basename(fsPath)}${STATUS_RUNNING_SUFFIX}`
-  ),
-
- handleStreamResult = (result: RunResult, index: number): void => {
-  logger.debug(`${LOG_MSG_STREAM_RESULT} ${result.file}`);
-  explorerProvider.updateResult(result.file, result);
-  lastResult = result;
-  playlistPanel.addResult(index, result);
-},
-
- savePlaylistReport = (
-  playlistFile: string,
-  results: readonly RunResult[]
-): void => {
-  const dir = path.dirname(playlistFile),
-   baseName = path.basename(playlistFile, path.extname(playlistFile)),
-   reportPath = path.join(
-    dir,
-    `${baseName}${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`
-  ),
-   html = generatePlaylistReport(baseName, results);
-  fs.writeFileSync(reportPath, html, ENCODING_UTF8);
-  void vscode.env.openExternal(vscode.Uri.file(reportPath));
-  void vscode.window.showInformationMessage(
-    `${REPORT_SAVED_MSG}${path.basename(reportPath)}`
-  );
-},
-
- currentEnvOrUndefined = (): string | undefined => {
-  const env = envStatusBar.currentEnv;
-  return env !== "" ? env : undefined;
-},
-
- preparePlaylistRun = (fileUri: vscode.Uri): void => {
-  logger.info(`${LOG_MSG_RUN_PLAYLIST} ${fileUri.fsPath}`);
-  explorerProvider.clearResults();
-  const content = fs.readFileSync(fileUri.fsPath, ENCODING_UTF8),
-   stepPaths = parsePlaylistStepPaths(content),
-   stepFileNames = stepPaths.map((s) => path.basename(s));
-  playlistPanel.showRunning(fileUri.fsPath, stepFileNames, getResponseColumn());
-};
+    return CLI_BINARY_NAME;
+  },
+  handleInstallResult = (
+    result:
+      | { readonly ok: true; readonly value: { readonly cliPath: string } }
+      | { readonly ok: false; readonly error: string },
+  ): void => {
+    if (result.ok) {
+      logger.info(CLI_INSTALL_COMPLETE_MSG);
+      return;
+    }
+    logger.error(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
+    void vscode.window.showErrorMessage(`${CLI_INSTALL_FAILED_MSG}${result.error}`);
+  },
+  isVersionMatch = async (): Promise<boolean> => {
+    const versionResult = await getCliVersion(CLI_BINARY_NAME);
+    if (versionResult.ok && versionResult.value === extensionVersion) {
+      return true;
+    }
+    logger.info(CLI_VERSION_MISMATCH_MSG);
+    return false;
+  },
+  performInstall = async (): Promise<void> => {
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: CLI_INSTALL_MSG,
+        cancellable: false,
+      },
+      async () => {
+        const result = await installCli({ version: extensionVersion });
+        handleInstallResult(result);
+      },
+    );
+  },
+  ensureCliInstalled = async (): Promise<void> => {
+    if (await isVersionMatch()) {
+      return;
+    }
+    await performInstall();
+  },
+  getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+  getResponseColumn = (): vscode.ViewColumn => {
+    const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
+      layout = config.get<string>(CONFIG_SPLIT_LAYOUT, LAYOUT_BESIDE);
+    return layout === LAYOUT_BELOW ? vscode.ViewColumn.Active : vscode.ViewColumn.Beside;
+  },
+  resolveFileUri = (arg?: vscode.Uri | { readonly filePath: string }): vscode.Uri | undefined => {
+    if (arg === undefined) {
+      return vscode.window.activeTextEditor?.document.uri;
+    }
+    if (arg instanceof vscode.Uri) {
+      return arg;
+    }
+    if (PROP_FILE_PATH in arg) {
+      return vscode.Uri.file(arg.filePath);
+    }
+    return undefined;
+  },
+  makeRunningStatus = (fsPath: string): vscode.Disposable =>
+    vscode.window.setStatusBarMessage(
+      `${STATUS_RUNNING_ICON}${path.basename(fsPath)}${STATUS_RUNNING_SUFFIX}`,
+    ),
+  handleStreamResult = (result: RunResult, index: number): void => {
+    logger.debug(`${LOG_MSG_STREAM_RESULT} ${result.file}`);
+    explorerProvider.updateResult(result.file, result);
+    lastResult = result;
+    playlistPanel.addResult(index, result);
+  },
+  savePlaylistReport = (playlistFile: string, results: readonly RunResult[]): void => {
+    const dir = path.dirname(playlistFile),
+      baseName = path.basename(playlistFile, path.extname(playlistFile)),
+      reportPath = path.join(dir, `${baseName}${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`),
+      html = generatePlaylistReport(baseName, results);
+    fs.writeFileSync(reportPath, html, ENCODING_UTF8);
+    void vscode.env.openExternal(vscode.Uri.file(reportPath));
+    void vscode.window.showInformationMessage(`${REPORT_SAVED_MSG}${path.basename(reportPath)}`);
+  },
+  currentEnvOrUndefined = (): string | undefined => {
+    const env = envStatusBar.currentEnv;
+    return env !== '' ? env : undefined;
+  },
+  preparePlaylistRun = (fileUri: vscode.Uri): void => {
+    logger.info(`${LOG_MSG_RUN_PLAYLIST} ${fileUri.fsPath}`);
+    explorerProvider.clearResults();
+    const content = fs.readFileSync(fileUri.fsPath, ENCODING_UTF8),
+      stepPaths = parsePlaylistStepPaths(content),
+      stepFileNames = stepPaths.map((s) => path.basename(s));
+    playlistPanel.showRunning(fileUri.fsPath, stepFileNames, getResponseColumn());
+  };
 
 interface StreamState {
   readonly collectedResults: RunResult[];
@@ -210,205 +190,199 @@ interface StreamState {
 }
 
 const collectResult = (state: StreamState, result: RunResult): void => {
-  handleStreamResult(result, state.resultIndex);
-  state.collectedResults.push(result);
-  state.resultIndex++;
-},
-
- awaitStream = async (
-  fileUri: vscode.Uri,
-  cwd: string,
-  state: StreamState
-): Promise<void> => {
-  await new Promise<void>((resolve) => {
-    streamCli({
-      cliPath: getCliPath(),
-      filePath: fileUri.fsPath,
-      env: currentEnvOrUndefined(),
-      cwd,
-      onResult: (result: RunResult) => { collectResult(state, result); },
-      onDone: (error?: string) => { state.streamError = error; resolve(); },
+    handleStreamResult(result, state.resultIndex);
+    state.collectedResults.push(result);
+    state.resultIndex++;
+  },
+  awaitStream = async (fileUri: vscode.Uri, cwd: string, state: StreamState): Promise<void> => {
+    await new Promise<void>((resolve) => {
+      streamCli({
+        cliPath: getCliPath(),
+        filePath: fileUri.fsPath,
+        env: currentEnvOrUndefined(),
+        cwd,
+        onResult: (result: RunResult) => {
+          collectResult(state, result);
+        },
+        onDone: (error?: string) => {
+          state.streamError = error;
+          resolve();
+        },
+      });
     });
-  });
-},
-
- handleStreamError = (
-  state: StreamState
-): void => {
-  logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${state.streamError}`);
-  playlistPanel.showError(state.streamError ?? "");
-  void vscode.window.showErrorMessage(
-    `${CLI_ERROR_PREFIX}${state.streamError}`
-  );
-},
-
- handleStreamSuccess = (
-  state: StreamState,
-  fileUri: vscode.Uri
-): void => {
-  logger.info(LOG_MSG_STREAM_DONE);
-  playlistPanel.showComplete(state.collectedResults);
-  const doSave = (): void => {
-    savePlaylistReport(fileUri.fsPath, state.collectedResults);
+  },
+  handleStreamError = (state: StreamState): void => {
+    logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${state.streamError}`);
+    playlistPanel.showError(state.streamError ?? '');
+    void vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${state.streamError}`);
+  },
+  handleStreamSuccess = (state: StreamState, fileUri: vscode.Uri): void => {
+    logger.info(LOG_MSG_STREAM_DONE);
+    playlistPanel.showComplete(state.collectedResults);
+    const doSave = (): void => {
+      savePlaylistReport(fileUri.fsPath, state.collectedResults);
+    };
+    playlistPanel.onSaveReport = doSave;
+    lastPlaylistReport = (): void => {
+      savePlaylistReport(fileUri.fsPath, state.collectedResults);
+    };
+  },
+  runPlaylistStreaming = async (fileUri: vscode.Uri, cwd: string): Promise<void> => {
+    preparePlaylistRun(fileUri);
+    const statusMsg = makeRunningStatus(fileUri.fsPath),
+      state: StreamState = { collectedResults: [], resultIndex: 0, streamError: undefined };
+    await awaitStream(fileUri, cwd, state);
+    statusMsg.dispose();
+    if (state.streamError !== undefined && state.collectedResults.length === 0) {
+      handleStreamError(state);
+    } else {
+      handleStreamSuccess(state, fileUri);
+    }
+  },
+  handleCliResults = (results: readonly RunResult[]): void => {
+    logger.info(`${LOG_MSG_CLI_RESULT_COUNT} ${results.length}`);
+    for (const r of results) {
+      explorerProvider.updateResult(r.file, r);
+      lastResult = r;
+    }
+    const [first] = results;
+    if (first !== undefined) {
+      responsePanel.show(first, getResponseColumn());
+    }
+  },
+  runSingleFile = async (fileUri: vscode.Uri, cwd: string): Promise<void> => {
+    logger.info(`${LOG_MSG_RUN_FILE} ${fileUri.fsPath}`);
+    const statusMsg = makeRunningStatus(fileUri.fsPath),
+      result = await runCli({
+        cliPath: getCliPath(),
+        filePath: fileUri.fsPath,
+        env: currentEnvOrUndefined(),
+        cwd,
+      });
+    statusMsg.dispose();
+    if (!result.ok) {
+      logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${result.error}`);
+      void vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${result.error}`);
+      return;
+    }
+    handleCliResults(result.value);
+  },
+  runFile = async (arg?: vscode.Uri | { readonly filePath: string }): Promise<void> => {
+    const fileUri = resolveFileUri(arg);
+    if (fileUri === undefined) {
+      void vscode.window.showWarningMessage(MSG_NO_FILE_SELECTED);
+      return;
+    }
+    const cwd = getWorkspacePath();
+    if (cwd === undefined) {
+      return;
+    }
+    if (fileUri.fsPath.endsWith(NAPLIST_EXTENSION)) {
+      await runPlaylistStreaming(fileUri, cwd);
+    } else {
+      await runSingleFile(fileUri, cwd);
+    }
+  },
+  runAll = async (): Promise<void> => {
+    const cwd = getWorkspacePath();
+    if (cwd === undefined) {
+      return;
+    }
+    await runFile(vscode.Uri.file(cwd));
+  },
+  openResponse = (): void => {
+    if (lastResult !== undefined) {
+      responsePanel.show(lastResult, getResponseColumn());
+    } else {
+      void vscode.window.showInformationMessage(MSG_NO_RESPONSE);
+    }
+  },
+  registerRunCommands = (context: vscode.ExtensionContext): void => {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(CMD_RUN_FILE, runFile),
+      vscode.commands.registerCommand(CMD_RUN_ALL, runAll),
+      vscode.commands.registerCommand(CMD_COPY_CURL, copyAsCurl),
+      vscode.commands.registerCommand(CMD_OPEN_RESPONSE, openResponse),
+      vscode.commands.registerCommand(CMD_SAVE_REPORT, () => {
+        if (lastPlaylistReport !== undefined) {
+          lastPlaylistReport();
+        }
+      }),
+    );
+  },
+  registerEditCommands = (context: vscode.ExtensionContext): void => {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(CMD_NEW_REQUEST, async () => {
+        await newRequest(explorerProvider);
+      }),
+      vscode.commands.registerCommand(CMD_NEW_PLAYLIST, async () => {
+        await newPlaylist(explorerProvider);
+      }),
+      vscode.commands.registerCommand(CMD_SWITCH_ENV, async () => {
+        await envStatusBar.showPicker();
+      }),
+    );
+  },
+  registerHttpConvertCommands = (context: vscode.ExtensionContext): void => {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(CMD_CONVERT_HTTP_FILE, async (uri?: vscode.Uri) => {
+        await convertHttpFile(explorerProvider, logger, uri);
+      }),
+      vscode.commands.registerCommand(CMD_CONVERT_HTTP_DIR, async () => {
+        await convertHttpDirectory(explorerProvider, logger);
+      }),
+    );
+  },
+  handleEnrichAi = async (arg?: { readonly filePath?: string }): Promise<void> => {
+    const fp = arg?.filePath;
+    if (fp === undefined) {
+      return;
+    }
+    await runAiEnrichment(path.dirname(fp), logger);
+    explorerProvider.refresh();
+  },
+  registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
+        await importOpenApiFromUrl(explorerProvider, logger);
+      }),
+      vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
+        await importOpenApiFromFile(explorerProvider, logger);
+      }),
+      vscode.commands.registerCommand(CMD_ENRICH_AI, handleEnrichAi),
+    );
+  },
+  initProviders = (): void => {
+    explorerProvider = new ExplorerAdapter();
+    envStatusBar = new EnvironmentStatusBar();
+    responsePanel = new ResponsePanel();
+    playlistPanel = new PlaylistPanel();
+  },
+  registerCodeLens = (context: vscode.ExtensionContext): void => {
+    const codeLens = new CodeLensProvider();
+    context.subscriptions.push(
+      vscode.languages.registerCodeLensProvider(
+        [
+          { language: LANG_NAP },
+          { language: LANG_NAPLIST },
+          { pattern: `**/*${HTTP_FILE_EXTENSION}` },
+          { pattern: `**/*${REST_FILE_EXTENSION}` },
+        ],
+        codeLens,
+      ),
+    );
+  },
+  initLogger = (context: vscode.ExtensionContext): void => {
+    const outputChannel = vscode.window.createOutputChannel(LOG_CHANNEL_NAME);
+    context.subscriptions.push(outputChannel);
+    logger = createLogger((msg) => {
+      outputChannel.appendLine(msg);
+    });
+    logger.info(LOG_MSG_ACTIVATED);
+    extensionVersion = (context.extension.packageJSON as { version: string }).version;
+    logger.info(`Extension version: ${extensionVersion}`);
+    ensureCliInstalled().catch(() => undefined);
   };
-  playlistPanel.onSaveReport = doSave;
-  lastPlaylistReport = (): void => {
-    savePlaylistReport(fileUri.fsPath, state.collectedResults);
-  };
-},
-
- runPlaylistStreaming = async (
-  fileUri: vscode.Uri,
-  cwd: string
-): Promise<void> => {
-  preparePlaylistRun(fileUri);
-  const statusMsg = makeRunningStatus(fileUri.fsPath),
-   state: StreamState = { collectedResults: [], resultIndex: 0, streamError: undefined };
-  await awaitStream(fileUri, cwd, state);
-  statusMsg.dispose();
-  if (state.streamError !== undefined && state.collectedResults.length === 0) {
-    handleStreamError(state);
-  } else {
-    handleStreamSuccess(state, fileUri);
-  }
-},
-
- handleCliResults = (results: readonly RunResult[]): void => {
-  logger.info(`${LOG_MSG_CLI_RESULT_COUNT} ${results.length}`);
-  for (const r of results) {
-    explorerProvider.updateResult(r.file, r);
-    lastResult = r;
-  }
-  const [first] = results;
-  if (first !== undefined) {
-    responsePanel.show(first, getResponseColumn());
-  }
-},
-
- runSingleFile = async (
-  fileUri: vscode.Uri,
-  cwd: string
-): Promise<void> => {
-  logger.info(`${LOG_MSG_RUN_FILE} ${fileUri.fsPath}`);
-  const statusMsg = makeRunningStatus(fileUri.fsPath),
-   result = await runCli({
-    cliPath: getCliPath(),
-    filePath: fileUri.fsPath,
-    env: currentEnvOrUndefined(),
-    cwd,
-  });
-  statusMsg.dispose();
-  if (!result.ok) {
-    logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${result.error}`);
-    void vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${result.error}`);
-    return;
-  }
-  handleCliResults(result.value);
-},
-
- runFile = async (
-  arg?: vscode.Uri | { readonly filePath: string }
-): Promise<void> => {
-  const fileUri = resolveFileUri(arg);
-  if (fileUri === undefined) {
-    void vscode.window.showWarningMessage(MSG_NO_FILE_SELECTED);
-    return;
-  }
-  const cwd = getWorkspacePath();
-  if (cwd === undefined) { return; }
-  if (fileUri.fsPath.endsWith(NAPLIST_EXTENSION)) {
-    await runPlaylistStreaming(fileUri, cwd);
-  } else {
-    await runSingleFile(fileUri, cwd);
-  }
-},
-
- runAll = async (): Promise<void> => {
-  const cwd = getWorkspacePath();
-  if (cwd === undefined) { return; }
-  await runFile(vscode.Uri.file(cwd));
-},
-
- openResponse = (): void => {
-  if (lastResult !== undefined) {
-    responsePanel.show(lastResult, getResponseColumn());
-  } else {
-    void vscode.window.showInformationMessage(MSG_NO_RESPONSE);
-  }
-},
-
-
- registerRunCommands = (context: vscode.ExtensionContext): void => {
-  context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_RUN_FILE, runFile),
-    vscode.commands.registerCommand(CMD_RUN_ALL, runAll),
-    vscode.commands.registerCommand(CMD_COPY_CURL, copyAsCurl),
-    vscode.commands.registerCommand(CMD_OPEN_RESPONSE, openResponse),
-    vscode.commands.registerCommand(CMD_SAVE_REPORT, () => {
-      if (lastPlaylistReport !== undefined) {
-        lastPlaylistReport();
-      }
-    })
-  );
-},
-
- registerEditCommands = (context: vscode.ExtensionContext): void => {
-  context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_NEW_REQUEST, async () => {
-      await newRequest(explorerProvider);
-    }),
-    vscode.commands.registerCommand(CMD_NEW_PLAYLIST, async () => {
-      await newPlaylist(explorerProvider);
-    }),
-    vscode.commands.registerCommand(CMD_SWITCH_ENV, async () => {
-      await envStatusBar.showPicker();
-    })
-  );
-},
-
- registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
-  context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
-      await importOpenApiFromUrl(explorerProvider, logger);
-    }),
-    vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
-      await importOpenApiFromFile(explorerProvider, logger);
-    }),
-    vscode.commands.registerCommand(CMD_ENRICH_AI, async (arg?: { readonly filePath?: string }) => {
-      const fp = arg?.filePath;
-      if (fp === undefined) { return; }
-      await runAiEnrichment(path.dirname(fp), logger);
-      explorerProvider.refresh();
-    })
-  );
-},
-
- initProviders = (): void => {
-  explorerProvider = new ExplorerAdapter();
-  envStatusBar = new EnvironmentStatusBar();
-  responsePanel = new ResponsePanel();
-  playlistPanel = new PlaylistPanel();
-},
-
- registerCodeLens = (context: vscode.ExtensionContext): void => {
-  const codeLens = new CodeLensProvider();
-  context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider(
-      [{ language: LANG_NAP }, { language: LANG_NAPLIST }], codeLens
-    )
-  );
-},
-
- initLogger = (context: vscode.ExtensionContext): void => {
-  const outputChannel = vscode.window.createOutputChannel(LOG_CHANNEL_NAME);
-  context.subscriptions.push(outputChannel);
-  logger = createLogger((msg) => { outputChannel.appendLine(msg); });
-  logger.info(LOG_MSG_ACTIVATED);
-  bundledCliPath = path.join(
-    context.extensionPath, CLI_BIN_DIR, localBinaryName(process.platform)
-  );
-  ensureCliInstalled(context.globalStorageUri).catch(() => undefined);
-};
 
 export interface ExtensionApi {
   readonly explorerProvider: ExplorerAdapter;
@@ -425,6 +399,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   registerRunCommands(context);
   registerEditCommands(context);
   registerOpenApiCommands(context);
+  registerHttpConvertCommands(context);
   registerContextMenuCommands(context, explorerProvider);
   registerWatchers(context, explorerProvider, logger);
   registerAutoRun(context, async (uri) => runFile(uri));

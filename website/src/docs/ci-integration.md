@@ -8,7 +8,7 @@ eleventyNavigation:
   order: 10
 ---
 
-# CI Integration
+# CI Integration (spec: cli-run, cli-output, cli-exit-codes)
 
 Napper is built for CI/CD. The CLI binary is self-contained with no runtime dependencies, and outputs standard formats like JUnit XML.
 
@@ -57,7 +57,7 @@ api-tests:
       junit: results.xml
 ```
 
-## Environment variables
+## Environment variables (spec: cli-env, cli-var)
 
 Create a `.napenv.ci` file for CI-specific configuration:
 
@@ -72,15 +72,15 @@ Override secrets via CLI flags:
 napper run ./tests/ --env ci --var token=$API_TOKEN
 ```
 
-## Output formats
+## Output formats (spec: cli-output, output-pretty, output-junit, output-json, output-ndjson)
 
 | Format | Use case |
 |--------|----------|
+| `pretty` | Human-readable terminal output (default) |
 | `junit` | Most CI platforms (GitHub Actions, GitLab, Jenkins, Azure DevOps) |
-| `tap` | TAP consumers, some CI tools |
 | `json` | Custom processing, dashboards |
 | `ndjson` | Streaming to log aggregators |
 
-## Exit codes
+## Exit codes (spec: cli-exit-codes)
 
 Napper exits with code `0` when all assertions pass, `1` when any assertion fails, and `2` on runtime errors. This integrates naturally with CI pipelines that fail on non-zero exit codes.

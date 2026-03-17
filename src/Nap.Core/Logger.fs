@@ -1,3 +1,4 @@
+// Specs: cli-verbose
 module Nap.Core.Logger
 
 open System
@@ -13,12 +14,12 @@ type LogLevel =
 let private levelTag (level: LogLevel) : string =
     match level with
     | Debug -> "DEBUG"
-    | Info  -> "INFO"
-    | Warn  -> "WARN"
+    | Info -> "INFO"
+    | Warn -> "WARN"
     | Error -> "ERROR"
 
-let mutable private minLevel : LogLevel = Info
-let mutable private writer : StreamWriter option = None
+let mutable private minLevel: LogLevel = Info
+let mutable private writer: StreamWriter option = None
 
 let private formatLine (level: LogLevel) (message: string) : string =
     let ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -42,8 +43,8 @@ let log (level: LogLevel) (message: string) : unit =
         | None -> ()
 
 let debug msg = log Debug msg
-let info  msg = log Info msg
-let warn  msg = log Warn msg
+let info msg = log Info msg
+let warn msg = log Warn msg
 let error msg = log Error msg
 
 /// Flush and close the log file

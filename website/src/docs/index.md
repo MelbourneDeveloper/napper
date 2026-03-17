@@ -14,14 +14,15 @@ eleventyNavigation:
 
 Napper is built for developers who want:
 
-- **Simple things to be simple** — a one-off request is nearly as terse as curl
-- **Complex things to be possible** — full F# and C# scripting for advanced flows
-- **Everything in version control** — plain text files, no binary blobs
+- **Simple things to be simple** — a one-off request is nearly as terse as curl (spec: nap-minimal)
+- **Complex things to be possible** — full F# and C# scripting for advanced flows (spec: script-fsx, script-csx)
+- **Everything in version control** — plain text files, no binary blobs (spec: nap-file, naplist-file, env-file)
 - **First-class VS Code support** — syntax highlighting, Test Explorer, environment switching
+- **Easy migration** — convert existing `.http` files with a single CLI command (spec: cli-convert)
 
 ## How does Napper work?
 
-Every HTTP request is a `.nap` file:
+Every HTTP request is a `.nap` file (spec: nap-file):
 
 ```
 GET https://api.example.com/health
@@ -37,7 +38,7 @@ Or from VS Code with a single click.
 
 ## What happens when you need more?
 
-Add headers, bodies, assertions, and environment variables:
+Add headers, bodies, assertions, and environment variables (spec: nap-full):
 
 ```
 [meta]
@@ -64,7 +65,17 @@ body.id exists
 duration < 500ms
 ```
 
-Chain requests into test suites with `.naplist` files. Add F# or C# scripts for advanced orchestration. Output JUnit XML for your CI pipeline.
+Chain requests into test suites with `.naplist` files (spec: naplist-file). Add F# or C# scripts for advanced orchestration (spec: script-fsx, script-csx). Output JUnit XML for your CI pipeline (spec: output-junit).
+
+## Already using .http files? (spec: cli-convert)
+
+Napper includes a built-in converter to migrate your existing `.http` files. Both Microsoft (VS Code REST Client) and JetBrains (IntelliJ, Rider, WebStorm) dialects are supported:
+
+```bash
+napper convert http ./requests.http
+```
+
+The converter maps variables to `.napenv` files, preserves request names, and converts JetBrains `http-client.env.json` environments. See the [.http file comparison](/docs/vs-http-files/) for details.
 
 ## Why is the CLI the primary interface?
 
@@ -75,3 +86,4 @@ Napper is not a GUI-first tool with a CLI bolted on. The CLI is the primary inte
 - [Install Napper](/docs/installation/) to get started
 - Follow the [Quick Start](/docs/quick-start/) guide
 - Learn about [.nap file format](/docs/nap-files/)
+- [Migrate from .http files](/docs/vs-http-files/) with the built-in converter

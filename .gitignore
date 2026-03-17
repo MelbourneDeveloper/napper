@@ -41,3 +41,15 @@ examples/httpbin/advanced-report.html
 tests/Nap.Core.Tests/.spec-cache/
 
 examples/httpbin/all-methods-report.html
+
+src/Nap.Zed/target/
+
+src/Nap.Zed/extension.wasm
+
+src/Nap.Zed/grammars/nap.wasm
+
+src/Nap.Zed/grammars/napenv.wasm
+
+*.wasm
+
+scripts/logs/

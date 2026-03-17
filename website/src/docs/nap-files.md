@@ -8,11 +8,11 @@ eleventyNavigation:
   order: 4
 ---
 
-# .nap Files
+# .nap Files (spec: nap-file)
 
 A `.nap` file defines a single HTTP request with optional metadata, headers, body, assertions, and script hooks.
 
-## Minimal format
+## Minimal format (spec: nap-minimal)
 
 The simplest possible `.nap` file is just a method and URL:
 
@@ -20,7 +20,7 @@ The simplest possible `.nap` file is just a method and URL:
 GET https://api.example.com/health
 ```
 
-## Full format
+## Full format (spec: nap-full)
 
 {% raw %}
 ```
@@ -53,7 +53,7 @@ post = ./scripts/log-response.fsx
 
 ## Sections
 
-### `[meta]`
+### `[meta]` (spec: nap-meta)
 
 Optional metadata about the request.
 
@@ -63,7 +63,7 @@ Optional metadata about the request.
 | `description` | Longer description for documentation |
 | `tags` | Comma-separated tags for filtering |
 
-### `[vars]`
+### `[vars]` (spec: nap-vars)
 
 Local variable defaults. These are overridden by environment files and CLI flags.
 
@@ -72,7 +72,7 @@ userId = 1
 baseUrl = https://api.example.com
 ```
 
-### `[request]`
+### `[request]` (spec: nap-request)
 
 The HTTP method and URL. This is the only required part of a `.nap` file.
 
@@ -82,9 +82,9 @@ GET {{baseUrl}}/users/{{userId}}
 ```
 {% endraw %}
 
-Supported methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`.
+Supported methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS` (spec: http-methods).
 
-### `[request.headers]`
+### `[request.headers]` (spec: nap-headers)
 
 Key-value pairs for HTTP headers. Variables are interpolated.
 
@@ -96,7 +96,7 @@ X-Custom-Header = {{customValue}}
 ```
 {% endraw %}
 
-### `[request.body]`
+### `[request.body]` (spec: nap-body)
 
 Request body for `POST`, `PUT`, and `PATCH` requests. Content is wrapped in triple quotes:
 
@@ -110,11 +110,11 @@ Request body for `POST`, `PUT`, and `PATCH` requests. Content is wrapped in trip
 """
 ```
 
-### `[assert]`
+### `[assert]` (spec: nap-assert)
 
 Declarative assertions on the response. See [Assertions](/docs/assertions/) for the full reference.
 
-### `[script]`
+### `[script]` (spec: nap-script)
 
 References to F# or C# scripts that run before or after the request.
 
@@ -126,7 +126,7 @@ post = ./scripts/validate.csx
 
 See [F# Scripting](/docs/fsharp-scripting/) and [C# Scripting](/docs/csharp-scripting/) for details.
 
-## Variable interpolation
+## Variable interpolation (spec: env-interpolation)
 
 Use {% raw %}`{{variableName}}`{% endraw %} anywhere in the request. Variables are resolved from (highest priority first):
 
@@ -136,7 +136,7 @@ Use {% raw %}`{{variableName}}`{% endraw %} anywhere in the request. Variables a
 4. `.napenv` (base environment)
 5. `[vars]` in the `.nap` file
 
-## Comments
+## Comments (spec: nap-comments)
 
 Lines starting with `#` are comments:
 

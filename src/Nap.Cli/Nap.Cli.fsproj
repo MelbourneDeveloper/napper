@@ -3,6 +3,16 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>napper</AssemblyName>
+    <Version>0.6.0</Version>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>napper</ToolCommandName>
+    <PackageId>napper</PackageId>
+    <Description>CLI-first, test-oriented HTTP API testing tool</Description>
+    <Authors>MelbourneDeveloper</Authors>
+    <PackageProjectUrl>https://napperapi.dev</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MelbourneDeveloper/napper</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>http;api;testing;cli;rest</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nap.Core\Nap.Core.fsproj" />
+    <ProjectReference Include="..\DotHttp\DotHttp.fsproj" />
   </ItemGroup>
 
 

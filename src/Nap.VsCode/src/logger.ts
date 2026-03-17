@@ -1,12 +1,7 @@
 // Logger — decoupled from vscode SDK
 // Accepts a write function; the adapter provides the OutputChannel binding
 
-import {
-  LOG_PREFIX_DEBUG,
-  LOG_PREFIX_ERROR,
-  LOG_PREFIX_INFO,
-  LOG_PREFIX_WARN,
-} from "./constants";
+import { LOG_PREFIX_DEBUG, LOG_PREFIX_ERROR, LOG_PREFIX_INFO, LOG_PREFIX_WARN } from './constants';
 
 export type LogWriter = (message: string) => void;
 

@@ -1,3 +1,4 @@
+// Specs: openapi-generate, openapi-nap-gen, openapi-meta-flag
 module Nap.Core.OpenApiTypes
 
 // --- String constants for .nap file generation (single location) ---
@@ -124,27 +125,21 @@ let BasicScheme = "basic"
 
 // --- Auth descriptor ---
 
-type AuthHeader = {
-    HeaderName: string
-    HeaderValue: string
-    VarName: string
-}
+type AuthHeader =
+    { HeaderName: string
+      HeaderValue: string
+      VarName: string }
 
 // --- Output types ---
 
-type GeneratedFile = {
-    FileName: string
-    Content: string
-}
+type GeneratedFile = { FileName: string; Content: string }
 
-type GenerationResult = {
-    NapFiles: GeneratedFile list
-    Playlist: GeneratedFile
-    Environment: GeneratedFile
-}
+type GenerationResult =
+    { NapFiles: GeneratedFile list
+      Playlist: GeneratedFile
+      Environment: GeneratedFile }
 
-type GenerateSummary = {
-    FileCount: int
-    Files: string list
-    PlaylistPath: string
-}
+type GenerateSummary =
+    { FileCount: int
+      Files: string list
+      PlaylistPath: string }
