@@ -188,7 +188,8 @@ test-fsharp:
 	@echo "==> Running Napper.Core tests with coverage..."
 	dotnet test src/Napper.Core.Tests --nologo \
 	  --settings src/Napper.Core.Tests/coverage.runsettings \
-	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw"
+	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw" \
+	  --logger "console;verbosity=detailed"
 	@echo "==> Generating Napper.Core coverage report..."
 	reportgenerator \
 	  -reports:"$(FSHARP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
@@ -225,7 +226,8 @@ test: build-cli
 	@echo "==> Running Napper.Core tests with coverage..."
 	dotnet test src/Napper.Core.Tests --nologo \
 	  --settings src/Napper.Core.Tests/coverage.runsettings \
-	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw"
+	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw" \
+	  --logger "console;verbosity=detailed"
 	@echo "==> Generating Napper.Core coverage report..."
 	reportgenerator \
 	  -reports:"$(FSHARP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
