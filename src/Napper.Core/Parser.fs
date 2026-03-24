@@ -225,18 +225,21 @@ let private fullParser: Parser<NapFile, unit> =
 // ─── Public API ────────────────────────────────────────────────
 
 let parseNapFile (input: string) : Result<NapFile, string> =
-    // Try shorthand first (just "GET https://...")
-    let shortResult = run shorthandParser input
+    try
+        // Try shorthand first (just "GET https://...")
+        let shortResult = run shorthandParser input
 
-    match shortResult with
-    | Success(result, _, _) -> Result.Ok result
-    | Failure _ ->
-        // Try full format
-        let fullResult = run fullParser input
-
-        match fullResult with
+        match shortResult with
         | Success(result, _, _) -> Result.Ok result
-        | Failure(msg, _, _) -> Result.Error msg
+        | Failure _ ->
+            // Try full format
+            let fullResult = run fullParser input
+
+            match fullResult with
+            | Success(result, _, _) -> Result.Ok result
+            | Failure(msg, _, _) -> Result.Error msg
+    with ex ->
+        Result.Error ex.Message
 
 /// Parse a .naplist file
 let parseNapList (input: string) : Result<NapPlaylist, string> =

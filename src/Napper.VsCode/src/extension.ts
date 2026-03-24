@@ -16,6 +16,7 @@ import { parsePlaylistStepPaths } from './explorerProvider';
 import { generatePlaylistReport } from './reportGenerator';
 import { type Logger, createLogger } from './logger';
 import {
+  type DownloadBinaryParams,
   downloadBinary,
   getCliVersion,
   installDotnetTool,
@@ -28,6 +29,7 @@ import { convertHttpFile, convertHttpDirectory } from './httpConvert';
 import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
 import {
+  CLI_BIN_DIR,
   CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
   CMD_CONVERT_HTTP_DIR,
@@ -80,6 +82,7 @@ import {
 } from './constants';
 
 let envStatusBar: EnvironmentStatusBar,
+  extensionDir: string,
   extensionVersion: string,
   explorerProvider: ExplorerAdapter,
   installedCliOverride: string | undefined,
@@ -90,67 +93,50 @@ let envStatusBar: EnvironmentStatusBar,
   responsePanel: ResponsePanel,
   storageDir: string;
 
-const getCliPath = (): string => {
-    const config = vscode.workspace.getConfiguration(CONFIG_SECTION),
-      configured = config.get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
-    if (configured !== DEFAULT_CLI_PATH) {
-      return configured;
-    }
-    return installedCliOverride ?? CLI_BINARY_NAME;
+const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BINARY_NAME),
+  getCliPath = (): string => {
+    const configured = vscode.workspace.getConfiguration(CONFIG_SECTION)
+      .get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
+    if (configured !== DEFAULT_CLI_PATH) { return configured; }
+    if (installedCliOverride !== undefined) { return installedCliOverride; }
+    const bundled = bundledCliPath();
+    return fs.existsSync(bundled) ? bundled : CLI_BINARY_NAME;
   },
   checkVersionAt = async (cliPath: string): Promise<boolean> => {
+    logger.debug(`Version check: ${cliPath}`);
     const result = await getCliVersion(cliPath);
-    if (result.ok && result.value === extensionVersion) {
-      installedCliOverride = cliPath;
-      logger.info(`${CLI_INSTALL_COMPLETE_MSG} (${cliPath})`);
-      return true;
+    if (!result.ok) {
+      logger.debug(`Version check failed at ${cliPath}: ${result.error}`);
+      return false;
     }
-    return false;
+    logger.debug(`${cliPath}: v${result.value} (need ${extensionVersion})`);
+    if (result.value !== extensionVersion) {
+      return false;
+    }
+    installedCliOverride = cliPath;
+    logger.info(`${CLI_INSTALL_COMPLETE_MSG} (${cliPath})`);
+    return true;
   },
   checkVersionMatch = async (): Promise<boolean> => {
-    // Check installed binary first, then fall back to PATH
-    const binaryPath = installedBinaryPath(storageDir);
-    if (await checkVersionAt(binaryPath)) {
-      return true;
-    }
-    if (await checkVersionAt(CLI_BINARY_NAME)) {
-      return true;
-    }
+    if (await checkVersionAt(installedBinaryPath(storageDir))) { return true; }
+    if (await checkVersionAt(bundledCliPath())) { return true; }
+    if (await checkVersionAt(CLI_BINARY_NAME)) { return true; }
     logger.info(CLI_VERSION_MISMATCH_MSG);
     return false;
   },
-  installParams = (): {
-    readonly version: string;
-    readonly storageDir: string;
-    readonly log: (msg: string) => void;
-  } => ({
+  installParams = (): DownloadBinaryParams => ({
     version: extensionVersion,
     storageDir,
-    log: (msg) => {
-      logger.info(msg);
-    },
+    log: (msg) => { logger.info(msg); },
   }),
-  tryBinaryInstall = async (params: {
-    readonly version: string;
-    readonly storageDir: string;
-    readonly log: (msg: string) => void;
-  }): Promise<boolean> => {
+  tryBinaryInstall = async (params: DownloadBinaryParams): Promise<boolean> => {
     const dlResult = await downloadBinary(params);
-    if (!dlResult.ok) {
-      logger.error(dlResult.error);
-      return false;
-    }
-    if (await checkVersionAt(dlResult.value)) {
-      return true;
-    }
+    if (!dlResult.ok) { logger.error(dlResult.error); return false; }
+    if (await checkVersionAt(dlResult.value)) { return true; }
     logger.error(`Binary downloaded but version check failed at ${dlResult.value}`);
     return false;
   },
-  tryDotnetFallback = async (params: {
-    readonly version: string;
-    readonly storageDir: string;
-    readonly log: (msg: string) => void;
-  }): Promise<void> => {
+  tryDotnetFallback = async (params: DownloadBinaryParams): Promise<void> => {
     const dotnetResult = await installDotnetTool(params);
     if (!dotnetResult.ok) {
       logger.error(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
@@ -161,20 +147,14 @@ const getCliPath = (): string => {
     logger.info(`${CLI_INSTALL_COMPLETE_MSG} (dotnet tool)`);
   },
   ensureCliInstalled = async (): Promise<void> => {
-    if (await checkVersionMatch()) {
-      return;
-    }
+    logger.info('Checking CLI installation...');
+    if (await checkVersionMatch()) { return; }
+    logger.info('No matching CLI found, starting install...');
     await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: CLI_INSTALL_MSG,
-        cancellable: false,
-      },
+      { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },
       async () => {
         const params = installParams();
-        if (await tryBinaryInstall(params)) {
-          return;
-        }
+        if (await tryBinaryInstall(params)) { return; }
         await tryDotnetFallback(params);
       },
     );
@@ -297,15 +277,18 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     }
   },
   runSingleFile = async (fileUri: vscode.Uri, cwd: string): Promise<void> => {
+    const resolvedCliPath = getCliPath();
     logger.info(`${LOG_MSG_RUN_FILE} ${fileUri.fsPath}`);
+    logger.info(`CLI path: ${resolvedCliPath}, cwd: ${cwd}`);
     const statusMsg = makeRunningStatus(fileUri.fsPath),
       result = await runCli({
-        cliPath: getCliPath(),
+        cliPath: resolvedCliPath,
         filePath: fileUri.fsPath,
         env: currentEnvOrUndefined(),
         cwd,
       });
     statusMsg.dispose();
+    logger.info(`CLI completed: ok=${String(result.ok)}`);
     if (!result.ok) {
       logger.error(`${LOG_MSG_CLI_SPAWN_ERROR} ${result.error}`);
       void vscode.window.showErrorMessage(`${CLI_ERROR_PREFIX}${result.error}`);
@@ -426,6 +409,7 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     });
     logger.info(LOG_MSG_ACTIVATED);
     extensionVersion = (context.extension.packageJSON as { version: string }).version;
+    extensionDir = context.extensionUri.fsPath;
     storageDir = context.globalStorageUri.fsPath;
     logger.info(`Extension version: ${extensionVersion}`);
     ensureCliInstalled().catch(() => undefined);

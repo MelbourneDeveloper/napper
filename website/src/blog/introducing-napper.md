@@ -275,7 +275,7 @@ The [Napper VS Code extension](https://marketplace.visualstudio.com/items?itemNa
 - **Response inspection** with headers, body, and timing information
 - **Copy as curl** to share requests with teammates who don't use Napper
 
-Install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=nimblesite.napper):
+The extension relies on the CLI binary to run requests — [install the CLI](/docs/installation/) first, then install the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=nimblesite.napper):
 
 ```bash
 code --install-extension nimblesite.napper

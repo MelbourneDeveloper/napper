@@ -25,10 +25,11 @@ let private formatLine (level: LogLevel) (message: string) : string =
     let ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     $"[{ts}] [{levelTag level}] {message}"
 
-/// Initialize the logger: creates timestamped log file in binary dir
+/// Initialize the logger: creates timestamped log file in temp dir
 let init (verbose: bool) : unit =
     minLevel <- if verbose then Debug else Info
-    let dir = AppContext.BaseDirectory
+    let dir = Path.Combine(Path.GetTempPath(), "napper-logs")
+    Directory.CreateDirectory(dir) |> ignore
     let ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH-mm-ss")
     let fileName = $"napper-{ts}.log"
     let filePath = Path.Combine(dir, fileName)

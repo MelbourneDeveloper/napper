@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const testWorkspace = mkdtempSync(join(tmpdir(), "napper-test-"));
 cpSync("./src/test/fixtures/workspace", testWorkspace, { recursive: true });
 
-// No custom settings needed — CLI resolves from extension path via context.extensionPath
+// CLI resolves from extension bin/ dir via checkVersionMatch in extension.ts
 
 const userDataDir = resolve(__dirname, ".vscode-test/user-data");
 

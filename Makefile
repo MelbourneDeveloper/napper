@@ -1,4 +1,4 @@
-.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help package-vsix test-fsharp test-rust test-vsix test clean format lint
+.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help install-binaries package-vsix test-fsharp test-rust test-vsix test clean format lint
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -22,6 +22,7 @@ else
 endif
 
 EXT_BIN := src/Napper.VsCode/bin
+LOG_DIR := .commandtree/logs
 FSHARP_COVERAGE_DIR := coverage/fsharp
 DOTHTTP_COVERAGE_DIR := coverage/dothttp
 TS_COVERAGE_DIR := coverage/typescript
@@ -164,7 +165,12 @@ endif
 # Install
 # ============================================================
 
-clean-install: build-all
+install-binaries: build-cli
+	@echo "==> Binaries installed:"
+	@echo "    CLI: ~/.local/bin/napper"
+	@echo "    CLI: $(EXT_BIN)/napper"
+
+clean-install-vsix: build-all
 	@VSIX_FILE=$$(ls -1 src/Napper.VsCode/*.vsix 2>/dev/null | head -1); \
 	if [ -z "$$VSIX_FILE" ]; then \
 	  echo "ERROR: No VSIX file found after build"; \
@@ -183,6 +189,7 @@ test-fsharp:
 	@echo "========================================="
 	@echo "  Napper.Core Tests + Coverage"
 	@echo "========================================="
+	mkdir -p "$(LOG_DIR)"
 	rm -rf "$(FSHARP_COVERAGE_DIR)"
 	mkdir -p "$(FSHARP_COVERAGE_DIR)"
 	@echo "==> Running Napper.Core tests with coverage..."
@@ -190,7 +197,7 @@ test-fsharp:
 	  --settings src/Napper.Core.Tests/coverage.runsettings \
 	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw" \
 	  --logger "console;verbosity=detailed" \
-	  -- RunConfiguration.FailFastEnabled=true
+	  -- RunConfiguration.FailFastEnabled=true 2>&1 | tee "$(LOG_DIR)/test-fsharp-core.log"
 	@echo "==> Generating Napper.Core coverage report..."
 	reportgenerator \
 	  -reports:"$(FSHARP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
@@ -210,7 +217,7 @@ test-fsharp:
 	  --settings src/DotHttp.Tests/coverage.runsettings \
 	  --results-directory "$(DOTHTTP_COVERAGE_DIR)/raw" \
 	  --logger "console;verbosity=detailed" \
-	  -- RunConfiguration.FailFastEnabled=true
+	  -- RunConfiguration.FailFastEnabled=true 2>&1 | tee "$(LOG_DIR)/test-dothttp.log"
 	@echo "==> Generating DotHttp coverage report..."
 	reportgenerator \
 	  -reports:"$(DOTHTTP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
@@ -224,13 +231,14 @@ test-rust:
 	@echo "========================================="
 	@echo "  Rust Tests + Coverage (Napper.Zed)"
 	@echo "========================================="
+	mkdir -p "$(LOG_DIR)"
 	rm -rf "$(RUST_COVERAGE_DIR)"
 	mkdir -p "$(RUST_COVERAGE_DIR)"
 	@echo "==> Running Rust checks..."
-	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check
-	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml
+	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check 2>&1 | tee "$(LOG_DIR)/test-rust-fmt.log"
+	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml 2>&1 | tee "$(LOG_DIR)/test-rust-clippy.log"
 	@echo "==> Running Rust tests with coverage..."
-	cd src/Napper.Zed && cargo tarpaulin --out html lcov xml --output-dir "../../$(RUST_COVERAGE_DIR)/report" --skip-clean
+	cd src/Napper.Zed && cargo tarpaulin --out html lcov xml --output-dir "../../$(RUST_COVERAGE_DIR)/report" --skip-clean 2>&1 | tee "../../$(LOG_DIR)/test-rust.log"
 	@echo ""
 	@echo "=== Rust Coverage Summary ==="
 	@LINE_RATE=$$(sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' "$(RUST_COVERAGE_DIR)/report/cobertura.xml" 2>/dev/null | head -1); \
@@ -241,17 +249,21 @@ test-vsix: build-cli build-extension
 	@echo "========================================="
 	@echo "  TypeScript Tests + Coverage"
 	@echo "========================================="
+	mkdir -p "$(LOG_DIR)"
 	rm -rf "$(TS_COVERAGE_DIR)"
 	mkdir -p "$(TS_COVERAGE_DIR)"
 	cd src/Napper.VsCode && npm run compile && npm run compile:tests
-	@echo "==> Running unit tests with coverage..."
-	cd src/Napper.VsCode && npx c8 \
+	@echo "==> Running unit tests..."
+	cd src/Napper.VsCode && NODE_V8_COVERAGE="../../$(TS_COVERAGE_DIR)/tmp" \
+	  npx mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000 2>&1 | tee "../../$(LOG_DIR)/test-vsix-unit.log"
+	@echo "==> Running e2e tests..."
+	cd src/Napper.VsCode && NODE_V8_COVERAGE="../../$(TS_COVERAGE_DIR)/tmp" \
+	  npx vscode-test 2>&1 | tee "../../$(LOG_DIR)/test-vsix-e2e.log"
+	@echo "==> Generating combined TypeScript coverage report..."
+	cd src/Napper.VsCode && npx c8 report \
 	  --temp-directory "../../$(TS_COVERAGE_DIR)/tmp" \
 	  --report-dir "../../$(TS_COVERAGE_DIR)/report" \
-	  --reporter html --reporter text --reporter lcov \
-	  mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000
-	@echo "==> Running e2e tests..."
-	cd src/Napper.VsCode && npx vscode-test
+	  --reporter html --reporter text --reporter lcov 2>&1 | tee "../../$(LOG_DIR)/test-vsix-coverage.log"
 
 test: test-fsharp test-rust test-vsix
 	@echo ""

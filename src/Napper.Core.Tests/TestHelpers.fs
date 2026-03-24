@@ -19,15 +19,17 @@ let log (msg: string) =
         Console.Error.Flush())
 
 let private findNapper () : string =
-    let localBin =
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".local",
-            "bin",
-            NapperBinaryName
-        )
+    let home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
 
-    if File.Exists localBin then localBin else NapperBinaryName
+    let dotnetTool =
+        Path.Combine(home, ".dotnet", "tools", NapperBinaryName)
+
+    let localBin =
+        Path.Combine(home, ".local", "bin", NapperBinaryName)
+
+    if File.Exists dotnetTool then dotnetTool
+    elif File.Exists localBin then localBin
+    else NapperBinaryName
 
 let runCli (args: string) (cwd: string) : int * string * string =
     let binary = findNapper ()

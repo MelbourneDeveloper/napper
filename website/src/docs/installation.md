@@ -10,39 +10,28 @@ eleventyNavigation:
 
 # Installation
 
-Napper has two components: the **CLI binary** and the **VS Code extension**. The extension bundles the CLI, so installing the extension is all most users need.
+## Download from GitHub Releases (spec: cli-run)
 
-## VS Code Extension
-
-Install from the marketplace:
-
-```bash
-code --install-extension nimblesite.napper
-```
-
-Or search for **"Napper"** in the VS Code Extensions panel.
-
-The extension includes:
-- Syntax highlighting for `.nap`, `.naplist`, and `.napenv` files
-- Request explorer in the activity bar
-- Test Explorer integration
-- Environment switching via status bar
-- CodeLens actions (Run, Copy as curl)
-
-## CLI Binary (spec: cli-run)
-
-For CI/CD pipelines or terminal-only workflows, install the standalone CLI.
-
-### From GitHub Releases
-
-Download the latest binary for your platform from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases):
+The fastest way to get Napper is to download the CLI binary from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases). The current release is **v0.9.0**.
 
 | Platform | Binary |
 |----------|--------|
-| macOS (Apple Silicon) | `napper-osx-arm64` |
-| macOS (Intel) | `napper-osx-x64` |
-| Linux (x64) | `napper-linux-x64` |
-| Windows (x64) | `napper-win-x64.exe` |
+| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64) |
+| macOS (Intel) | [`napper-osx-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-x64) |
+| Linux (x64) | [`napper-linux-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64) |
+| Windows (x64) | [`napper-win-x64.exe`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-win-x64.exe) |
+
+Download the binary, make it executable (`chmod +x` on macOS/Linux), and move it somewhere on your PATH.
+
+### Verify installation
+
+```bash
+napper --help
+```
+
+## Install script
+
+Alternatively, use the install script which auto-detects your platform and verifies the SHA256 checksum.
 
 ### macOS / Linux
 
@@ -53,10 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scri
 Or install a specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.2.0
+curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.9.0
 ```
-
-The installer automatically detects your platform, downloads the binary, and verifies the SHA256 checksum.
 
 ### Windows
 
@@ -67,16 +54,39 @@ irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/ins
 Or install a specific version:
 
 ```powershell
-.\scripts\install.ps1 -Version 0.2.0
+.\scripts\install.ps1 -Version 0.9.0
 ```
 
-The installer downloads the binary, verifies the SHA256 checksum, and adds it to your PATH.
+## Build from source
 
-### Verify installation
+If you have the .NET SDK and `make` installed, you can build and install the CLI from source:
 
 ```bash
-napper --help
+git clone https://github.com/MelbourneDeveloper/napper.git
+cd napper
+make install-binaries
 ```
+
+This builds the CLI for your platform and installs it to `~/.local/bin/napper`.
+
+## VS Code Extension
+
+The extension provides editor integration but relies on the CLI binary to run requests. Install the CLI first (see above), then install the extension.
+
+Install from the marketplace:
+
+```bash
+code --install-extension nimblesite.napper
+```
+
+Or search for **"Napper"** in the VS Code Extensions panel.
+
+The extension provides:
+- Syntax highlighting for `.nap`, `.naplist`, and `.napenv` files
+- Request explorer in the activity bar
+- Test Explorer integration
+- Environment switching via status bar
+- CodeLens actions (Run, Copy as curl)
 
 ## Requirements (spec: script-fsx, script-csx)
 
