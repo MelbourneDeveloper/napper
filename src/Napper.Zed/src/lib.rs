@@ -42,8 +42,8 @@ const STDERR_SEPARATOR: &str = "\n--- stderr ---\n";
 /// LSP not-yet-available message.
 const LSP_NOT_AVAILABLE: &str = "Nap Language Server not yet available — install when released";
 
-/// Nap Zed extension entry point.
-struct NapExtension;
+/// Nap Zed extension entry point — implements all Zed extension traits.
+pub struct NapExtension;
 
 #[cfg(not(tarpaulin_include))]
 impl zed::Extension for NapExtension {
@@ -248,7 +248,10 @@ fn run_import_openapi_command(args: &[String]) -> Result<SlashCommandOutput, Str
     Ok(process_import_output(&output, spec_path))
 }
 
-zed::register_extension!(NapExtension);
+mod _register {
+    use zed_extension_api as zed;
+    zed::register_extension!(super::NapExtension);
+}
 
 #[cfg(test)]
 mod tests;

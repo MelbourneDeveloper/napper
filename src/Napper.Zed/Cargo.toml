@@ -18,8 +18,7 @@ tempfile = "3"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
 unsafe_code  = "deny"
-# warn not deny: zed_extension_api::register_extension! generates undocumented extern fn
-missing_docs = "warn"
+missing_docs = "deny"
 unused_imports = "deny"
 dead_code = "deny"
 unused_variables = "deny"

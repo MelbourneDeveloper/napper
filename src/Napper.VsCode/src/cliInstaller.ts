@@ -61,9 +61,7 @@ const PLATFORM_RID_MAP: ReadonlyMap<string, string> = new Map([
 const platformToRid = (): Result<string, string> => {
   const key = `${os.platform()}-${os.arch()}`,
     rid = PLATFORM_RID_MAP.get(key);
-  return rid !== undefined
-    ? ok(rid)
-    : err(`${CLI_UNSUPPORTED_PLATFORM_MSG}${key}`);
+  return rid !== undefined ? ok(rid) : err(`${CLI_UNSUPPORTED_PLATFORM_MSG}${key}`);
 };
 
 const assetName = (rid: string): string => {
@@ -78,9 +76,7 @@ const localBinaryName = (): string =>
 
 // ── Version check ───────────────────────────────────────────────────
 
-export const getCliVersion = async (
-  cliPath: string,
-): Promise<Result<string, string>> =>
+export const getCliVersion = async (cliPath: string): Promise<Result<string, string>> =>
   new Promise((resolve) => {
     execFile(
       cliPath,
@@ -100,61 +96,72 @@ export const getCliVersion = async (
 
 import type * as http from 'http';
 
-const handleRedirectResponse = (
-  response: http.IncomingMessage,
-  dest: string,
-  redirectCount: number,
-  resolve: (value: Result<Buffer, string>) => void,
-): void => {
-  const { location } = response.headers;
-  response.resume();
-  if (location === undefined || location === '') {
-    resolve(err(CLI_REDIRECT_ERROR));
-    return;
-  }
-  httpsGet(location, dest, redirectCount + 1)
-    .then(resolve)
-    .catch(() => { resolve(err(CLI_REDIRECT_ERROR)); });
-};
+type ResultResolver = (value: Result<Buffer, string>) => void;
 
-const handleSuccessResponse = (
-  response: http.IncomingMessage,
-  resolve: (value: Result<Buffer, string>) => void,
-): void => {
+const collectBody = (response: http.IncomingMessage, resolve: ResultResolver): void => {
   const chunks: Buffer[] = [];
-  response.on('data', (chunk: Buffer) => { chunks.push(chunk); });
-  response.on('end', () => { resolve(ok(Buffer.concat(chunks))); });
-  response.on('error', (e) => { resolve(err(e.message)); });
-};
-
-const httpsGet = async (
-  url: string,
-  dest: string,
-  redirectCount: number,
-): Promise<Result<Buffer, string>> => {
-  if (redirectCount > CLI_MAX_REDIRECTS) {
-    return err(CLI_TOO_MANY_REDIRECTS);
-  }
-
-  return new Promise((resolve) => {
-    https
-      .get(url, { headers: { 'User-Agent': CLI_BINARY_NAME } }, (response) => {
-        const status = response.statusCode ?? 0;
-        if (status >= 300 && status < 400) {
-          handleRedirectResponse(response, dest, redirectCount, resolve);
-        } else if (status !== 200) {
-          response.resume();
-          resolve(err(`${CLI_DOWNLOAD_ERROR_PREFIX}HTTP ${String(status)}`));
-        } else {
-          handleSuccessResponse(response, resolve);
-        }
-      })
-      .on('error', (e) => { resolve(err(e.message)); });
+  response.on('data', (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+  response.on('end', () => {
+    resolve(ok(Buffer.concat(chunks)));
+  });
+  response.on('error', (e) => {
+    resolve(err(e.message));
   });
 };
 
-const downloadFile = async (url: string): Promise<Result<Buffer, string>> =>
-  httpsGet(url, '', 0);
+interface HttpGetResult {
+  readonly response: http.IncomingMessage;
+  readonly status: number;
+}
+
+const httpsGetOnce = async (url: string): Promise<Result<HttpGetResult, string>> =>
+  new Promise((resolve) => {
+    https
+      .get(url, { headers: { 'User-Agent': CLI_BINARY_NAME } }, (response) => {
+        resolve(ok({ response, status: response.statusCode ?? 0 }));
+      })
+      .on('error', (e) => {
+        resolve(err(e.message));
+      });
+  });
+
+const resolveRedirect = (response: http.IncomingMessage): Result<string, string> => {
+  response.resume();
+  const { location } = response.headers;
+  return location !== undefined && location !== '' ? ok(location) : err(CLI_REDIRECT_ERROR);
+};
+
+const followRedirects = async (url: string, depth: number): Promise<Result<http.IncomingMessage, string>> => {
+  if (depth > CLI_MAX_REDIRECTS) {
+    return err(CLI_TOO_MANY_REDIRECTS);
+  }
+  const result = await httpsGetOnce(url);
+  if (!result.ok) {
+    return err(result.error);
+  }
+  const { response, status } = result.value;
+  if (status >= 300 && status < 400) {
+    const loc = resolveRedirect(response);
+    return loc.ok ? followRedirects(loc.value, depth + 1) : err(loc.error);
+  }
+  if (status !== 200) {
+    response.resume();
+    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}HTTP ${String(status)}`);
+  }
+  return ok(response);
+};
+
+const downloadFile = async (url: string): Promise<Result<Buffer, string>> => {
+  const result = await followRedirects(url, 0);
+  if (!result.ok) {
+    return err(result.error);
+  }
+  return new Promise((resolve) => {
+    collectBody(result.value, resolve);
+  });
+};
 
 // ── Checksum verification ───────────────────────────────────────────
 
@@ -163,9 +170,7 @@ const verifyChecksum = (
   checksumFileContent: string,
   asset: string,
 ): Result<void, string> => {
-  const line = checksumFileContent
-    .split('\n')
-    .find((l) => l.includes(asset));
+  const line = checksumFileContent.split('\n').find((l) => l.includes(asset));
 
   if (line === undefined) {
     return err(CLI_CHECKSUM_NOT_FOUND_MSG);
@@ -194,10 +199,7 @@ const buildDownloadUrls = (
   };
 };
 
-const writeBinaryToDisk = (
-  destPath: string,
-  data: Buffer,
-): void => {
+const writeBinaryToDisk = (destPath: string, data: Buffer): void => {
   const dir = path.dirname(destPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -208,6 +210,25 @@ const writeBinaryToDisk = (
   }
 };
 
+const fetchAndVerify = async (
+  version: string,
+  rid: string,
+): Promise<Result<{ readonly data: Buffer; readonly asset: string }, string>> => {
+  const { binaryUrl, checksumUrl, asset } = buildDownloadUrls(version, rid),
+    [binaryResult, checksumResult] = await Promise.all([
+      downloadFile(binaryUrl),
+      downloadFile(checksumUrl),
+    ]);
+  if (!binaryResult.ok) {
+    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}${binaryResult.error}`);
+  }
+  if (!checksumResult.ok) {
+    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}checksums: ${checksumResult.error}`);
+  }
+  const verifyResult = verifyChecksum(binaryResult.value, checksumResult.value.toString('utf-8'), asset);
+  return verifyResult.ok ? ok({ data: binaryResult.value, asset }) : err(verifyResult.error);
+};
+
 const downloadAndVerifyBinary = async (
   version: string,
   destPath: string,
@@ -216,40 +237,18 @@ const downloadAndVerifyBinary = async (
   if (!ridResult.ok) {
     return err(ridResult.error);
   }
-
-  const { binaryUrl, checksumUrl, asset } = buildDownloadUrls(version, ridResult.value),
-    [binaryResult, checksumResult] = await Promise.all([
-      downloadFile(binaryUrl),
-      downloadFile(checksumUrl),
-    ]);
-
-  if (!binaryResult.ok) {
-    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}${binaryResult.error}`);
+  const fetchResult = await fetchAndVerify(version, ridResult.value);
+  if (!fetchResult.ok) {
+    return err(fetchResult.error);
   }
-  if (!checksumResult.ok) {
-    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}checksums: ${checksumResult.error}`);
-  }
-
-  const verifyResult = verifyChecksum(
-    binaryResult.value,
-    checksumResult.value.toString('utf-8'),
-    asset,
-  );
-
-  if (!verifyResult.ok) {
-    return err(verifyResult.error);
-  }
-
-  writeBinaryToDisk(destPath, binaryResult.value);
+  writeBinaryToDisk(destPath, fetchResult.value.data);
   return ok(undefined);
 };
 
 // ── Dotnet tool fallback ────────────────────────────────────────────
 
 const parseToolVersion = (stdout: string): Result<string, string> => {
-  const line = stdout
-    .split('\n')
-    .find((l) => l.toLowerCase().startsWith(CLI_BINARY_NAME));
+  const line = stdout.split('\n').find((l) => l.toLowerCase().startsWith(CLI_BINARY_NAME));
   if (line === undefined) {
     return err('not installed');
   }
@@ -273,10 +272,7 @@ const isToolInstalled = async (): Promise<Result<string, string>> =>
     );
   });
 
-const runDotnetTool = async (
-  action: string,
-  version: string,
-): Promise<Result<void, string>> =>
+const runDotnetTool = async (action: string, version: string): Promise<Result<void, string>> =>
   new Promise((resolve) => {
     execFile(
       CLI_DOTNET_CMD,
@@ -292,9 +288,7 @@ const runDotnetTool = async (
     );
   });
 
-const installViaDotnetTool = async (
-  version: string,
-): Promise<Result<void, string>> => {
+const installViaDotnetTool = async (version: string): Promise<Result<void, string>> => {
   const existing = await isToolInstalled(),
     action = existing.ok ? CLI_TOOL_UPDATE_ARG : CLI_TOOL_INSTALL_ARG;
   return runDotnetTool(action, version);

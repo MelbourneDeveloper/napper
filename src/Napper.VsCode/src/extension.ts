@@ -119,17 +119,51 @@ const getCliPath = (): string => {
     logger.info(CLI_VERSION_MISMATCH_MSG);
     return false;
   },
-  installParams = (): { readonly version: string; readonly storageDir: string; readonly log: (msg: string) => void } => ({
+  installParams = (): {
+    readonly version: string;
+    readonly storageDir: string;
+    readonly log: (msg: string) => void;
+  } => ({
     version: extensionVersion,
     storageDir,
-    log: (msg) => { logger.info(msg); },
+    log: (msg) => {
+      logger.info(msg);
+    },
   }),
+  tryBinaryInstall = async (params: {
+    readonly version: string;
+    readonly storageDir: string;
+    readonly log: (msg: string) => void;
+  }): Promise<boolean> => {
+    const dlResult = await downloadBinary(params);
+    if (!dlResult.ok) {
+      logger.error(dlResult.error);
+      return false;
+    }
+    if (await checkVersionAt(dlResult.value)) {
+      return true;
+    }
+    logger.error(`Binary downloaded but version check failed at ${dlResult.value}`);
+    return false;
+  },
+  tryDotnetFallback = async (params: {
+    readonly version: string;
+    readonly storageDir: string;
+    readonly log: (msg: string) => void;
+  }): Promise<void> => {
+    const dotnetResult = await installDotnetTool(params);
+    if (!dotnetResult.ok) {
+      logger.error(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
+      void vscode.window.showErrorMessage(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
+      return;
+    }
+    installedCliOverride = CLI_BINARY_NAME;
+    logger.info(`${CLI_INSTALL_COMPLETE_MSG} (dotnet tool)`);
+  },
   ensureCliInstalled = async (): Promise<void> => {
-    // Step 1: Check version — if match, nothing to do
     if (await checkVersionMatch()) {
       return;
     }
-
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -138,31 +172,10 @@ const getCliPath = (): string => {
       },
       async () => {
         const params = installParams();
-
-        // Step 2: Install matching binary
-        const dlResult = await downloadBinary(params);
-        if (dlResult.ok) {
-          // Step 3: Check version again after install
-          const binaryPath = dlResult.value;
-          if (await checkVersionAt(binaryPath)) {
-            return;
-          }
-          logger.error(`Binary downloaded but version check failed at ${binaryPath}`);
-        } else {
-          logger.error(dlResult.error);
-        }
-
-        // Step 4: Binary didn't work — install dotnet tool
-        const dotnetResult = await installDotnetTool(params);
-        if (!dotnetResult.ok) {
-          logger.error(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
-          void vscode.window.showErrorMessage(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
+        if (await tryBinaryInstall(params)) {
           return;
         }
-
-        // Step 5: Switch to dotnet tool mode from now on
-        installedCliOverride = CLI_BINARY_NAME;
-        logger.info(`${CLI_INSTALL_COMPLETE_MSG} (dotnet tool)`);
+        await tryDotnetFallback(params);
       },
     );
   },
