@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Napper.Cli/Napper.Cli.fsproj" />
+    <Project Path="src/Napper.Core/Napper.Core.fsproj" />
+    <Project Path="src/DotHttp/DotHttp.fsproj" />
+    <Project Path="src/Napper.Lsp/Napper.Lsp.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="src/Napper.Core.Tests/Napper.Core.Tests.fsproj" />
+    <Project Path="src/DotHttp.Tests/DotHttp.Tests.fsproj" />
+    <Project Path="src/Napper.Lsp.Tests/Napper.Lsp.Tests.fsproj" />
+  </Folder>
+</Solution>

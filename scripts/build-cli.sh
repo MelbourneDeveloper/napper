@@ -24,7 +24,7 @@ fi
 
 echo "==> Building CLI for $NAP_RID..."
 
-dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
+dotnet publish src/Napper.Cli/Napper.Cli.fsproj \
   -r "$NAP_RID" \
   --self-contained \
   -p:PublishTrimmed=true \
@@ -35,7 +35,7 @@ dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
 echo "==> CLI built → out/$NAP_RID/"
 
 # --- Copy into extension bin/ so tests can find it ---
-EXT_BIN="src/Nap.VsCode/bin"
+EXT_BIN="src/Napper.VsCode/bin"
 mkdir -p "$EXT_BIN"
 cp "out/$NAP_RID/napper" "$EXT_BIN/napper"
 echo "==> Copied CLI → $EXT_BIN/"

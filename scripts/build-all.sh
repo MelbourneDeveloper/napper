@@ -27,13 +27,13 @@ echo "==> Platform: $NAP_RID"
 echo "==> Cleaning all build artifacts..."
 
 rm -rf out/
-rm -rf src/Nap.Core/bin/ src/Nap.Core/obj/
-rm -rf src/Nap.Cli/bin/ src/Nap.Cli/obj/
-rm -rf tests/Nap.Core.Tests/bin/ tests/Nap.Core.Tests/obj/
-rm -rf src/Nap.VsCode/bin/
-rm -rf src/Nap.VsCode/dist/
-rm -rf src/Nap.VsCode/out/
-rm -f  src/Nap.VsCode/*.vsix
+rm -rf src/Napper.Core/bin/ src/Napper.Core/obj/
+rm -rf src/Napper.Cli/bin/ src/Napper.Cli/obj/
+rm -rf tests/Napper.Core.Tests/bin/ tests/Napper.Core.Tests/obj/
+rm -rf src/Napper.VsCode/bin/
+rm -rf src/Napper.VsCode/dist/
+rm -rf src/Napper.VsCode/out/
+rm -f  src/Napper.VsCode/*.vsix
 rm -rf coverage/
 
 echo "==> Clean complete"
@@ -43,7 +43,7 @@ echo "==> Clean complete"
 # ============================================================
 echo "==> Building CLI ($NAP_RID)..."
 
-dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
+dotnet publish src/Napper.Cli/Napper.Cli.fsproj \
   -r "$NAP_RID" \
   --self-contained \
   -p:PublishTrimmed=true \
@@ -52,7 +52,7 @@ dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
   --nologo
 
 # Copy to extension bin/ (for tests and VSIX packaging)
-EXT_BIN="src/Nap.VsCode/bin"
+EXT_BIN="src/Napper.VsCode/bin"
 mkdir -p "$EXT_BIN"
 cp "out/$NAP_RID/napper" "$EXT_BIN/napper"
 
@@ -76,7 +76,7 @@ echo "==> CLI built and installed → ~/.local/bin/napper (v$ACTUAL_VERSION)"
 # ============================================================
 echo "==> Building VS Code extension..."
 
-cd src/Nap.VsCode
+cd src/Napper.VsCode
 npm ci
 npx webpack --mode production
 npm run compile:tests
@@ -97,6 +97,6 @@ echo ""
 echo "==> BUILD COMPLETE"
 echo "    CLI:  ~/.local/bin/napper"
 echo "    CLI:  $EXT_BIN/napper"
-[ -n "${VSIX_FILE:-}" ] && echo "    VSIX: src/Nap.VsCode/$VSIX_FILE"
+[ -n "${VSIX_FILE:-}" ] && echo "    VSIX: src/Napper.VsCode/$VSIX_FILE"
 echo ""
 napper --help | head -1

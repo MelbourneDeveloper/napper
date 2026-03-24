@@ -5,28 +5,28 @@ cd "$(dirname "$0")/.."
 NAPCORE_COVERAGE_DIR="coverage/fsharp"
 DOTHTTP_COVERAGE_DIR="coverage/dothttp"
 
-# ─── Nap.Core tests ─────────────────────────────────────────
+# ─── Napper.Core tests ─────────────────────────────────────────
 
 echo "========================================="
-echo "  Nap.Core Tests + Coverage"
+echo "  Napper.Core Tests + Coverage"
 echo "========================================="
 
 rm -rf "$NAPCORE_COVERAGE_DIR"
 mkdir -p "$NAPCORE_COVERAGE_DIR"
 
-echo "==> Running Nap.Core tests with coverage..."
-dotnet test src/Nap.Core.Tests --nologo \
-  --settings src/Nap.Core.Tests/coverage.runsettings \
+echo "==> Running Napper.Core tests with coverage..."
+dotnet test src/Napper.Core.Tests --nologo \
+  --settings src/Napper.Core.Tests/coverage.runsettings \
   --results-directory "$NAPCORE_COVERAGE_DIR/raw"
 
-echo "==> Generating Nap.Core coverage report..."
+echo "==> Generating Napper.Core coverage report..."
 reportgenerator \
   -reports:"$NAPCORE_COVERAGE_DIR/raw/*/coverage.cobertura.xml" \
   -targetdir:"$NAPCORE_COVERAGE_DIR/report" \
   -reporttypes:"Html;TextSummary;Cobertura;lcov"
 
 echo ""
-echo "=== Nap.Core Coverage Summary ==="
+echo "=== Napper.Core Coverage Summary ==="
 cat "$NAPCORE_COVERAGE_DIR/report/Summary.txt"
 
 # ─── DotHttp tests ──────────────────────────────────────────

@@ -10,6 +10,6 @@ bash scripts/build-extension.sh
 
 # --- VSIX ---
 echo "==> Packaging universal VSIX..."
-cd src/Nap.VsCode
+cd src/Napper.VsCode
 npx @vscode/vsce package --no-dependencies --skip-license
 echo "==> VSIX packaged"

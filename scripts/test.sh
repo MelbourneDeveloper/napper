@@ -10,7 +10,7 @@ RUST_COVERAGE_DIR="coverage/rust"
 # ─── F# tests with coverage ─────────────────────────────────
 
 echo "========================================="
-echo "  F# Tests + Coverage (Nap.Core)"
+echo "  F# Tests + Coverage (Napper.Core)"
 echo "========================================="
 
 rm -rf "$FSHARP_COVERAGE_DIR"
@@ -19,19 +19,19 @@ mkdir -p "$FSHARP_COVERAGE_DIR"
 echo "==> Building CLI..."
 bash scripts/build-cli.sh
 
-echo "==> Running Nap.Core tests with coverage..."
-dotnet test src/Nap.Core.Tests --nologo \
-  --settings src/Nap.Core.Tests/coverage.runsettings \
+echo "==> Running Napper.Core tests with coverage..."
+dotnet test src/Napper.Core.Tests --nologo \
+  --settings src/Napper.Core.Tests/coverage.runsettings \
   --results-directory "$FSHARP_COVERAGE_DIR/raw"
 
-echo "==> Generating Nap.Core coverage report..."
+echo "==> Generating Napper.Core coverage report..."
 reportgenerator \
   -reports:"$FSHARP_COVERAGE_DIR/raw/*/coverage.cobertura.xml" \
   -targetdir:"$FSHARP_COVERAGE_DIR/report" \
   -reporttypes:"Html;TextSummary;Cobertura;lcov"
 
 echo ""
-echo "=== Nap.Core Coverage Summary ==="
+echo "=== Napper.Core Coverage Summary ==="
 cat "$FSHARP_COVERAGE_DIR/report/Summary.txt"
 
 # ─── DotHttp F# tests with coverage ─────────────────────────
@@ -63,18 +63,18 @@ cat "$DOTHTTP_COVERAGE_DIR/report/Summary.txt"
 
 echo ""
 echo "========================================="
-echo "  Rust Tests + Coverage (Nap.Zed)"
+echo "  Rust Tests + Coverage (Napper.Zed)"
 echo "========================================="
 
 rm -rf "$RUST_COVERAGE_DIR"
 mkdir -p "$RUST_COVERAGE_DIR"
 
 echo "==> Running Rust checks..."
-cargo fmt --manifest-path src/Nap.Zed/Cargo.toml -- --check
-cargo clippy --manifest-path src/Nap.Zed/Cargo.toml
+cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check
+cargo clippy --manifest-path src/Napper.Zed/Cargo.toml
 
 echo "==> Running Rust tests with coverage..."
-pushd src/Nap.Zed > /dev/null
+pushd src/Napper.Zed > /dev/null
 cargo tarpaulin --out html lcov xml --output-dir "../../$RUST_COVERAGE_DIR/report" --skip-clean
 popd > /dev/null
 
@@ -94,7 +94,7 @@ echo "========================================="
 rm -rf "$TS_COVERAGE_DIR"
 mkdir -p "$TS_COVERAGE_DIR"
 
-cd src/Nap.VsCode
+cd src/Napper.VsCode
 
 echo "==> Compiling TypeScript..."
 npm run compile
@@ -116,7 +116,7 @@ echo ""
 echo "========================================="
 echo "  Coverage Reports"
 echo "========================================="
-echo "  Nap.Core:   $FSHARP_COVERAGE_DIR/report/index.html"
+echo "  Napper.Core:   $FSHARP_COVERAGE_DIR/report/index.html"
 echo "  DotHttp:    $DOTHTTP_COVERAGE_DIR/report/index.html"
 echo "  Rust:       $RUST_COVERAGE_DIR/report/index.html"
 echo "  TypeScript: $TS_COVERAGE_DIR/report/index.html"

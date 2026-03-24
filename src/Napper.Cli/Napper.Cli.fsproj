@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>napper</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>napper</ToolCommandName>
+    <PackageId>napper</PackageId>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <Description>CLI-first, test-oriented HTTP API testing tool</Description>
+    <PackageTags>http;api;testing;cli;rest;fsharp;dotnet-tool</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Napper.Core\Napper.Core.fsproj" />
+    <ProjectReference Include="..\DotHttp\DotHttp.fsproj" />
+  </ItemGroup>
+
+
+</Project>

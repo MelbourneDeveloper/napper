@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/Nap.VsCode
+        working-directory: src/Napper.VsCode
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: src/Nap.VsCode/package-lock.json
+          cache-dependency-path: src/Napper.VsCode/package-lock.json
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -74,7 +74,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: typescript-coverage
-          path: src/Nap.VsCode/coverage/
+          path: src/Napper.VsCode/coverage/
 
   test-fsharp:
     name: F# Build & Tests
@@ -114,23 +114,23 @@ jobs:
       - name: Test with coverage
         run: bash scripts/test-fsharp.sh
 
-      - name: Extract Nap.Core coverage percentage
+      - name: Extract Napper.Core coverage percentage
         id: napcore-coverage
         run: |
           COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' coverage/fsharp/report/Summary.txt || echo "0")
           echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Check Nap.Core coverage threshold
+      - name: Check Napper.Core coverage threshold
         run: |
           ACTUAL="${{ steps.napcore-coverage.outputs.coverage }}"
           THRESHOLD="${{ vars.FSHARP_COVERAGE_THRESHOLD }}"
-          echo "Nap.Core coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          echo "Napper.Core coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
           if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
             echo "No threshold set — skipping"
             exit 0
           fi
           if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
-            echo "::error::Nap.Core coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            echo "::error::Napper.Core coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
             exit 1
           fi
 
@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/Nap.Zed
+        working-directory: src/Napper.Zed
     steps:
       - uses: actions/checkout@v4
 
@@ -187,8 +187,8 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            src/Nap.Zed/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('src/Nap.Zed/Cargo.lock') }}
+            src/Napper.Zed/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src/Napper.Zed/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Format check

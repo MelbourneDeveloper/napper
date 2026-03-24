@@ -12,11 +12,11 @@ dist/
 out/
 
 # VSCode extension
-src/Nap.VsCode/node_modules/
-src/Nap.VsCode/dist/
-src/Nap.VsCode/out/
-src/Nap.VsCode/*.vsix
-src/Nap.VsCode/.vscode-test/
+src/Napper.VsCode/node_modules/
+src/Napper.VsCode/dist/
+src/Napper.VsCode/out/
+src/Napper.VsCode/*.vsix
+src/Napper.VsCode/.vscode-test/
 
 # IDE settings
 .vscode/
@@ -38,18 +38,20 @@ website/_site/
 examples/httpbin/advanced-report.html
 
 # Cached test specs
-tests/Nap.Core.Tests/.spec-cache/
+tests/Napper.Core.Tests/.spec-cache/
 
 examples/httpbin/all-methods-report.html
 
-src/Nap.Zed/target/
+src/Napper.Zed/target/
 
-src/Nap.Zed/extension.wasm
+src/Napper.Zed/extension.wasm
 
-src/Nap.Zed/grammars/nap.wasm
+src/Napper.Zed/grammars/nap.wasm
 
-src/Nap.Zed/grammars/napenv.wasm
+src/Napper.Zed/grammars/napenv.wasm
 
 *.wasm
 
 scripts/logs/
+
+src/Napper.VsCode/.nyc_output/

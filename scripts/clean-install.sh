@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 bash scripts/build-all.sh
 
 # Install VSIX into VS Code
-cd src/Nap.VsCode
+cd src/Napper.VsCode
 VSIX_FILE=$(ls -1 *.vsix 2>/dev/null | head -1)
 
 if [ -z "${VSIX_FILE:-}" ]; then

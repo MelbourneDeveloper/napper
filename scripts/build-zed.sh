@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ZED_DIR="src/Nap.Zed"
+ZED_DIR="src/Napper.Zed"
 GRAMMARS_DIR="$ZED_DIR/grammars"
 
 echo "==> Checking prerequisites..."

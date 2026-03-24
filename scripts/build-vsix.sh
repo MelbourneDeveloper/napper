@@ -12,7 +12,7 @@ bash scripts/build-cli.sh
 
 # --- Build extension + package VSIX ---
 echo "==> Building VS Code extension..."
-cd src/Nap.VsCode
+cd src/Napper.VsCode
 npm ci
 npx webpack --mode production
 npx @vscode/vsce package --no-dependencies --skip-license
@@ -22,5 +22,5 @@ cd ../..
 
 echo ""
 echo "==> VSIX packaged (universal — no CLI bundled)"
-[ -n "${VSIX_FILE:-}" ] && echo "    VSIX: src/Nap.VsCode/$VSIX_FILE"
+[ -n "${VSIX_FILE:-}" ] && echo "    VSIX: src/Napper.VsCode/$VSIX_FILE"
 echo "    CLI installed at: ~/.local/bin/napper (for local use)"
