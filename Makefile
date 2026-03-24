@@ -1,4 +1,4 @@
-.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help package-vsix test-fsharp test clean format lint
+.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help package-vsix test-fsharp test-rust test-vsix test clean format lint
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -189,7 +189,8 @@ test-fsharp:
 	dotnet test src/Napper.Core.Tests --nologo \
 	  --settings src/Napper.Core.Tests/coverage.runsettings \
 	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw" \
-	  --logger "console;verbosity=detailed"
+	  --logger "console;verbosity=detailed" \
+	  -- RunConfiguration.FailFastEnabled=true
 	@echo "==> Generating Napper.Core coverage report..."
 	reportgenerator \
 	  -reports:"$(FSHARP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
@@ -207,7 +208,9 @@ test-fsharp:
 	@echo "==> Running DotHttp tests with coverage..."
 	dotnet test src/DotHttp.Tests --nologo \
 	  --settings src/DotHttp.Tests/coverage.runsettings \
-	  --results-directory "$(DOTHTTP_COVERAGE_DIR)/raw"
+	  --results-directory "$(DOTHTTP_COVERAGE_DIR)/raw" \
+	  --logger "console;verbosity=detailed" \
+	  -- RunConfiguration.FailFastEnabled=true
 	@echo "==> Generating DotHttp coverage report..."
 	reportgenerator \
 	  -reports:"$(DOTHTTP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
@@ -217,44 +220,7 @@ test-fsharp:
 	@echo "=== DotHttp Coverage Summary ==="
 	@cat "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt"
 
-test: build-cli
-	@echo "========================================="
-	@echo "  F# Tests + Coverage (Napper.Core)"
-	@echo "========================================="
-	rm -rf "$(FSHARP_COVERAGE_DIR)"
-	mkdir -p "$(FSHARP_COVERAGE_DIR)"
-	@echo "==> Running Napper.Core tests with coverage..."
-	dotnet test src/Napper.Core.Tests --nologo \
-	  --settings src/Napper.Core.Tests/coverage.runsettings \
-	  --results-directory "$(FSHARP_COVERAGE_DIR)/raw" \
-	  --logger "console;verbosity=detailed"
-	@echo "==> Generating Napper.Core coverage report..."
-	reportgenerator \
-	  -reports:"$(FSHARP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
-	  -targetdir:"$(FSHARP_COVERAGE_DIR)/report" \
-	  -reporttypes:"Html;TextSummary;Cobertura;lcov"
-	@echo ""
-	@echo "=== Napper.Core Coverage Summary ==="
-	@cat "$(FSHARP_COVERAGE_DIR)/report/Summary.txt"
-	@echo ""
-	@echo "========================================="
-	@echo "  F# Tests + Coverage (DotHttp)"
-	@echo "========================================="
-	rm -rf "$(DOTHTTP_COVERAGE_DIR)"
-	mkdir -p "$(DOTHTTP_COVERAGE_DIR)"
-	@echo "==> Running DotHttp tests with coverage..."
-	dotnet test src/DotHttp.Tests --nologo \
-	  --settings src/DotHttp.Tests/coverage.runsettings \
-	  --results-directory "$(DOTHTTP_COVERAGE_DIR)/raw"
-	@echo "==> Generating DotHttp coverage report..."
-	reportgenerator \
-	  -reports:"$(DOTHTTP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
-	  -targetdir:"$(DOTHTTP_COVERAGE_DIR)/report" \
-	  -reporttypes:"Html;TextSummary;Cobertura;lcov"
-	@echo ""
-	@echo "=== DotHttp Coverage Summary ==="
-	@cat "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt"
-	@echo ""
+test-rust:
 	@echo "========================================="
 	@echo "  Rust Tests + Coverage (Napper.Zed)"
 	@echo "========================================="
@@ -270,7 +236,8 @@ test: build-cli
 	@LINE_RATE=$$(sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' "$(RUST_COVERAGE_DIR)/report/cobertura.xml" 2>/dev/null | head -1); \
 	LINE_RATE=$${LINE_RATE:-0}; \
 	echo "  Line coverage: $$(echo "$$LINE_RATE * 100" | bc -l | xargs printf "%.1f")%"
-	@echo ""
+
+test-vsix: build-cli build-extension
 	@echo "========================================="
 	@echo "  TypeScript Tests + Coverage"
 	@echo "========================================="
@@ -285,6 +252,8 @@ test: build-cli
 	  mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000
 	@echo "==> Running e2e tests..."
 	cd src/Napper.VsCode && npx vscode-test
+
+test: test-fsharp test-rust test-vsix
 	@echo ""
 	@echo "========================================="
 	@echo "  Coverage Reports"

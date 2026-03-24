@@ -532,4 +532,5 @@ let main argv =
 
     Logger.info $"CLI exiting with code {exitCode}"
     Logger.close ()
+    Environment.Exit(exitCode)
     exitCode
