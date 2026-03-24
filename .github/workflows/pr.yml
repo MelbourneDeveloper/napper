@@ -112,7 +112,7 @@ jobs:
         run: dotnet build --no-restore --nologo -warnaserror
 
       - name: Test with coverage
-        run: bash scripts/test-fsharp.sh
+        run: make test-fsharp
 
       - name: Extract Napper.Core coverage percentage
         id: napcore-coverage
@@ -167,6 +167,33 @@ jobs:
         with:
           name: dothttp-coverage
           path: coverage/dothttp/report/
+
+      - name: Extract Napper.Lsp coverage percentage
+        id: lsp-coverage
+        run: |
+          COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' coverage/lsp/report/Summary.txt || echo "0")
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Check Napper.Lsp coverage threshold
+        run: |
+          ACTUAL="${{ steps.lsp-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.LSP_COVERAGE_THRESHOLD }}"
+          echo "Napper.Lsp coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::Napper.Lsp coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload Napper.Lsp coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lsp-coverage
+          path: coverage/lsp/report/
 
   test-rust:
     name: Rust Build & Tests
