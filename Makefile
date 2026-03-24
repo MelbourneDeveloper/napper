@@ -1,4 +1,4 @@
-.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help package-vsix test-fsharp test clean
+.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help package-vsix test-fsharp test clean format lint
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -292,6 +292,28 @@ test: build-cli
 	@echo "  Rust:       $(RUST_COVERAGE_DIR)/report/index.html"
 	@echo "  TypeScript: $(TS_COVERAGE_DIR)/report/index.html"
 	@echo "========================================="
+
+# ============================================================
+# Format & Lint
+# ============================================================
+
+format:
+	@echo "==> F# (Fantomas)..."
+	dotnet fantomas src/
+	@echo "==> TypeScript (Prettier)..."
+	cd src/Napper.VsCode && npx prettier --write "src/**/*.ts"
+	@echo "==> Rust (cargo fmt)..."
+	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml
+	@echo "==> All projects formatted"
+
+lint:
+	@echo "==> F# build (warnings as errors)..."
+	dotnet build --nologo -warnaserror
+	@echo "==> TypeScript (ESLint)..."
+	cd src/Napper.VsCode && npm run lint
+	@echo "==> Rust (clippy)..."
+	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml
+	@echo "==> All projects linted"
 
 # ============================================================
 # Docs
