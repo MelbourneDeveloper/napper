@@ -22,33 +22,25 @@ import {
   installDotnetTool,
   installedBinaryPath,
 } from './cliInstaller';
-import { newPlaylist, newRequest } from './fileCreation';
-import { copyAsCurl } from './curlCopy';
-import { importOpenApiFromFile, importOpenApiFromUrl, runAiEnrichment } from './openApiImport';
-import { convertHttpFile, convertHttpDirectory } from './httpConvert';
+import {
+  registerEditCommands,
+  registerHttpConvertCommands,
+  registerOpenApiCommands,
+} from './editAndImportCommands';
 import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
 import {
   CLI_BIN_DIR,
   CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
-  CMD_CONVERT_HTTP_DIR,
-  CMD_CONVERT_HTTP_FILE,
   CLI_INSTALL_COMPLETE_MSG,
   CLI_INSTALL_FAILED_MSG,
   CLI_INSTALL_MSG,
   CLI_VERSION_MISMATCH_MSG,
-  CMD_COPY_CURL,
-  CMD_ENRICH_AI,
-  CMD_IMPORT_OPENAPI_FILE,
-  CMD_IMPORT_OPENAPI_URL,
-  CMD_NEW_PLAYLIST,
-  CMD_NEW_REQUEST,
   CMD_OPEN_RESPONSE,
   CMD_RUN_ALL,
   CMD_RUN_FILE,
   CMD_SAVE_REPORT,
-  CMD_SWITCH_ENV,
   CONFIG_CLI_PATH,
   CONFIG_SECTION,
   CONFIG_SPLIT_LAYOUT,
@@ -164,6 +156,13 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     installedCliOverride = CLI_BINARY_NAME;
     logger.info(`${CLI_INSTALL_COMPLETE_MSG} (dotnet tool)`);
   },
+  performInstall = async (): Promise<void> => {
+    const params = installParams();
+    if (await tryBinaryInstall(params)) {
+      return;
+    }
+    await tryDotnetFallback(params);
+  },
   ensureCliInstalled = async (): Promise<void> => {
     logger.info('Checking CLI installation...');
     if (await checkVersionMatch()) {
@@ -176,13 +175,7 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
         title: CLI_INSTALL_MSG,
         cancellable: false,
       },
-      async () => {
-        const params = installParams();
-        if (await tryBinaryInstall(params)) {
-          return;
-        }
-        await tryDotnetFallback(params);
-      },
+      performInstall,
     );
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
@@ -198,10 +191,7 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     if (arg instanceof vscode.Uri) {
       return arg;
     }
-    if (PROP_FILE_PATH in arg) {
-      return vscode.Uri.file(arg.filePath);
-    }
-    return undefined;
+    return PROP_FILE_PATH in arg ? vscode.Uri.file(arg.filePath) : undefined;
   },
   makeRunningStatus = (fsPath: string): vscode.Disposable =>
     vscode.window.setStatusBarMessage(
@@ -214,11 +204,12 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     playlistPanel.addResult(index, result);
   },
   savePlaylistReport = (playlistFile: string, results: readonly RunResult[]): void => {
-    const dir = path.dirname(playlistFile),
-      baseName = path.basename(playlistFile, path.extname(playlistFile)),
-      reportPath = path.join(dir, `${baseName}${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`),
-      html = generatePlaylistReport(baseName, results);
-    fs.writeFileSync(reportPath, html, ENCODING_UTF8);
+    const baseName = path.basename(playlistFile, path.extname(playlistFile)),
+      reportPath = path.join(
+        path.dirname(playlistFile),
+        `${baseName}${REPORT_FILE_SUFFIX}${REPORT_FILE_EXTENSION}`,
+      );
+    fs.writeFileSync(reportPath, generatePlaylistReport(baseName, results), ENCODING_UTF8);
     void vscode.env.openExternal(vscode.Uri.file(reportPath));
     void vscode.window.showInformationMessage(`${REPORT_SAVED_MSG}${path.basename(reportPath)}`);
   },
@@ -275,9 +266,7 @@ const collectResult = (state: StreamState, result: RunResult): void => {
       savePlaylistReport(fileUri.fsPath, state.collectedResults);
     };
     playlistPanel.onSaveReport = doSave;
-    lastPlaylistReport = (): void => {
-      savePlaylistReport(fileUri.fsPath, state.collectedResults);
-    };
+    lastPlaylistReport = doSave;
   },
   runPlaylistStreaming = async (fileUri: vscode.Uri, cwd: string): Promise<void> => {
     preparePlaylistRun(fileUri);
@@ -340,10 +329,9 @@ const collectResult = (state: StreamState, result: RunResult): void => {
   },
   runAll = async (): Promise<void> => {
     const cwd = getWorkspacePath();
-    if (cwd === undefined) {
-      return;
+    if (cwd !== undefined) {
+      await runFile(vscode.Uri.file(cwd));
     }
-    await runFile(vscode.Uri.file(cwd));
   },
   openResponse = (): void => {
     if (lastResult !== undefined) {
@@ -356,7 +344,6 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     context.subscriptions.push(
       vscode.commands.registerCommand(CMD_RUN_FILE, runFile),
       vscode.commands.registerCommand(CMD_RUN_ALL, runAll),
-      vscode.commands.registerCommand(CMD_COPY_CURL, copyAsCurl),
       vscode.commands.registerCommand(CMD_OPEN_RESPONSE, openResponse),
       vscode.commands.registerCommand(CMD_SAVE_REPORT, () => {
         if (lastPlaylistReport !== undefined) {
@@ -365,66 +352,21 @@ const collectResult = (state: StreamState, result: RunResult): void => {
       }),
     );
   },
-  registerEditCommands = (context: vscode.ExtensionContext): void => {
-    context.subscriptions.push(
-      vscode.commands.registerCommand(CMD_NEW_REQUEST, async () => {
-        await newRequest(explorerProvider);
-      }),
-      vscode.commands.registerCommand(CMD_NEW_PLAYLIST, async () => {
-        await newPlaylist(explorerProvider);
-      }),
-      vscode.commands.registerCommand(CMD_SWITCH_ENV, async () => {
-        await envStatusBar.showPicker();
-      }),
-    );
-  },
-  registerHttpConvertCommands = (context: vscode.ExtensionContext): void => {
-    context.subscriptions.push(
-      vscode.commands.registerCommand(CMD_CONVERT_HTTP_FILE, async (uri?: vscode.Uri) => {
-        await convertHttpFile(explorerProvider, logger, uri);
-      }),
-      vscode.commands.registerCommand(CMD_CONVERT_HTTP_DIR, async () => {
-        await convertHttpDirectory(explorerProvider, logger);
-      }),
-    );
-  },
-  handleEnrichAi = async (arg?: { readonly filePath?: string }): Promise<void> => {
-    const fp = arg?.filePath;
-    if (fp === undefined) {
-      return;
-    }
-    await runAiEnrichment(path.dirname(fp), logger);
-    explorerProvider.refresh();
-  },
-  registerOpenApiCommands = (context: vscode.ExtensionContext): void => {
-    context.subscriptions.push(
-      vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
-        await importOpenApiFromUrl(explorerProvider, logger);
-      }),
-      vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
-        await importOpenApiFromFile(explorerProvider, logger);
-      }),
-      vscode.commands.registerCommand(CMD_ENRICH_AI, handleEnrichAi),
-    );
-  },
   initProviders = (): void => {
     explorerProvider = new ExplorerAdapter();
     envStatusBar = new EnvironmentStatusBar();
     responsePanel = new ResponsePanel();
     playlistPanel = new PlaylistPanel();
   },
+  codeLensSelectors = [
+    { language: LANG_NAP },
+    { language: LANG_NAPLIST },
+    { pattern: `**/*${HTTP_FILE_EXTENSION}` },
+    { pattern: `**/*${REST_FILE_EXTENSION}` },
+  ],
   registerCodeLens = (context: vscode.ExtensionContext): void => {
-    const codeLens = new CodeLensProvider();
     context.subscriptions.push(
-      vscode.languages.registerCodeLensProvider(
-        [
-          { language: LANG_NAP },
-          { language: LANG_NAPLIST },
-          { pattern: `**/*${HTTP_FILE_EXTENSION}` },
-          { pattern: `**/*${REST_FILE_EXTENSION}` },
-        ],
-        codeLens,
-      ),
+      vscode.languages.registerCodeLensProvider(codeLensSelectors, new CodeLensProvider()),
     );
   },
   initLogger = (context: vscode.ExtensionContext): void => {
@@ -453,10 +395,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     vscode.window.registerFileDecorationProvider(explorerProvider),
   );
   registerCodeLens(context);
+  const commandDeps = { explorer: explorerProvider, envStatusBar, logger };
   registerRunCommands(context);
-  registerEditCommands(context);
-  registerOpenApiCommands(context);
-  registerHttpConvertCommands(context);
+  registerEditCommands(context, commandDeps);
+  registerOpenApiCommands(context, commandDeps);
+  registerHttpConvertCommands(context, commandDeps);
   registerContextMenuCommands(context, explorerProvider);
   registerWatchers(context, explorerProvider, logger);
   registerAutoRun(context, async (uri) => runFile(uri));

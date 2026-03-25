@@ -83,8 +83,8 @@ impl zed::Extension for NapExtension {
         command: SlashCommand,
         _args: Vec<String>,
     ) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
-        let cwd = std::env::current_dir()
-            .map_err(|e| format!("Failed to get working directory: {e}"))?;
+        let cwd =
+            std::env::current_dir().map_err(|e| format!("Failed to get working directory: {e}"))?;
         route_completions(&command.name, &cwd)
     }
 
@@ -112,9 +112,14 @@ fn resolve_language_server(id: &str) -> Result<Command, String> {
 }
 
 /// Route slash command argument completions by command name.
-fn route_completions(name: &str, path: &Path) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
+fn route_completions(
+    name: &str,
+    path: &Path,
+) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
     match name {
-        NAP_RUN_COMMAND => collect_file_completions(path, &[NAP_FILE_EXTENSION, NAPLIST_FILE_EXTENSION]),
+        NAP_RUN_COMMAND => {
+            collect_file_completions(path, &[NAP_FILE_EXTENSION, NAPLIST_FILE_EXTENSION])
+        }
         NAP_IMPORT_OPENAPI_COMMAND => collect_file_completions(path, &["json", "yaml", "yml"]),
         _ => Ok(Vec::new()),
     }

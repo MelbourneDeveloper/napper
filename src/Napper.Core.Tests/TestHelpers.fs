@@ -18,16 +18,38 @@ let log (msg: string) =
         Console.Error.WriteLine(msg)
         Console.Error.Flush())
 
+let private findRepoRoot () : string option =
+    let mutable dir = DirectoryInfo(AppContext.BaseDirectory)
+
+    while dir <> null
+          && not (File.Exists(Path.Combine(dir.FullName, "Directory.Build.props"))) do
+        dir <- dir.Parent
+
+    if dir <> null then Some dir.FullName else None
+
 let private findNapper () : string =
     let home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
-
     let dotnetTool = Path.Combine(home, ".dotnet", "tools", NapperBinaryName)
-
     let localBin = Path.Combine(home, ".local", "bin", NapperBinaryName)
 
-    if File.Exists dotnetTool then dotnetTool
-    elif File.Exists localBin then localBin
-    else NapperBinaryName
+    match findRepoRoot () with
+    | Some root ->
+        let buildBin =
+            Path.Combine(root, "src", "Napper.Cli", "bin", "Debug", "net10.0", NapperBinaryName)
+
+        if File.Exists buildBin then
+            log $"[test] Using build output binary: %s{buildBin}"
+            buildBin
+        elif File.Exists dotnetTool then
+            dotnetTool
+        elif File.Exists localBin then
+            localBin
+        else
+            NapperBinaryName
+    | None ->
+        if File.Exists dotnetTool then dotnetTool
+        elif File.Exists localBin then localBin
+        else NapperBinaryName
 
 let runCli (args: string) (cwd: string) : int * string * string =
     let binary = findNapper ()

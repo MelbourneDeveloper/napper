@@ -133,6 +133,14 @@ const resolveRedirect = (response: http.IncomingMessage): Result<string, string>
   return location !== undefined && location !== '' ? ok(location) : err(CLI_REDIRECT_ERROR);
 };
 
+const handleNon200 = (
+  response: http.IncomingMessage,
+  status: number,
+): Result<http.IncomingMessage, string> => {
+  response.resume();
+  return err(`${CLI_DOWNLOAD_ERROR_PREFIX}HTTP ${String(status)}`);
+};
+
 const followRedirects = async (
   url: string,
   depth: number,
@@ -149,11 +157,7 @@ const followRedirects = async (
     const loc = resolveRedirect(response);
     return loc.ok ? followRedirects(loc.value, depth + 1) : err(loc.error);
   }
-  if (status !== 200) {
-    response.resume();
-    return err(`${CLI_DOWNLOAD_ERROR_PREFIX}HTTP ${String(status)}`);
-  }
-  return ok(response);
+  return status === 200 ? ok(response) : handleNon200(response, status);
 };
 
 const downloadFile = async (url: string): Promise<Result<Buffer, string>> => {
@@ -213,10 +217,12 @@ const writeBinaryToDisk = (destPath: string, data: Buffer): void => {
   }
 };
 
-const fetchAndVerify = async (
+const downloadPair = async (
   version: string,
   rid: string,
-): Promise<Result<{ readonly data: Buffer; readonly asset: string }, string>> => {
+): Promise<
+  Result<{ readonly binary: Buffer; readonly checksum: Buffer; readonly asset: string }, string>
+> => {
   const { binaryUrl, checksumUrl, asset } = buildDownloadUrls(version, rid),
     [binaryResult, checksumResult] = await Promise.all([
       downloadFile(binaryUrl),
@@ -228,12 +234,20 @@ const fetchAndVerify = async (
   if (!checksumResult.ok) {
     return err(`${CLI_DOWNLOAD_ERROR_PREFIX}checksums: ${checksumResult.error}`);
   }
-  const verifyResult = verifyChecksum(
-    binaryResult.value,
-    checksumResult.value.toString('utf-8'),
-    asset,
-  );
-  return verifyResult.ok ? ok({ data: binaryResult.value, asset }) : err(verifyResult.error);
+  return ok({ binary: binaryResult.value, checksum: checksumResult.value, asset });
+};
+
+const fetchAndVerify = async (
+  version: string,
+  rid: string,
+): Promise<Result<{ readonly data: Buffer; readonly asset: string }, string>> => {
+  const dlResult = await downloadPair(version, rid);
+  if (!dlResult.ok) {
+    return err(dlResult.error);
+  }
+  const { binary, checksum, asset } = dlResult.value,
+    verifyResult = verifyChecksum(binary, checksum.toString('utf-8'), asset);
+  return verifyResult.ok ? ok({ data: binary, asset }) : err(verifyResult.error);
 };
 
 const downloadAndVerifyBinary = async (
