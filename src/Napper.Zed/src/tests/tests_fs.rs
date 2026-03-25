@@ -1,5 +1,8 @@
 use crate::*;
-use std::fs::{self, File};
+use std::{
+    fs::{self, File},
+    path::Path,
+};
 use tempfile::TempDir;
 use zed_extension_api::Extension;
 
@@ -184,9 +187,8 @@ fn skips_non_utf8_filenames() {
 #[test]
 fn collect_file_completions_from_real_dir() {
     let dir = create_test_dir();
-    std::env::set_current_dir(dir.path()).unwrap();
 
-    let completions = collect_file_completions(&["nap", "naplist"]).unwrap();
+    let completions = collect_file_completions(dir.path(), &["nap", "naplist"]).unwrap();
     assert!(!completions.is_empty());
     assert!(completions.iter().any(|c| c.label.ends_with(".nap")));
 }
@@ -196,61 +198,30 @@ fn collect_file_completions_from_real_dir() {
 #[test]
 fn route_completions_nap_run_finds_nap_files() {
     let dir = create_test_dir();
-    std::env::set_current_dir(dir.path()).unwrap();
 
-    let result = route_completions(NAP_RUN_COMMAND).unwrap();
+    let result = route_completions(NAP_RUN_COMMAND, dir.path()).unwrap();
     assert!(result.iter().any(|c| c.label.ends_with(".nap")));
     assert!(result.iter().any(|c| c.label.ends_with(".naplist")));
-}
-
-#[test]
-fn route_completions_openapi_finds_spec_files() {
-    let dir = create_test_dir();
-    std::env::set_current_dir(dir.path()).unwrap();
-
-    let result = route_completions(NAP_IMPORT_OPENAPI_COMMAND).unwrap();
-    assert!(result.iter().any(|c| c.label.ends_with(".json")));
-}
-
-#[test]
-fn route_completions_unknown_returns_empty() {
-    let result = route_completions("unknown").unwrap();
-    assert!(result.is_empty());
-}
-
-// ─── Extension trait dispatch ───────────────────────────────
-
-#[test]
-fn complete_nap_run_collects_nap_and_naplist_files() {
-    let dir = create_test_dir();
-    std::env::set_current_dir(dir.path()).unwrap();
-
-    let ext = NapExtension;
-    let completions = ext
-        .complete_slash_command_argument(test_slash_command(NAP_RUN_COMMAND), vec![])
-        .unwrap();
-
-    assert!(completions.iter().any(|c| c.label.ends_with(".nap")));
-    assert!(completions.iter().any(|c| c.label.ends_with(".naplist")));
-    for c in &completions {
+    for c in &result {
         assert!(c.label.ends_with(".nap") || c.label.ends_with(".naplist"));
     }
 }
 
 #[test]
-fn complete_openapi_collects_spec_files() {
+fn route_completions_openapi_finds_spec_files() {
     let dir = create_test_dir();
-    std::env::set_current_dir(dir.path()).unwrap();
 
-    let ext = NapExtension;
-    let completions = ext
-        .complete_slash_command_argument(test_slash_command(NAP_IMPORT_OPENAPI_COMMAND), vec![])
-        .unwrap();
-
-    assert!(completions.iter().any(|c| c.label.ends_with(".json")));
-    assert!(completions
+    let result = route_completions(NAP_IMPORT_OPENAPI_COMMAND, dir.path()).unwrap();
+    assert!(result.iter().any(|c| c.label.ends_with(".json")));
+    assert!(result
         .iter()
         .any(|c| c.label.ends_with(".yaml") || c.label.ends_with(".yml")));
+}
+
+#[test]
+fn route_completions_unknown_returns_empty() {
+    let result = route_completions("unknown", Path::new(".")).unwrap();
+    assert!(result.is_empty());
 }
 
 #[test]

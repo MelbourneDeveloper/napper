@@ -95,10 +95,15 @@ let envStatusBar: EnvironmentStatusBar,
 
 const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BINARY_NAME),
   getCliPath = (): string => {
-    const configured = vscode.workspace.getConfiguration(CONFIG_SECTION)
+    const configured = vscode.workspace
+      .getConfiguration(CONFIG_SECTION)
       .get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
-    if (configured !== DEFAULT_CLI_PATH) { return configured; }
-    if (installedCliOverride !== undefined) { return installedCliOverride; }
+    if (configured !== DEFAULT_CLI_PATH) {
+      return configured;
+    }
+    if (installedCliOverride !== undefined) {
+      return installedCliOverride;
+    }
     const bundled = bundledCliPath();
     return fs.existsSync(bundled) ? bundled : CLI_BINARY_NAME;
   },
@@ -118,21 +123,34 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     return true;
   },
   checkVersionMatch = async (): Promise<boolean> => {
-    if (await checkVersionAt(installedBinaryPath(storageDir))) { return true; }
-    if (await checkVersionAt(bundledCliPath())) { return true; }
-    if (await checkVersionAt(CLI_BINARY_NAME)) { return true; }
+    if (await checkVersionAt(installedBinaryPath(storageDir))) {
+      return true;
+    }
+    if (await checkVersionAt(bundledCliPath())) {
+      return true;
+    }
+    if (await checkVersionAt(CLI_BINARY_NAME)) {
+      return true;
+    }
     logger.info(CLI_VERSION_MISMATCH_MSG);
     return false;
   },
   installParams = (): DownloadBinaryParams => ({
     version: extensionVersion,
     storageDir,
-    log: (msg) => { logger.info(msg); },
+    log: (msg) => {
+      logger.info(msg);
+    },
   }),
   tryBinaryInstall = async (params: DownloadBinaryParams): Promise<boolean> => {
     const dlResult = await downloadBinary(params);
-    if (!dlResult.ok) { logger.error(dlResult.error); return false; }
-    if (await checkVersionAt(dlResult.value)) { return true; }
+    if (!dlResult.ok) {
+      logger.error(dlResult.error);
+      return false;
+    }
+    if (await checkVersionAt(dlResult.value)) {
+      return true;
+    }
     logger.error(`Binary downloaded but version check failed at ${dlResult.value}`);
     return false;
   },
@@ -148,13 +166,21 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
   },
   ensureCliInstalled = async (): Promise<void> => {
     logger.info('Checking CLI installation...');
-    if (await checkVersionMatch()) { return; }
+    if (await checkVersionMatch()) {
+      return;
+    }
     logger.info('No matching CLI found, starting install...');
     await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: CLI_INSTALL_MSG, cancellable: false },
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: CLI_INSTALL_MSG,
+        cancellable: false,
+      },
       async () => {
         const params = installParams();
-        if (await tryBinaryInstall(params)) { return; }
+        if (await tryBinaryInstall(params)) {
+          return;
+        }
         await tryDotnetFallback(params);
       },
     );

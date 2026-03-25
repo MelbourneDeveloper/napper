@@ -133,7 +133,10 @@ const resolveRedirect = (response: http.IncomingMessage): Result<string, string>
   return location !== undefined && location !== '' ? ok(location) : err(CLI_REDIRECT_ERROR);
 };
 
-const followRedirects = async (url: string, depth: number): Promise<Result<http.IncomingMessage, string>> => {
+const followRedirects = async (
+  url: string,
+  depth: number,
+): Promise<Result<http.IncomingMessage, string>> => {
   if (depth > CLI_MAX_REDIRECTS) {
     return err(CLI_TOO_MANY_REDIRECTS);
   }
@@ -225,7 +228,11 @@ const fetchAndVerify = async (
   if (!checksumResult.ok) {
     return err(`${CLI_DOWNLOAD_ERROR_PREFIX}checksums: ${checksumResult.error}`);
   }
-  const verifyResult = verifyChecksum(binaryResult.value, checksumResult.value.toString('utf-8'), asset);
+  const verifyResult = verifyChecksum(
+    binaryResult.value,
+    checksumResult.value.toString('utf-8'),
+    asset,
+  );
   return verifyResult.ok ? ok({ data: binaryResult.value, asset }) : err(verifyResult.error);
 };
 

@@ -27,7 +27,8 @@ let ``Directory.Build.props declares a non-empty Version`` () =
     let repoRoot =
         let mutable d = DirectoryInfo(AppContext.BaseDirectory)
 
-        while d <> null && not (File.Exists(Path.Combine(d.FullName, "Directory.Build.props"))) do
+        while d <> null
+              && not (File.Exists(Path.Combine(d.FullName, "Directory.Build.props"))) do
             d <- d.Parent
 
         d.FullName
@@ -35,8 +36,7 @@ let ``Directory.Build.props declares a non-empty Version`` () =
     let propsPath = Path.Combine(repoRoot, "Directory.Build.props")
     let doc = XDocument.Load(propsPath)
 
-    let versionEl =
-        doc.Descendants(XName.Get "Version") |> Seq.tryHead
+    let versionEl = doc.Descendants(XName.Get "Version") |> Seq.tryHead
 
     Assert.True(versionEl.IsSome, "Directory.Build.props must contain a <Version> element")
     let propsVersion = versionEl.Value.Value.Trim()

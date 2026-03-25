@@ -3,7 +3,7 @@
 //! Provides syntax highlighting (via Tree-sitter), runnables, slash commands,
 //! and a language server integration point for the Nap Language Server.
 
-use std::fs;
+use std::{fs, path::Path};
 use zed_extension_api::{
     self as zed, process::Output, serde_json, Command, LanguageServerId, SlashCommand,
     SlashCommandArgumentCompletion, SlashCommandOutput, SlashCommandOutputSection, Worktree,
@@ -83,7 +83,9 @@ impl zed::Extension for NapExtension {
         command: SlashCommand,
         _args: Vec<String>,
     ) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
-        route_completions(&command.name)
+        let cwd = std::env::current_dir()
+            .map_err(|e| format!("Failed to get working directory: {e}"))?;
+        route_completions(&command.name, &cwd)
     }
 
     fn run_slash_command(
@@ -110,20 +112,21 @@ fn resolve_language_server(id: &str) -> Result<Command, String> {
 }
 
 /// Route slash command argument completions by command name.
-fn route_completions(name: &str) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
+fn route_completions(name: &str, path: &Path) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
     match name {
-        NAP_RUN_COMMAND => collect_file_completions(&[NAP_FILE_EXTENSION, NAPLIST_FILE_EXTENSION]),
-        NAP_IMPORT_OPENAPI_COMMAND => collect_file_completions(&["json", "yaml", "yml"]),
+        NAP_RUN_COMMAND => collect_file_completions(path, &[NAP_FILE_EXTENSION, NAPLIST_FILE_EXTENSION]),
+        NAP_IMPORT_OPENAPI_COMMAND => collect_file_completions(path, &["json", "yaml", "yml"]),
         _ => Ok(Vec::new()),
     }
 }
 
 /// Recursively collect files matching given extensions for slash command argument completion.
 fn collect_file_completions(
+    path: &Path,
     extensions: &[&str],
 ) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
     let mut completions = Vec::new();
-    let entries = fs::read_dir(".").map_err(|e| format!("Failed to read directory: {e}"))?;
+    let entries = fs::read_dir(path).map_err(|e| format!("Failed to read directory: {e}"))?;
     collect_files_recursive(entries, extensions, "", &mut completions);
     Ok(completions)
 }

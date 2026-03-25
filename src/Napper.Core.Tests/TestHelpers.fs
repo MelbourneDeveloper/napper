@@ -21,11 +21,9 @@ let log (msg: string) =
 let private findNapper () : string =
     let home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
 
-    let dotnetTool =
-        Path.Combine(home, ".dotnet", "tools", NapperBinaryName)
+    let dotnetTool = Path.Combine(home, ".dotnet", "tools", NapperBinaryName)
 
-    let localBin =
-        Path.Combine(home, ".local", "bin", NapperBinaryName)
+    let localBin = Path.Combine(home, ".local", "bin", NapperBinaryName)
 
     if File.Exists dotnetTool then dotnetTool
     elif File.Exists localBin then localBin
