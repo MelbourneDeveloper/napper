@@ -5,6 +5,7 @@ module OpenApiGeneratorTests
 //        openapi-meta-flag, nap-meta, nap-request, nap-headers, nap-body, nap-vars, nap-assert
 
 open Xunit
+open Napper.Core
 open Napper.Core.OpenApiGenerator
 
 // --- Helpers ---
@@ -715,6 +716,42 @@ let ``Environment file has baseUrl key-value pair`` () =
     Assert.Contains("baseUrl = https://api.test.com/v1", gen.Environment.Content)
 
 // --- Base URL fallback --- Spec: openapi-baseurl
+
+// --- Generated files must be parseable --- Spec: openapi-nap-gen, nap-file
+
+[<Fact>]
+let ``Generated nap files are parseable by the nap parser`` () =
+    let gen = unwrap minimalOas3
+
+    for f in gen.NapFiles do
+        match Napper.Core.Parser.parseNapFile f.Content with
+        | Ok parsed ->
+            Assert.Equal(GET, parsed.Request.Method)
+            Assert.Contains("{{baseUrl}}/users", parsed.Request.Url)
+        | Error e -> failwith $"Generated file '{f.FileName}' failed to parse: {e}"
+
+[<Fact>]
+let ``Generated POST nap file is parseable with correct method and body`` () =
+    let gen = unwrap multiMethodSpec
+    let postFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("Create pet"))
+
+    match Napper.Core.Parser.parseNapFile postFile.Content with
+    | Ok parsed ->
+        Assert.Equal(POST, parsed.Request.Method)
+        Assert.Contains("{{baseUrl}}/pets", parsed.Request.Url)
+        Assert.True(parsed.Request.Body.IsSome, "POST must have a request body")
+    | Error e -> failwith $"Generated POST file failed to parse: {e}"
+
+[<Fact>]
+let ``Generated nap file with path params is parseable`` () =
+    let gen = unwrap multiMethodSpec
+    let petFile = gen.NapFiles |> List.find (fun f -> f.Content.Contains("getPetById"))
+
+    match Napper.Core.Parser.parseNapFile petFile.Content with
+    | Ok parsed ->
+        Assert.Contains("{{petId}}", parsed.Request.Url)
+        Assert.True(parsed.Vars.ContainsKey("petId"), "Must have petId var")
+    | Error e -> failwith $"Generated file with path params failed to parse: {e}"
 
 [<Fact>]
 let ``Falls back to default URL when no servers or host`` () =

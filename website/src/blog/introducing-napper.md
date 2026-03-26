@@ -292,6 +292,7 @@ code --install-extension nimblesite.napper
 | Scripting language | **C# + F# (.NET)** | Sandboxed JS | Sandboxed JS | None |
 | CI/CD output | JUnit, JSON, NDJSON | Via Newman | Via CLI | None |
 | Test Explorer | Native | No | No | No |
+| OpenAPI import | URL + file + AI | Import only | Import only | No |
 | .http file migration | Built-in converter | Import only | No | N/A |
 | Account required | No | Yes | No | No |
 | Price | Free (MIT) | Freemium | Free (MIT) | Free |

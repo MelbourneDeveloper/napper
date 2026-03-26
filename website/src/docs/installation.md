@@ -12,7 +12,7 @@ eleventyNavigation:
 
 ## Download from GitHub Releases (spec: cli-run)
 
-The fastest way to get Napper is to download the CLI binary from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases). The current release is **v0.9.0**.
+The fastest way to get Napper is to download the CLI binary from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases). The current release is **v0.10.0**.
 
 | Platform | Binary |
 |----------|--------|
@@ -26,6 +26,7 @@ Download the binary, make it executable (`chmod +x` on macOS/Linux), and move it
 ### Verify installation
 
 ```bash
+napper --version
 napper --help
 ```
 
@@ -42,7 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scri
 Or install a specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.9.0
+curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.10.0
 ```
 
 ### Windows
@@ -54,7 +55,7 @@ irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/ins
 Or install a specific version:
 
 ```powershell
-.\scripts\install.ps1 -Version 0.9.0
+.\scripts\install.ps1 -Version 0.10.0
 ```
 
 ## Build from source

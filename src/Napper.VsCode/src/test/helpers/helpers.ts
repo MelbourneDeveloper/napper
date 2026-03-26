@@ -82,6 +82,13 @@ export const deleteFixtureFile = (relativePath: string): void => {
   }
 };
 
+export const deleteFixtureDir = (relativePath: string): void => {
+  const fullPath = getFixturePath(relativePath);
+  if (fs.existsSync(fullPath)) {
+    fs.rmSync(fullPath, { recursive: true });
+  }
+};
+
 export const waitForCondition = async (
   condition: () => boolean | Promise<boolean>,
   timeout = 10000,

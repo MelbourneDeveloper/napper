@@ -44,6 +44,7 @@ Bruno provides a CLI for running collections from the terminal. Napper is design
 | Editor integration | Native VS Code extension | Standalone Electron app |
 | Test Explorer | Native VS Code support | No |
 | CI/CD output | JUnit, JSON, NDJSON | JSON via CLI |
+| OpenAPI import | URL + file + AI | Import only |
 | .http file migration | Built-in converter | No |
 | Pricing | Free, MIT license | Free, MIT license |
 

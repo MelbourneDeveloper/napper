@@ -241,6 +241,7 @@ Options:
   --var <key=value>         Variable override (repeatable) (cli-var)
   --output <format>         Output: pretty, junit, json, ndjson (cli-output)
   --output-dir <dir>        Output directory for generate command (cli-output-dir)
+  --version                 Print the installed CLI version
   --verbose                 Enable debug-level logging (cli-verbose)
 ```
 

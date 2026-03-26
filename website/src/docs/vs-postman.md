@@ -44,6 +44,7 @@ Postman requires Newman (a separate npm package) for running collections from th
 | CI/CD output | JUnit, JSON, NDJSON | Via Newman |
 | Test Explorer | Native VS Code support | No |
 | Account required | No | Yes |
+| OpenAPI import | URL + file + AI | Import only |
 | .http file migration | Built-in converter | Import only |
 | Pricing | Free, MIT license | Freemium with paid tiers |
 

@@ -36,6 +36,14 @@ napper run ./tests/
 | `--output <format>` | Output format | `--output junit` | (spec: cli-output) |
 | `--verbose` | Enable verbose output with detailed request/response info | `--verbose` | (spec: cli-verbose) |
 
+### `napper --version`
+
+Print the installed CLI version.
+
+```bash
+napper --version
+```
+
 #### Output formats (spec: cli-output)
 
 | Format | Description | Spec |
