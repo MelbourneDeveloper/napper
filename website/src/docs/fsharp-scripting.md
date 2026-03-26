@@ -8,11 +8,11 @@ eleventyNavigation:
   order: 7
 ---
 
-# F# Scripting
+# F# Scripting (spec: script-fsx)
 
 Napper supports F# Interactive scripts (`.fsx` files) for pre/post request hooks and test orchestration. This gives you the full power of .NET for complex testing scenarios.
 
-## Pre/post request hooks
+## Pre/post request hooks (spec: script-pre, script-post)
 
 Reference scripts in your `.nap` file:
 
@@ -22,7 +22,7 @@ pre = ./scripts/setup-auth.fsx
 post = ./scripts/validate-response.fsx
 ```
 
-### Pre-request scripts
+### Pre-request scripts (spec: script-pre)
 
 Run before the HTTP request is sent. Use them to set up authentication, generate dynamic data, or modify variables.
 
@@ -33,7 +33,7 @@ ctx.Set "token" token
 ctx.Log $"Token generated: {token.[..8]}..."
 ```
 
-### Post-request scripts
+### Post-request scripts (spec: script-post)
 
 Run after the response is received. Use them for complex validation, data extraction, or chaining.
 
@@ -52,7 +52,7 @@ if userId <= 0 then
 ctx.Log $"Created user {userId}"
 ```
 
-## NapContext
+## NapContext (spec: script-context)
 
 Scripts receive a `ctx` object with these members:
 
@@ -66,7 +66,7 @@ Scripts receive a `ctx` object with these members:
 | `Fail message` | Pre + Post | Fail the test with a message |
 | `Log message` | Pre + Post | Write to test output |
 
-## Orchestration scripts
+## Orchestration scripts (spec: script-orchestration)
 
 For complex flows, use orchestration scripts that control execution directly:
 
@@ -98,7 +98,7 @@ Reference orchestration scripts in a `.naplist`:
 ./scripts/orchestration.fsx
 ```
 
-## NapRunner
+## NapRunner (spec: script-runner)
 
 Orchestration scripts receive a `runner` object:
 

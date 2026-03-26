@@ -1,0 +1,37 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{fs,fsx}]
+indent_size = 4
+
+# F# compiler diagnostics — all unused things are errors
+dotnet_diagnostic.FS1182.severity = error
+
+# Opt-in warnings elevated to errors
+dotnet_diagnostic.FS3388.severity = error
+dotnet_diagnostic.FS3389.severity = error
+dotnet_diagnostic.FS3390.severity = error
+dotnet_diagnostic.FS3391.severity = error
+dotnet_diagnostic.FS3395.severity = error
+dotnet_diagnostic.FS3559.severity = error
+dotnet_diagnostic.FS3560.severity = error
+dotnet_diagnostic.FS3582.severity = error
+
+[*.ts]
+indent_size = 2
+
+[*.json]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.rs]
+indent_size = 4

@@ -1,0 +1,5 @@
+name = "Nap"
+grammar = "nap"
+path_suffixes = ["nap"]
+line_comments = ["# "]
+tab_size = 2

@@ -1,56 +1,39 @@
 #!/usr/bin/env bash
-# Build CLI binary and install to PATH + extension bin/
 set -euo pipefail
-cd "$(dirname "$0")/.."
 
-# --- Detect RID ---
-if [ -z "${NAP_RID:-}" ]; then
-  ARCH=$(uname -m)
-  OS=$(uname -s)
-  case "$OS" in
-    Darwin)
-      case "$ARCH" in
-        arm64) NAP_RID="osx-arm64" ;;
-        x86_64) NAP_RID="osx-x64" ;;
-      esac ;;
-    Linux) NAP_RID="linux-x64" ;;
-  esac
-fi
+# Build the Napper CLI and copy it into the VSCode extension bin directory.
+# Called from src/Napper.VsCode via: bash ../../scripts/build-cli.sh
 
-if [ -z "${NAP_RID:-}" ]; then
-  echo "ERROR: Could not detect platform. Set NAP_RID manually."
-  exit 1
-fi
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+EXT_BIN="${REPO_ROOT}/src/Napper.VsCode/bin"
 
-echo "==> Building CLI for $NAP_RID..."
+ARCH="$(uname -m)"
+OS="$(uname -s)"
 
-dotnet publish src/Nap.Cli/Nap.Cli.fsproj \
-  -r "$NAP_RID" \
+case "${OS}" in
+  Darwin)
+    case "${ARCH}" in
+      arm64)  RID="osx-arm64" ;;
+      x86_64) RID="osx-x64" ;;
+      *)      echo "Unsupported arch: ${ARCH}" >&2; exit 1 ;;
+    esac
+    ;;
+  Linux)  RID="linux-x64" ;;
+  *)      echo "Unsupported OS: ${OS}" >&2; exit 1 ;;
+esac
+
+OUT_DIR="${REPO_ROOT}/out/${RID}"
+
+echo "==> Building CLI for ${RID}..."
+dotnet publish "${REPO_ROOT}/src/Napper.Cli/Napper.Cli.fsproj" \
+  -r "${RID}" \
   --self-contained \
   -p:PublishTrimmed=true \
   -p:PublishSingleFile=true \
-  -o "out/$NAP_RID" \
+  -o "${OUT_DIR}" \
   --nologo
 
-echo "==> CLI built → out/$NAP_RID/"
-
-# --- Copy into extension bin/ so tests can find it ---
-EXT_BIN="src/Nap.VsCode/bin"
-mkdir -p "$EXT_BIN"
-cp "out/$NAP_RID/napper" "$EXT_BIN/napper"
-echo "==> Copied CLI → $EXT_BIN/"
-
-# --- Install to PATH so it overrides any stale released binary ---
-mkdir -p "$HOME/.local/bin"
-cp "out/$NAP_RID/napper" "$HOME/.local/bin/napper"
-chmod +x "$HOME/.local/bin/napper"
-echo "==> Installed CLI → ~/.local/bin/napper"
-
-# --- Verify CLI version matches fsproj ---
-EXPECTED_VERSION=$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' Directory.Build.props)
-ACTUAL_VERSION=$("out/$NAP_RID/napper" --version)
-if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
-  echo "ERROR: Version mismatch — expected $EXPECTED_VERSION, got $ACTUAL_VERSION"
-  exit 1
-fi
-echo "==> CLI version verified: $ACTUAL_VERSION"
+echo "==> CLI built → ${OUT_DIR}/"
+mkdir -p "${EXT_BIN}"
+cp "${OUT_DIR}/napper" "${EXT_BIN}/napper"
+echo "==> Copied CLI → ${EXT_BIN}/"

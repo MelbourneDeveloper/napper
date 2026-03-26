@@ -1,0 +1,360 @@
+{
+  "name": "napper",
+  "displayName": "Napper",
+  "description": "CLI-first, test-oriented HTTP API testing tool. Send requests, run assertions, manage environments.",
+  "version": "0.6.0",
+  "publisher": "nimblesite",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MelbourneDeveloper/napper"
+  },
+  "homepage": "https://github.com/MelbourneDeveloper/napper",
+  "bugs": {
+    "url": "https://github.com/MelbourneDeveloper/napper/issues"
+  },
+  "keywords": [
+    "api",
+    "http",
+    "rest",
+    "testing",
+    "requests",
+    "api-testing",
+    "napper"
+  ],
+  "icon": "media/logo.png",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.nap",
+    "workspaceContains:**/*.naplist",
+    "workspaceContains:**/*.napenv",
+    "workspaceContains:**/*.http"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nap",
+        "extensions": [
+          ".nap"
+        ],
+        "aliases": [
+          "Napper Request",
+          "nap"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "naplist",
+        "extensions": [
+          ".naplist"
+        ],
+        "aliases": [
+          "Napper Playlist",
+          "naplist"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "napenv",
+        "extensions": [
+          ".napenv"
+        ],
+        "aliases": [
+          "Napper Environment",
+          "napenv"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nap",
+        "scopeName": "source.nap",
+        "path": "./syntaxes/nap.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json.nap": "json"
+        }
+      },
+      {
+        "language": "naplist",
+        "scopeName": "source.naplist",
+        "path": "./syntaxes/naplist.tmLanguage.json"
+      },
+      {
+        "language": "napenv",
+        "scopeName": "source.napenv",
+        "path": "./syntaxes/napenv.tmLanguage.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "napper-panel",
+          "title": "Napper",
+          "icon": "media/napper-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "napper-panel": [
+        {
+          "id": "napperExplorer",
+          "name": "Explorer",
+          "icon": "media/napper-icon.png"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "napper.runFile",
+        "title": "Napper: Run File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "napper.runAll",
+        "title": "Napper: Run All"
+      },
+      {
+        "command": "napper.newRequest",
+        "title": "Napper: New Request",
+        "icon": "$(add)"
+      },
+      {
+        "command": "napper.newPlaylist",
+        "title": "Napper: New Playlist"
+      },
+      {
+        "command": "napper.switchEnvironment",
+        "title": "Napper: Switch Environment"
+      },
+      {
+        "command": "napper.copyAsCurl",
+        "title": "Napper: Copy as curl"
+      },
+      {
+        "command": "napper.openResponse",
+        "title": "Napper: Open Response Panel"
+      },
+      {
+        "command": "napper.savePlaylistReport",
+        "title": "Napper: Save Playlist Report"
+      },
+      {
+        "command": "napper.importOpenApiUrl",
+        "title": "Napper: Import from OpenAPI URL",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "napper.importOpenApiFile",
+        "title": "Napper: Import from OpenAPI File",
+        "icon": "$(file-symlink-file)"
+      },
+      {
+        "command": "napper.addToPlaylist",
+        "title": "Add to Playlist..."
+      },
+      {
+        "command": "napper.performanceTest",
+        "title": "Performance Test"
+      },
+      {
+        "command": "napper.deleteFile",
+        "title": "Delete",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "napper.addNapToPlaylist",
+        "title": "Add .nap..."
+      },
+      {
+        "command": "napper.addScriptToPlaylist",
+        "title": "Add Script..."
+      },
+      {
+        "command": "napper.duplicatePlaylist",
+        "title": "Duplicate"
+      },
+      {
+        "command": "napper.copyPath",
+        "title": "Copy Path"
+      },
+      {
+        "command": "napper.enrichWithAi",
+        "title": "Enrich with AI",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "napper.convertHttpFile",
+        "title": "Napper: Convert .http to .nap",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "napper.convertHttpDirectory",
+        "title": "Napper: Convert .http Directory to .nap"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "napper.newRequest",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "napper.importOpenApiUrl",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "napper.importOpenApiFile",
+          "when": "view == napperExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "napper.runFile",
+          "when": "view == napperExplorer && viewItem =~ /requestFile|playlist/",
+          "group": "inline"
+        },
+        {
+          "command": "napper.runFile",
+          "when": "view == napperExplorer && viewItem =~ /requestFile|playlist/",
+          "group": "1_run"
+        },
+        {
+          "command": "napper.addToPlaylist",
+          "when": "view == napperExplorer && viewItem == scriptFile",
+          "group": "2_add"
+        },
+        {
+          "command": "napper.addNapToPlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@1"
+        },
+        {
+          "command": "napper.addScriptToPlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@2"
+        },
+        {
+          "command": "napper.importOpenApiUrl",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@3"
+        },
+        {
+          "command": "napper.importOpenApiFile",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "2_add@4"
+        },
+        {
+          "command": "napper.duplicatePlaylist",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@1"
+        },
+        {
+          "command": "napper.copyPath",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@2"
+        },
+        {
+          "command": "napper.enrichWithAi",
+          "when": "view == napperExplorer && viewItem == playlist",
+          "group": "3_edit@3"
+        },
+        {
+          "command": "napper.performanceTest",
+          "when": "view == napperExplorer && viewItem == scriptFile",
+          "group": "3_edit"
+        },
+        {
+          "command": "napper.deleteFile",
+          "when": "view == napperExplorer && viewItem =~ /scriptFile|playlist/",
+          "group": "9_delete"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "napper.convertHttpFile",
+          "when": "resourceExtname == .http || resourceExtname == .rest",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Napper",
+      "properties": {
+        "napper.defaultEnvironment": {
+          "type": "string",
+          "default": "",
+          "description": "Active environment name"
+        },
+        "napper.autoRunOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Re-run the request when the file is saved"
+        },
+        "napper.splitEditorLayout": {
+          "type": "string",
+          "enum": [
+            "beside",
+            "below"
+          ],
+          "default": "beside",
+          "description": "Layout for the response panel"
+        },
+        "napper.maskSecretsInPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask variables sourced from .napenv.local in hover tooltips"
+        },
+        "napper.cliPath": {
+          "type": "string",
+          "default": "napper",
+          "description": "Path or command name for the Napper CLI binary"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "build:cli": "bash ../../scripts/build-cli.sh",
+    "compile": "webpack --mode production",
+    "compile:tests": "tsc -p tsconfig.test.json",
+    "watch": "webpack --mode development --watch",
+    "pretest": "npm run build:cli && npm run compile && npm run compile:tests",
+    "test": "vscode-test",
+    "test:unit": "npm run compile:tests && c8 mocha out/test/unit/**/*.test.js --ui tdd --timeout 5000",
+    "lint": "eslint src",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.3.2",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "c8": "^11.0.0",
+    "eslint": "^10.0.2",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.5",
+    "prettier": "^3.8.1",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "webpack": "^5.105.3",
+    "webpack-cli": "^6.0.1"
+  }
+}

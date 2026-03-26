@@ -1,0 +1,30 @@
+id = "nap"
+name = "Nap"
+description = "Language support for Nap API testing files (.nap, .naplist, .napenv)"
+version = "0.1.0"
+schema_version = 1
+authors = ["Christian Findlay <christian@napapi.dev>"]
+repository = "https://github.com/nicknap/napper"
+
+[grammars.nap]
+repository = "file:///Users/christianfindlay/Documents/Code/ApiTesting/src/Napper.Zed/grammars/tree-sitter-nap"
+rev = "70c16517498078236bde80c8824af2ca5549f051"
+
+[grammars.naplist]
+repository = "file:///Users/christianfindlay/Documents/Code/ApiTesting/src/Napper.Zed/grammars/tree-sitter-naplist"
+rev = "ab2aa9511c3849f20fd488c8197cf78ebdd2648a"
+
+[grammars.napenv]
+repository = "file:///Users/christianfindlay/Documents/Code/ApiTesting/src/Napper.Zed/grammars/tree-sitter-napenv"
+rev = "0680806d478a53b3885b914cd48e1e9fffa812e6"
+
+[language_servers.nap-lsp]
+languages = ["Nap", "Naplist", "Napenv"]
+
+[slash_commands.nap-run]
+description = "Run a .nap or .naplist file and show results"
+requires_argument = true
+
+[slash_commands.nap-import-openapi]
+description = "Generate .nap files from an OpenAPI spec"
+requires_argument = true

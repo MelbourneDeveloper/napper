@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestHelpers.fs" />
+    <Compile Include="Tests.fs" />
+    <Compile Include="HttpMethodTests.fs" />
+    <Compile Include="ParserEdgeCaseTests.fs" />
+    <Compile Include="AssertionEdgeCaseTests.fs" />
+    <Compile Include="EnvironmentEdgeCaseTests.fs" />
+    <Compile Include="OutputEdgeCaseTests.fs" />
+    <Compile Include="CliArgTests.fs" />
+    <Compile Include="ScriptEdgeCaseTests.fs" />
+    <Compile Include="CsxScriptTests.fs" />
+    <Compile Include="CliIntegrationTests.fs" />
+    <Compile Include="HttpToNapConverterTests.fs" />
+    <Compile Include="OpenApiGeneratorTests.fs" />
+    <Compile Include="OpenApiCliTests.fs" />
+    <Compile Include="LoggerTests.fs" />
+    <Compile Include="RunnerE2eTests.fs" />
+    <Compile Include="OpenApiE2eTests.fs" />
+    <Compile Include="HttpConvertE2eTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="8.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Napper.Core\Napper.Core.fsproj" />
+  </ItemGroup>
+
+</Project>

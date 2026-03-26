@@ -1,0 +1,12 @@
+{
+  "name": "tree-sitter-nap",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for Nap API testing files",
+  "tree-sitter": [
+    {
+      "scope": "source.nap",
+      "file-types": ["nap"],
+      "highlights": "queries/highlights.scm"
+    }
+  ]
+}

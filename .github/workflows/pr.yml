@@ -10,20 +10,32 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/Nap.VsCode
+        working-directory: src/Napper.VsCode
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: src/Napper.VsCode/package-lock.json
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.fsproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
@@ -34,15 +46,38 @@ jobs:
       - name: Unit tests with coverage
         run: npm run test:unit
 
+      - name: Add CLI to PATH
+        run: echo "${{ github.workspace }}/src/Napper.VsCode/bin" >> "$GITHUB_PATH"
+
       - name: E2E tests
         run: xvfb-run --auto-servernum npm test
+
+      - name: Extract TypeScript coverage percentage
+        id: ts-coverage
+        run: |
+          COVERAGE=$(npx c8 report --reporter text 2>/dev/null | grep 'All files' | awk '{print $4}' || echo "0")
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Check TypeScript coverage threshold
+        run: |
+          ACTUAL="${{ steps.ts-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.TS_COVERAGE_THRESHOLD }}"
+          echo "TypeScript coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::TypeScript coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
 
       - name: Upload TypeScript coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: typescript-coverage
-          path: coverage/typescript/report/
+          path: src/Napper.VsCode/coverage/
 
   test-fsharp:
     name: F# Build & Tests
@@ -54,17 +89,73 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.fsproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Install dotnet-script
         run: dotnet tool install -g dotnet-script
 
-      - name: Build
-        run: dotnet build --nologo
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Format check (Fantomas)
+        run: dotnet fantomas --check src/
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (warnings are errors)
+        run: dotnet build --no-restore --nologo -warnaserror
 
       - name: Test with coverage
-        run: bash scripts/test-fsharp.sh
+        run: make test-fsharp
+
+      - name: Extract Napper.Core coverage percentage
+        id: napcore-coverage
+        run: |
+          COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' coverage/fsharp/report/Summary.txt || echo "0")
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Check Napper.Core coverage threshold
+        run: |
+          ACTUAL="${{ steps.napcore-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.FSHARP_COVERAGE_THRESHOLD }}"
+          echo "Napper.Core coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::Napper.Core coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Extract DotHttp coverage percentage
+        id: dothttp-coverage
+        run: |
+          COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' coverage/dothttp/report/Summary.txt || echo "0")
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Check DotHttp coverage threshold
+        run: |
+          ACTUAL="${{ steps.dothttp-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.DOTHTTP_COVERAGE_THRESHOLD }}"
+          echo "DotHttp coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::DotHttp coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
 
       - name: Upload F# coverage
         if: always()
@@ -72,6 +163,111 @@ jobs:
         with:
           name: fsharp-coverage
           path: coverage/fsharp/report/
+
+      - name: Upload DotHttp coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dothttp-coverage
+          path: coverage/dothttp/report/
+
+      - name: Extract Napper.Lsp coverage percentage
+        id: lsp-coverage
+        run: |
+          if [ -f coverage/lsp/report/Summary.txt ]; then
+            COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' coverage/lsp/report/Summary.txt || echo "0")
+          else
+            COVERAGE="0"
+          fi
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Check Napper.Lsp coverage threshold
+        run: |
+          ACTUAL="${{ steps.lsp-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.LSP_COVERAGE_THRESHOLD }}"
+          echo "Napper.Lsp coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if [ "$ACTUAL" = "0" ] && grep -q 'Assemblies: 0' coverage/lsp/report/Summary.txt 2>/dev/null; then
+            echo "LSP tests are integration tests (subprocess) — skipping coverage threshold"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::Napper.Lsp coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload Napper.Lsp coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lsp-coverage
+          path: coverage/lsp/report/
+
+  test-rust:
+    name: Rust Build & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Napper.Zed
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/Napper.Zed/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src/Napper.Zed/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        run: cargo clippy
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Test with coverage
+        run: cargo tarpaulin --out xml html --output-dir ../../coverage/rust/report --skip-clean
+
+      - name: Extract Rust coverage percentage
+        id: rust-coverage
+        run: |
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' ../../coverage/rust/report/cobertura.xml 2>/dev/null || echo "0")
+          COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc -l | xargs printf "%.2f")
+          echo "coverage=$COVERAGE_PCT" >> "$GITHUB_OUTPUT"
+
+      - name: Check Rust coverage threshold
+        run: |
+          ACTUAL="${{ steps.rust-coverage.outputs.coverage }}"
+          THRESHOLD="${{ vars.RUST_COVERAGE_THRESHOLD }}"
+          echo "Rust coverage: ${ACTUAL}% (threshold: ${THRESHOLD}%)"
+          if [ -z "$THRESHOLD" ] || [ "$THRESHOLD" = "0" ]; then
+            echo "No threshold set — skipping"
+            exit 0
+          fi
+          if (( $(echo "$ACTUAL < $THRESHOLD" | bc -l) )); then
+            echo "::error::Rust coverage ${ACTUAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload Rust coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-coverage
+          path: coverage/rust/report/
 
   build-website:
     name: Website Build
@@ -85,6 +281,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
 
       - name: Install dependencies
         run: npm ci

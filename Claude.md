@@ -1,6 +1,7 @@
 ## Too Many Cooks
 
 You are working with many other agents. Make sure there is effective cooperation
+
 - Register on TMC immediately
 - Don't edit files that are locked; lock files when editing
 - COMMUNICATE REGULARLY AND COORDINATE WITH OTHERS THROUGH MESSAGES
@@ -16,31 +17,43 @@ You are working with many other agents. Make sure there is effective cooperation
 - **Heavy logging at all levels** - Logs are critical, even in tests
 - **No suppressing warnings** - Fix them properly
 - **Use a robust library for CLI arg parsing** - Don't use Regex
-- **No REGEX matching on structured data like JSON, YAML, TOML** - Regex is only for extreme corner cases
+- **No REGEX matching on structured data like JSON, .HTTP, YAML, TOML, F#, TS, etc** - Use a well-established parser. Regex is only for extreme corner cases
 - **Expressions over assignments** - Prefer const and immutable patterns
 - **Named parameters** - Use object params for functions with 1+ args
 - **Keep files under 450 LOC and functions under 20 LOC**
 - **No commented-out code** - Delete it
 - **No placeholders** - If incomplete, leave LOUD compilation error with TODO
 
+### Rust
+
+- We will soon be inserting an LSP so keep the code loose enough that this will be easy
+- Keep files under 500 LOC
+- Run fmt and clippy regularly!!!
+
 ### Typescript
+
+- We will soon be inserting an LSP so keep the code loose enough that this will be easy
 - **TypeScript strict mode** - No `any`, no implicit types, turn all lints up to error
 - **Regularly run the linter** - Fix lint errors IMMEDIATELY
 - **Decouple providers from the VSCODE SDK** - No vscode sdk use within the providers
 - **Ignoring lints = ⛔️ illegal** - Fix violations immediately
 - **No throwing** - Only return `Result<T,E>`
 
-### F# 
+### F#
+
+- **⚠️ MAXIMUM CODE SHARING — NON-NEGOTIABLE** - All F# projects (Napper.Cli, Napper.Lsp, future consumers) MUST share logic through `Napper.Core`. If code could live in `Napper.Core`, it MUST live in `Napper.Core`. NEVER duplicate parsing, types, environment resolution, logging, or any domain logic across projects. Before writing ANY new module in a consumer project, check if it belongs in `Napper.Core` first.
 - **Idiomatic F#**
 - **Move content out of the fsproj files and into Directory.Build.props**
 - **Standard F# result types** - Use the standard F# built-in result types
 - **Turn on F# analyzers** - Strict rules to enforce F# best practice
+- **Prefer moving config from fsproj -> buildprops** avoid project config across projects
 
 ## Testing
 
 ⚠️ NEVER KILL VSCODE PROCESSES
 
 #### Rules
+
 - **Prefer e2e tests over unit tests** - only unit tests for isolating bugs
 - Separate e2e tests from unit tests by file. They should not be in the same file together.
 - **Add more assertions** - No, that's not enough. Add more!!!
@@ -52,23 +65,26 @@ You are working with many other agents. Make sure there is effective cooperation
 ### Automated (E2E) Testing
 
 **AUTOMATED TESTING IS BLACK BOX TESTING ONLY**
-- Only test the UI **THROUGH the UI**. 
-- Do not run command etc. to coerce the state. 
-- You are testing the UI, not the code. 
+
+- Only test the UI **THROUGH the UI**.
+- Do not run command etc. to coerce the state.
+- You are testing the UI, not the code.
 - Make assertions about the UI - not the internal state
-- This is true for both the CLI and the VSIX. 
-- The test VSIX must call the actual, real CLI. 
+- This is true for both the CLI and the VSIX.
+- The test VSIX must call the actual, real CLI.
 - VSIX tests run in actual VS Code window
 
 **Illegal VSIX testing patterns**
- * - ❌ Calling internal methods like provider.updateTasks()
- * - ❌ Calling provider.refresh() directly
- * - ❌ Manipulating internal state directly
- * - ❌ Using any method not exposed via VS Code commands
- * - ❌ Using commands that should just happen as part of normal use. e.g.: `await vscode.commands.executeCommand('commandtree.refresh');`
- * - ❌ `executeCommand('commandtree.addToQuick', item)` - TAP the item via the DOM!!!
+
+- - ❌ Calling internal methods like provider.updateTasks()
+- - ❌ Calling provider.refresh() directly
+- - ❌ Manipulating internal state directly
+- - ❌ Using any method not exposed via VS Code commands
+- - ❌ Using commands that should just happen as part of normal use. e.g.: `await vscode.commands.executeCommand('commandtree.refresh');`
+- - ❌ `executeCommand('commandtree.addToQuick', item)` - TAP the item via the DOM!!!
 
 ### Test First Process
+
 - Write test that fails because of bug/missing feature
 - Run tests to verify that test fails because of this reason
 - Adjust test and repeat until you see failure for the reason above
@@ -77,6 +93,7 @@ You are working with many other agents. Make sure there is effective cooperation
 - Repeat and fix until test passes WITHOUT changing the test
 
 **Every test MUST:**
+
 1. Assert on the ACTUAL OBSERVABLE BEHAVIOR (UI state, view contents, return values)
 2. Fail if the feature is broken
 3. Test the full flow, not just side effects like config files
@@ -87,25 +104,57 @@ You are working with many other agents. Make sure there is effective cooperation
 
 ```typescript
 // ❌ ILLEGAL - asserts true unconditionally
-assert.ok(true, 'Should work');
+assert.ok(true, "Should work");
 
 // ❌ ILLEGAL - no assertion on actual behavior
-try { await doSomething(); } catch { }
-assert.ok(true, 'Did not crash');
+try {
+  await doSomething();
+} catch {}
+assert.ok(true, "Did not crash");
 
 // ❌ ILLEGAL - only checks config file, not actual UI/view behavior
-writeConfig({ quick: ['task1'] });
+writeConfig({ quick: ["task1"] });
 const config = readConfig();
-assert.ok(config.quick.includes('task1')); // This doesn't test the FEATURE
+assert.ok(config.quick.includes("task1")); // This doesn't test the FEATURE
 
 // ❌ ILLEGAL - empty catch with success assertion
-try { await command(); } catch { /* swallow */ }
-assert.ok(true, 'Command ran');
+try {
+  await command();
+} catch {
+  /* swallow */
+}
+assert.ok(true, "Command ran");
 ```
+
+## Specs Structure
+
+The `specs/` directory contains the product specification, split by concern and by CLI vs IDE extension:
+
+- **`CLI-*.md`** — CLI specification and plan
+- **`IDE-EXTENSION-*.md`** — Shared extension spec + VSCode-specific plan
+- **`ZED-EXTENSION-PLAN.md`** — Zed-specific extension plan
+- **`LSP-SPEC.md`** — Nap Language Server specification (F# binary, LSP 3.17 over stdio)
+- **`LSP-PLAN.md`** — LSP implementation phases and TODO
+- **`*-OPENAPI-GENERATION-*.md`** — OpenAPI generation, split by CLI and extension
+- **`FILE-FORMATS-SPEC.md`** — Shared `.nap`, `.napenv`, `.naplist` format specs
+- **`SCRIPTING-SPEC.md`** — F# scripting model (NapContext, NapRunner)
+- **`HTTP-FILES-SPEC.md`** — .http file compatibility (converter + direct run)
+- **`HTTP-FILES-PLAN.md`** — .http converter implementation phases
+
+Plan files end with a TODO checklist. Specs describe _what_, plans describe _how and when_.
+
+Extensions target **VSCode and Zed** as primary IDEs (Neovim future). All extensions shell out to the Nap CLI — no IDE re-implements HTTP logic. A portable **Nap Language Server (LSP)** provides completions, diagnostics, and hover across all IDEs.
 
 ## Critical Docs
 
+### Zed SDK
+
+[Zed Extension Development](https://zed.dev/docs/extensions/developing-extensions)
+[Zed Language Extensions](https://zed.dev/docs/extensions/languages)
+[Zed Slash Commands](https://zed.dev/docs/extensions/slash-commands)
+
 ### Vscode SDK
+
 [VSCode Extension API](https://code.visualstudio.com/api/)
 [VSCode Extension Testing API](https://code.visualstudio.com/api/extension-guides/testing)
 [VSCODE Language Model API](https://code.visualstudio.com/api/extension-guides/ai/language-model)
@@ -120,3 +169,6 @@ https://developers.google.com/search/docs/fundamentals/seo-starter-guide
 
 https://studiohawk.com.au/blog/how-to-optimise-ai-overviews/
 https://about.ads.microsoft.com/en/blog/post/october-2025/optimizing-your-content-for-inclusion-in-ai-search-answers
+
+Never stamp commits with this. You ARE NOT THE COAUTHOR!!!
+Co-Authored-By: C*** <noreply@anthropic.com>

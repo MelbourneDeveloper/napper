@@ -1,0 +1,136 @@
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const EXTENSION_ID = 'nimblesite.napper';
+
+interface TestContext {
+  readonly extension: vscode.Extension<unknown>;
+  readonly workspaceRoot: string;
+}
+
+export const activateExtension = async (): Promise<TestContext> => {
+  const extension = vscode.extensions.getExtension(EXTENSION_ID);
+  if (!extension) {
+    throw new Error(`Extension ${EXTENSION_ID} not found`);
+  }
+
+  if (!extension.isActive) {
+    await extension.activate();
+  }
+
+  const { workspaceFolders } = vscode.workspace;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    throw new Error('No workspace folder open');
+  }
+
+  const [firstFolder] = workspaceFolders;
+  if (!firstFolder) {
+    throw new Error('No workspace folder open');
+  }
+
+  return {
+    extension,
+    workspaceRoot: firstFolder.uri.fsPath,
+  };
+};
+
+export const sleep = async (ms: number): Promise<void> => {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+export const getFixturePath = (relativePath: string): string => {
+  const { workspaceFolders } = vscode.workspace;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    throw new Error('No workspace folder open');
+  }
+  const [firstFolder] = workspaceFolders;
+  if (!firstFolder) {
+    throw new Error('No workspace folder open');
+  }
+  return path.join(firstFolder.uri.fsPath, relativePath);
+};
+
+export const getExtensionPath = (relativePath: string): string => {
+  const extension = vscode.extensions.getExtension(EXTENSION_ID);
+  if (!extension) {
+    throw new Error(`Extension ${EXTENSION_ID} not found`);
+  }
+  return path.join(extension.extensionPath, relativePath);
+};
+
+export const fileExists = (filePath: string): boolean => fs.existsSync(filePath);
+
+export const readFixtureFile = (relativePath: string): string =>
+  fs.readFileSync(getFixturePath(relativePath), 'utf-8');
+
+export const writeFixtureFile = (relativePath: string, content: string): void => {
+  const fullPath = getFixturePath(relativePath),
+    dir = path.dirname(fullPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(fullPath, content, 'utf-8');
+};
+
+export const deleteFixtureFile = (relativePath: string): void => {
+  const fullPath = getFixturePath(relativePath);
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+  }
+};
+
+export const waitForCondition = async (
+  condition: () => boolean | Promise<boolean>,
+  timeout = 10000,
+  interval = 200,
+): Promise<void> => {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    if (await condition()) {
+      return;
+    }
+    await sleep(interval);
+  }
+  throw new Error(`Condition not met within ${timeout}ms`);
+};
+
+export const executeCommand = async <T>(command: string, ...args: unknown[]): Promise<T> =>
+  vscode.commands.executeCommand<T>(command, ...args);
+
+export const getRegisteredCommands = async (): Promise<string[]> =>
+  vscode.commands.getCommands(true);
+
+export const openDocument = async (relativePath: string): Promise<vscode.TextDocument> => {
+  const fullPath = getFixturePath(relativePath),
+    doc = await vscode.workspace.openTextDocument(fullPath);
+  await vscode.window.showTextDocument(doc);
+  return doc;
+};
+
+export const closeAllEditors = async (): Promise<void> => {
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+};
+
+export const extractStepLines = (content: string): string[] => {
+  const lines = content.split('\n'),
+    steps: string[] = [];
+  let inSteps = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === '[steps]') {
+      inSteps = true;
+      continue;
+    }
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      inSteps = false;
+      continue;
+    }
+    if (inSteps && trimmed.length > 0 && !trimmed.startsWith('#')) {
+      steps.push(trimmed);
+    }
+  }
+  return steps;
+};

@@ -8,7 +8,7 @@ eleventyNavigation:
   order: 8
 ---
 
-# Assertions
+# Assertions (spec: nap-assert)
 
 The `[assert]` section in `.nap` files provides declarative assertions on HTTP responses. No scripting needed for common checks.
 
@@ -20,14 +20,14 @@ Each assertion is a single line in the form:
 target operator value
 ```
 
-## Status code
+## Status code (spec: assert-status)
 
 ```
 [assert]
 status = 200
 ```
 
-## JSON body paths
+## JSON body paths (spec: assert-equals, assert-exists, assert-gt)
 
 Assert on values in the JSON response body using dot notation:
 
@@ -39,7 +39,7 @@ body.email exists
 body.users.length > 0
 ```
 
-## Headers
+## Headers (spec: assert-contains, assert-exists)
 
 Check response headers:
 
@@ -49,7 +49,7 @@ headers.Content-Type contains "application/json"
 headers.X-Request-Id exists
 ```
 
-## Response time
+## Response time (spec: assert-lt)
 
 Assert that the response completes within a time limit:
 
@@ -61,13 +61,14 @@ duration < 2s
 
 ## Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `=` | Equals | `status = 200` |
-| `>` | Greater than | `body.count > 0` |
-| `<` | Less than | `duration < 500ms` |
-| `exists` | Field is present | `body.id exists` |
-| `contains` | String contains | `headers.Content-Type contains "json"` |
+| Operator | Description | Example | Spec |
+|----------|-------------|---------|------|
+| `=` | Equals | `status = 200` | (spec: assert-equals) |
+| `>` | Greater than | `body.count > 0` | (spec: assert-gt) |
+| `<` | Less than | `duration < 500ms` | (spec: assert-lt) |
+| `exists` | Field is present | `body.id exists` | (spec: assert-exists) |
+| `contains` | String contains | `headers.Content-Type contains "json"` | (spec: assert-contains) |
+| `matches` | Regex match | `body.email matches "^.+@.+$"` | (spec: assert-matches) |
 
 ## Multiple assertions
 

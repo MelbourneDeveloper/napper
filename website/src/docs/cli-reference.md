@@ -12,7 +12,7 @@ eleventyNavigation:
 
 ## Commands
 
-### `napper run`
+### `napper run` (spec: cli-run)
 
 Run a `.nap` file, `.naplist` file, or folder.
 
@@ -29,23 +29,23 @@ napper run ./tests/
 
 #### Flags
 
-| Flag | Description | Example |
-|------|-------------|---------|
-| `--env <name>` | Use a named environment | `--env staging` |
-| `--var <key=value>` | Override a variable | `--var userId=42` |
-| `--output <format>` | Output format | `--output junit` |
+| Flag | Description | Example | Spec |
+|------|-------------|---------|------|
+| `--env <name>` | Use a named environment | `--env staging` | (spec: cli-env) |
+| `--var <key=value>` | Override a variable | `--var userId=42` | (spec: cli-var) |
+| `--output <format>` | Output format | `--output junit` | (spec: cli-output) |
+| `--verbose` | Enable verbose output with detailed request/response info | `--verbose` | (spec: cli-verbose) |
 
-#### Output formats
+#### Output formats (spec: cli-output)
 
-| Format | Description |
-|--------|-------------|
-| `pretty` | Human-readable colored output (default) |
-| `junit` | JUnit XML for CI integration |
-| `tap` | TAP (Test Anything Protocol) |
-| `json` | JSON report |
-| `ndjson` | Newline-delimited JSON (streaming) |
+| Format | Description | Spec |
+|--------|-------------|------|
+| `pretty` | Human-readable colored output (default) | (spec: output-pretty) |
+| `junit` | JUnit XML for CI integration | (spec: output-junit) |
+| `json` | JSON report | (spec: output-json) |
+| `ndjson` | Newline-delimited JSON (streaming) | (spec: output-ndjson) |
 
-### `napper check`
+### `napper check` (spec: cli-check)
 
 Validate syntax without executing requests.
 
@@ -53,15 +53,45 @@ Validate syntax without executing requests.
 napper check ./suite.naplist
 ```
 
-### `napper list`
+### `napper convert http` (spec: cli-convert)
 
-List all requests in a path.
+Convert `.http` files to `.nap` format. Supports both Microsoft (VS Code REST Client) and JetBrains (IntelliJ, Rider, WebStorm) dialects.
 
 ```bash
-napper list ./
+# Convert a single .http file
+napper convert http ./requests.http
+
+# Convert a directory of .http files
+napper convert http ./api-tests/ --output-dir ./nap-tests/
+
+# Preview without writing files
+napper convert http ./requests.http --dry-run
+
+# Specify dialect explicitly
+napper convert http ./requests.http --dialect jb
 ```
 
-## Exit codes
+#### Flags
+
+| Flag | Description | Example | Spec |
+|------|-------------|---------|------|
+| `--output-dir <path>` | Output directory for converted files | `--output-dir ./nap/` | (spec: cli-convert) |
+| `--env-file <path>` | JetBrains environment file | `--env-file http-client.env.json` | (spec: cli-convert) |
+| `--dialect <ms\|jb\|auto>` | Force dialect detection | `--dialect jb` | (spec: cli-convert) |
+| `--dry-run` | Preview conversion without writing | `--dry-run` | (spec: cli-convert) |
+| `--verbose` | Show detailed conversion output | `--verbose` | (spec: cli-verbose) |
+
+The converter maps variables to `.napenv` files, preserves request names, and warns about unsupported features (WebSocket, gRPC, GraphQL).
+
+### `napper generate` (spec: cli-generate, openapi-generate)
+
+Generate `.nap` files from an OpenAPI specification.
+
+```bash
+napper generate openapi ./openapi.json
+```
+
+## Exit codes (spec: cli-exit-codes)
 
 | Code | Meaning |
 |------|---------|

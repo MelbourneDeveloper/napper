@@ -13,7 +13,7 @@ permalink: /
     <p class="hero-subtitle">
       Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code.
       Define HTTP requests as plain text <code>.nap</code> files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output.
-      As simple as curl for quick requests. As powerful as F# and C# for full test suites.
+      Migrate from <code>.http</code> files with a single command. As simple as curl for quick requests. As powerful as F# and C# for full test suites.
     </p>
     <div class="hero-actions">
       <a href="/docs/installation/" class="btn btn-primary">Get Started</a>
@@ -113,6 +113,14 @@ permalink: /
         <h3>Plain Text, Git Friendly</h3>
         <p>Every request is a <code>.nap</code> file. Every environment is a <code>.napenv</code> file. Version control everything. No binary blobs, no lock-in.</p>
       </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(27,73,101,0.12); color: #1B4965;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </div>
+        <h3>.http File Conversion</h3>
+        <p>Migrate from <code>.http</code> files with one command. Napper converts both Microsoft (REST Client) and JetBrains formats to <code>.nap</code> files, including variables and environments.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -173,7 +181,7 @@ permalink: /
         </tr>
         <tr>
           <td>CI/CD output formats</td>
-          <td><span class="check">JUnit, TAP, JSON</span></td>
+          <td><span class="check">JUnit, JSON, NDJSON</span></td>
           <td><span class="check">Via Newman</span></td>
           <td><span class="check">Via CLI</span></td>
           <td><span class="cross">None</span></td>
@@ -191,6 +199,13 @@ permalink: /
           <td><span class="cross">Freemium</span></td>
           <td><span class="check">Yes</span></td>
           <td><span class="check">Yes</span></td>
+        </tr>
+        <tr>
+          <td>.http file migration</td>
+          <td><span class="check">Built-in converter</span></td>
+          <td><span class="cross">Import only</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">N/A</span></td>
         </tr>
         <tr>
           <td>No account required</td>
@@ -313,7 +328,7 @@ permalink: /
 
     <div class="faq-item">
       <h3>Does Napper work with CI/CD pipelines?</h3>
-      <p>Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, TAP, JSON, and NDJSON formats. It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats. Exit code 0 means all assertions passed, exit code 1 means a test failed.</p>
+      <p>Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, JSON, and NDJSON formats (<code>cli-output</code>). It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats. Exit code 0 means all assertions passed, exit code 1 means a test failed (<code>cli-exit-codes</code>).</p>
     </div>
 
     <div class="faq-item">
@@ -324,6 +339,11 @@ permalink: /
     <div class="faq-item">
       <h3>What file formats does Napper use?</h3>
       <p>Napper uses three plain text file formats: <code>.nap</code> files for individual HTTP requests, <code>.naplist</code> files for composing requests into ordered test suites, and <code>.napenv</code> files for environment-specific variables like base URLs and tokens. All files are human-readable, git-friendly, and produce clean diffs in code reviews.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Can I convert my existing .http files to Napper?</h3>
+      <p>Yes. Napper includes a built-in converter that transforms <code>.http</code> files into <code>.nap</code> files. Run <code>napper convert http ./requests.http</code> and Napper will parse your requests, map variables to <code>.napenv</code> files, and preserve request names. The converter supports both Microsoft (VS Code REST Client) and JetBrains (IntelliJ, Rider, WebStorm) <code>.http</code> dialects, including environment files like <code>http-client.env.json</code>.</p>
     </div>
 
     <div class="faq-item">
@@ -390,7 +410,7 @@ permalink: /
       "name": "Does Napper work with CI/CD pipelines?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, TAP, JSON, and NDJSON formats. It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats."
+        "text": "Yes. Napper is designed for CI/CD from the ground up. The CLI binary is self-contained with no runtime dependencies. It outputs JUnit XML, JSON, and NDJSON formats. It integrates with GitHub Actions, GitLab CI, Jenkins, Azure DevOps, and any platform that supports standard test output formats."
       }
     },
     {
@@ -407,6 +427,14 @@ permalink: /
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Napper uses three plain text file formats: .nap files for individual HTTP requests, .naplist files for composing requests into ordered test suites, and .napenv files for environment-specific variables like base URLs and tokens."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I convert my existing .http files to Napper?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Napper includes a built-in converter that transforms .http files into .nap files. Run napper convert http ./requests.http and Napper will parse your requests, map variables to .napenv files, and preserve request names. The converter supports both Microsoft (VS Code REST Client) and JetBrains (IntelliJ, Rider, WebStorm) .http dialects, including environment files like http-client.env.json."
       }
     },
     {
@@ -449,8 +477,9 @@ permalink: /
     "F# and C# scripting for advanced request flows",
     "Composable test suites with .naplist playlists",
     "Environment variable management with .napenv files",
-    "JUnit XML, TAP, JSON, NDJSON output for CI/CD",
-    "Native VS Code Test Explorer integration"
+    "JUnit XML, JSON, NDJSON output for CI/CD",
+    "Native VS Code Test Explorer integration",
+    "Built-in .http file converter for Microsoft and JetBrains formats"
   ]
 }
 </script>

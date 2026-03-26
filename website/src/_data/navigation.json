@@ -32,7 +32,7 @@
       ]
     },
     {
-      "title": "Compare",
+      "title": "Migrate",
       "items": [
         { "text": "vs Postman", "url": "/docs/vs-postman/" },
         { "text": "vs Bruno", "url": "/docs/vs-bruno/" },
@@ -60,7 +60,7 @@
       ]
     },
     {
-      "title": "Compare",
+      "title": "Migrate",
       "items": [
         { "text": "vs Postman", "url": "/docs/vs-postman/" },
         { "text": "vs Bruno", "url": "/docs/vs-bruno/" },

@@ -6,8 +6,8 @@ author: Christian Findlay
 tags: posts
 category: announcements
 excerpt: "Meet Napper — a free, open-source API testing tool that puts the CLI first, stores everything as plain text, and gives you the full power of C# and F# scripting with the entire .NET ecosystem."
-description: "Introducing Napper, a free, open-source, CLI-first API testing tool for VS Code. A modern alternative to Postman, Bruno, and .http files with C# and F# scripting, declarative assertions, composable test suites, and CI/CD integration via JUnit XML."
-keywords: "API testing, VS Code extension, C# scripting, F# scripting, CLI API testing, Postman alternative, Bruno alternative, HTTP testing, REST API testing, .NET API testing, CI/CD testing, JUnit XML, open source API testing tool"
+description: "Introducing Napper, a free, open-source, CLI-first API testing tool for VS Code. A modern alternative to Postman, Bruno, and .http files with C# and F# scripting, declarative assertions, composable test suites, built-in .http file conversion, and CI/CD integration via JUnit XML."
+keywords: "API testing, VS Code extension, C# scripting, F# scripting, CLI API testing, Postman alternative, Bruno alternative, HTTP testing, REST API testing, .NET API testing, CI/CD testing, JUnit XML, open source API testing tool, http file converter, convert http to nap"
 ---
 
 # Introducing Napper: CLI-First API Testing for VS Code with C# and F# Scripting
@@ -212,7 +212,7 @@ name = Full API Suite
 
 ## Built for CI/CD from day one
 
-Napper is designed for [continuous integration](/docs/ci-integration/). The CLI binary is self-contained with no runtime dependencies. It outputs [JUnit XML](https://github.com/testmoapp/junitxml), TAP, JSON, and NDJSON formats natively.
+Napper is designed for [continuous integration](/docs/ci-integration/). The CLI binary is self-contained with no runtime dependencies. It outputs [JUnit XML](https://github.com/testmoapp/junitxml), JSON, and NDJSON formats natively (`cli-output`).
 
 ### GitHub Actions
 
@@ -245,6 +245,24 @@ jobs:
 
 Napper exits with code `0` when all assertions pass and `1` when any assertion fails. This integrates natively with [GitHub Actions](https://github.com/features/actions), [GitLab CI](https://docs.gitlab.com/ci/), [Jenkins](https://www.jenkins.io/), [Azure DevOps](https://azure.microsoft.com/en-us/products/devops), and any CI platform that fails on non-zero exit codes.
 
+## Migrate from .http files with one command
+
+Already using `.http` files with VS Code REST Client or JetBrains IDEs? Napper includes a **built-in converter** that transforms your existing `.http` files into `.nap` format:
+
+```bash
+# Convert a single file
+napper convert http ./requests.http
+
+# Convert an entire directory
+napper convert http ./api-tests/ --output-dir ./nap-tests/
+```
+
+The converter supports both **Microsoft** (VS Code REST Client) and **JetBrains** (IntelliJ, Rider, WebStorm) `.http` dialects. It maps variables to `.napenv` files, preserves request names, converts JetBrains `http-client.env.json` environments, and warns about unsupported features like WebSocket or gRPC requests.
+
+Migration is non-destructive — your original `.http` files are untouched. Use `--dry-run` to preview what will be generated before writing any files. Once converted, you get all the benefits of Napper: declarative assertions, composable test suites, F# and C# scripting, and CI/CD integration.
+
+See [Napper vs .http files](/docs/vs-http-files/) for a full comparison.
+
 ## VS Code extension — native editor integration
 
 The [Napper VS Code extension](https://marketplace.visualstudio.com/items?itemName=nimblesite.napper) brings the full experience into your editor:
@@ -257,7 +275,7 @@ The [Napper VS Code extension](https://marketplace.visualstudio.com/items?itemNa
 - **Response inspection** with headers, body, and timing information
 - **Copy as curl** to share requests with teammates who don't use Napper
 
-Install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=nimblesite.napper):
+The extension relies on the CLI binary to run requests — [install the CLI](/docs/installation/) first, then install the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=nimblesite.napper):
 
 ```bash
 code --install-extension nimblesite.napper
@@ -272,8 +290,9 @@ code --install-extension nimblesite.napper
 | Git-friendly files | Plain text | JSON blobs | Yes | Yes |
 | Assertions | Declarative + scripts | JS scripts | JS scripts | None |
 | Scripting language | **C# + F# (.NET)** | Sandboxed JS | Sandboxed JS | None |
-| CI/CD output | JUnit, TAP, JSON | Via Newman | Via CLI | None |
+| CI/CD output | JUnit, JSON, NDJSON | Via Newman | Via CLI | None |
 | Test Explorer | Native | No | No | No |
+| .http file migration | Built-in converter | Import only | No | N/A |
 | Account required | No | Yes | No | No |
 | Price | Free (MIT) | Freemium | Free (MIT) | Free |
 
@@ -281,9 +300,10 @@ code --install-extension nimblesite.napper
 
 1. [Install the CLI or VS Code extension](/docs/installation/)
 2. Follow the [Quick Start guide](/docs/quick-start/) to create your first request
-3. Add [assertions](/docs/assertions/) to validate responses
-4. Set up [environments](/docs/environments/) for different targets
-5. Write [C# scripts](/docs/csharp-scripting/) or [F# scripts](/docs/fsharp-scripting/) for advanced flows
-6. Run everything in [CI/CD](/docs/ci-integration/) with JUnit XML output
+3. [Migrate existing .http files](/docs/vs-http-files/) with `napper convert http`
+4. Add [assertions](/docs/assertions/) to validate responses
+5. Set up [environments](/docs/environments/) for different targets
+6. Write [C# scripts](/docs/csharp-scripting/) or [F# scripts](/docs/fsharp-scripting/) for advanced flows
+7. Run everything in [CI/CD](/docs/ci-integration/) with JUnit XML output
 
 Napper is free, open source, and [MIT licensed](https://github.com/MelbourneDeveloper/napper/blob/main/LICENSE). Browse the source code and examples on [GitHub](https://github.com/MelbourneDeveloper/napper).

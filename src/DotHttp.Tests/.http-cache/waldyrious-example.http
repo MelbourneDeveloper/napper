@@ -1,0 +1,28 @@
+# To use with the [vscode-restclient](https://github.com/Huachao/vscode-restclient) extension
+
+#-------------------------------------------------------------------------------
+# Example with JSON data
+POST https://api.example.com/address
+Content-Type: application/json
+
+{
+  "foo": "bar",
+  "baz": "qux"
+}
+###
+
+#-------------------------------------------------------------------------------
+# Example with query parameters
+GET https://example.com/comments
+    ?page=2
+    &pageSize=10
+###
+
+#-------------------------------------------------------------------------------
+# Example with form-urlencoded data
+POST https://api.example.com/login
+Content-Type: application/x-www-form-urlencoded
+
+name=foo
+&password=bar
+###
