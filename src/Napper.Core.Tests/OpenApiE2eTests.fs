@@ -184,7 +184,7 @@ let ``Petstore POST endpoints have request body`` () =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains("POST {{baseUrl}}"))
+                content.Contains("method = POST"))
 
         Assert.True(postFiles.Length >= 1, "Must have at least one POST endpoint")
 
@@ -397,7 +397,7 @@ let ``Beeceptor POST endpoints have request body and headers`` () =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains "POST {{baseUrl}}")
+                content.Contains "method = POST")
         // auth/register, auth/login, cart/items, checkout, addresses POST = 5
         Assert.True(postFiles.Length >= 5, $"Must have at least 5 POST endpoints, got {postFiles.Length}")
 
@@ -483,7 +483,7 @@ let ``Beeceptor checkout endpoint asserts 201 status`` () =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains("POST {{baseUrl}}/checkout"))
+                content.Contains("method = POST") && content.Contains("url = {{baseUrl}}/checkout"))
 
         Assert.True(checkoutFiles.Length >= 1, "Must have checkout endpoint")
         let content = File.ReadAllText(checkoutFiles[0])
@@ -525,7 +525,7 @@ let ``Petstore POST endpoints include actual JSON body content`` () =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains("POST {{baseUrl}}") && content.Contains("[request.body]"))
+                content.Contains("method = POST") && content.Contains("[request.body]"))
 
         Assert.True(postFilesWithBody.Length >= 1, "Must have POST endpoints with body")
 

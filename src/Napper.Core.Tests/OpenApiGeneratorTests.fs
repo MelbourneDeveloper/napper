@@ -154,7 +154,8 @@ let ``OAS3 nap file contains meta section with name`` () =
 let ``OAS3 nap file contains request section`` () =
     let content = (unwrap minimalOas3 |> firstFile).Content
     Assert.Contains("[request]", content)
-    Assert.Contains("GET {{baseUrl}}/users", content)
+    Assert.Contains("method = GET", content)
+    Assert.Contains("url = {{baseUrl}}/users", content)
 
 [<Fact>]
 let ``OAS3 nap file contains assert section`` () =
@@ -201,7 +202,8 @@ let ``Swagger2 generates nap file`` () =
     let gen = unwrap minimalSwagger2
     Assert.Equal(1, gen.NapFiles.Length)
     let content = (firstFile gen).Content
-    Assert.Contains("GET {{baseUrl}}/items", content)
+    Assert.Contains("method = GET", content)
+    Assert.Contains("url = {{baseUrl}}/items", content)
 
 // --- Multiple endpoints --- Spec: openapi-nap-gen, openapi-params, openapi-assert-gen
 

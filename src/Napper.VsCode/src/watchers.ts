@@ -7,6 +7,7 @@ import type { Logger } from './logger';
 import {
   CONFIG_AUTO_RUN,
   CONFIG_SECTION,
+  DIRECTORY_GLOB,
   LOG_MSG_TREE_REFRESH,
   NAPLIST_EXTENSION,
   NAPLIST_GLOB,
@@ -24,6 +25,7 @@ export const registerWatchers = (
 ): void => {
   const napWatcher = vscode.workspace.createFileSystemWatcher(NAP_GLOB),
     naplistWatcher = vscode.workspace.createFileSystemWatcher(NAPLIST_GLOB),
+    dirWatcher = vscode.workspace.createFileSystemWatcher(DIRECTORY_GLOB),
     refreshExplorer = (): void => {
       log.debug(LOG_MSG_TREE_REFRESH);
       explorer.refresh();
@@ -34,7 +36,9 @@ export const registerWatchers = (
   naplistWatcher.onDidCreate(refreshExplorer);
   naplistWatcher.onDidDelete(refreshExplorer);
   naplistWatcher.onDidChange(refreshExplorer);
-  context.subscriptions.push(napWatcher, naplistWatcher);
+  dirWatcher.onDidCreate(refreshExplorer);
+  dirWatcher.onDidDelete(refreshExplorer);
+  context.subscriptions.push(napWatcher, naplistWatcher, dirWatcher);
 };
 
 export const registerAutoRun = (

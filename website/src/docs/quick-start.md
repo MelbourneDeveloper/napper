@@ -10,6 +10,8 @@ eleventyNavigation:
 
 # Quick Start
 
+![Screenshot: VS Code with a newly created hello.nap file open, showing the GET request line and the CodeLens Run button above it](quick-start-first-request.png)
+
 Get up and running with Napper in under 5 minutes.
 
 ## How do I create my first request? (spec: nap-minimal, nap-request)
@@ -94,8 +96,11 @@ napper run ./smoke.naplist --output junit > results.xml
 
 Napper exits with code 0 when all assertions pass, 1 when any assertion fails, and 2 on runtime errors. This integrates naturally with any CI platform that fails on non-zero exit codes.
 
+![Screenshot: Napper CLI output after running a .naplist suite, showing green checkmarks for all assertions and a summary pass/fail count](quick-start-suite-results.png)
+
 ## Next steps
 
 - Learn the [.nap file format](/docs/nap-files/) in detail
 - Build test suites with [.naplist files](/docs/naplist-files/)
 - Set up [environments](/docs/environments/) for different targets
+- [Import an OpenAPI spec](/docs/openapi-import/) to generate tests automatically

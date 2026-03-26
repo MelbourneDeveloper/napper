@@ -12,6 +12,7 @@ export const CSX_EXTENSION = '.csx';
 export const NAP_GLOB = '**/*.nap';
 export const NAPLIST_GLOB = '**/*.naplist';
 export const NAPENV_GLOB = '**/.napenv*';
+export const DIRECTORY_GLOB = '**/';
 
 // View IDs
 export const VIEW_EXPLORER = 'napperExplorer';
