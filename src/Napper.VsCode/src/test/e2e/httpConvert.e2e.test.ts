@@ -213,10 +213,13 @@ suite('HTTP Convert — Execute via VSCode Command', () => {
         !content.includes(SECTION_ASSERT),
         `${path.basename(napFile)} must not have [assert] section (generated, not hand-written)`,
       );
-      assert.ok(
-        content.includes('method'),
-        `${path.basename(napFile)} must specify an HTTP method`,
-      );
+      const hasMethod =
+        content.includes('GET ') ||
+        content.includes('POST ') ||
+        content.includes('PUT ') ||
+        content.includes('PATCH ') ||
+        content.includes('DELETE ');
+      assert.ok(hasMethod, `${path.basename(napFile)} must specify an HTTP method`);
     }
   });
 
