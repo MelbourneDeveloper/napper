@@ -25,6 +25,7 @@ EXT_BIN := src/Napper.VsCode/bin
 LOG_DIR := .commandtree/logs
 FSHARP_COVERAGE_DIR := coverage/fsharp
 DOTHTTP_COVERAGE_DIR := coverage/dothttp
+LSP_COVERAGE_DIR := coverage/lsp
 TS_COVERAGE_DIR := coverage/typescript
 RUST_COVERAGE_DIR := coverage/rust
 
@@ -226,6 +227,26 @@ test-fsharp:
 	@echo ""
 	@echo "=== DotHttp Coverage Summary ==="
 	@cat "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt"
+	@echo ""
+	@echo "========================================="
+	@echo "  Napper.Lsp Tests + Coverage"
+	@echo "========================================="
+	rm -rf "$(LSP_COVERAGE_DIR)"
+	mkdir -p "$(LSP_COVERAGE_DIR)"
+	@echo "==> Running Napper.Lsp tests with coverage..."
+	dotnet test src/Napper.Lsp.Tests --nologo \
+	  --settings src/Napper.Lsp.Tests/coverage.runsettings \
+	  --results-directory "$(LSP_COVERAGE_DIR)/raw" \
+	  --logger "console;verbosity=detailed" \
+	  -- RunConfiguration.FailFastEnabled=true 2>&1 | tee "$(LOG_DIR)/test-lsp.log"
+	@echo "==> Generating Napper.Lsp coverage report..."
+	reportgenerator \
+	  -reports:"$(LSP_COVERAGE_DIR)/raw/*/coverage.cobertura.xml" \
+	  -targetdir:"$(LSP_COVERAGE_DIR)/report" \
+	  -reporttypes:"Html;TextSummary;Cobertura;lcov"
+	@echo ""
+	@echo "=== Napper.Lsp Coverage Summary ==="
+	@cat "$(LSP_COVERAGE_DIR)/report/Summary.txt"
 
 test-rust:
 	@echo "========================================="
