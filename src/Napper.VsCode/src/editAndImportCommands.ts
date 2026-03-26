@@ -9,7 +9,7 @@ import type { Logger } from './logger';
 import { newPlaylist, newRequest } from './fileCreation';
 import { copyAsCurl } from './curlCopy';
 import { importOpenApiFromFile, importOpenApiFromUrl, runAiEnrichment } from './openApiImport';
-import { convertHttpFile, convertHttpDirectory } from './httpConvert';
+import { type ConvertContext, convertHttpFile, convertHttpDirectory } from './httpConvert';
 import {
   CMD_CONVERT_HTTP_DIR,
   CMD_CONVERT_HTTP_FILE,
@@ -26,6 +26,7 @@ interface CommandDeps {
   readonly explorer: ExplorerAdapter;
   readonly envStatusBar: EnvironmentStatusBar;
   readonly logger: Logger;
+  readonly getCliPath: () => string;
 }
 
 const handleEnrichAi = async (
@@ -56,16 +57,23 @@ export const registerEditCommands = (context: vscode.ExtensionContext, deps: Com
   );
 };
 
+const toConvertContext = (deps: CommandDeps): ConvertContext => ({
+  explorer: deps.explorer,
+  logger: deps.logger,
+  getCliPath: deps.getCliPath,
+});
+
 export const registerHttpConvertCommands = (
   context: vscode.ExtensionContext,
   deps: CommandDeps,
 ): void => {
+  const ctx = toConvertContext(deps);
   context.subscriptions.push(
     vscode.commands.registerCommand(CMD_CONVERT_HTTP_FILE, async (uri?: vscode.Uri) => {
-      await convertHttpFile(deps.explorer, deps.logger, uri);
+      await convertHttpFile(ctx, uri);
     }),
     vscode.commands.registerCommand(CMD_CONVERT_HTTP_DIR, async () => {
-      await convertHttpDirectory(deps.explorer, deps.logger);
+      await convertHttpDirectory(ctx);
     }),
   );
 };
@@ -76,10 +84,10 @@ export const registerOpenApiCommands = (
 ): void => {
   context.subscriptions.push(
     vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_URL, async () => {
-      await importOpenApiFromUrl(deps.explorer, deps.logger);
+      await importOpenApiFromUrl(deps.explorer, deps.logger, deps.getCliPath);
     }),
     vscode.commands.registerCommand(CMD_IMPORT_OPENAPI_FILE, async () => {
-      await importOpenApiFromFile(deps.explorer, deps.logger);
+      await importOpenApiFromFile(deps.explorer, deps.logger, deps.getCliPath);
     }),
     vscode.commands.registerCommand(CMD_ENRICH_AI, async (arg?: { readonly filePath?: string }) => {
       await handleEnrichAi(arg, deps.explorer, deps.logger);

@@ -395,7 +395,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     vscode.window.registerFileDecorationProvider(explorerProvider),
   );
   registerCodeLens(context);
-  const commandDeps = { explorer: explorerProvider, envStatusBar, logger };
+  const commandDeps = { explorer: explorerProvider, envStatusBar, logger, getCliPath };
   registerRunCommands(context);
   registerEditCommands(context, commandDeps);
   registerOpenApiCommands(context, commandDeps);

@@ -16,8 +16,6 @@ import {
   CLI_OUTPUT_JSON,
   CLI_SPAWN_FAILED_PREFIX,
   CLI_SUBCMD_HTTP,
-  CONFIG_CLI_PATH,
-  CONFIG_SECTION,
   CONVERT_HTTP_ERROR_PREFIX,
   CONVERT_HTTP_FILE_EXTENSIONS,
   CONVERT_HTTP_FILTER_LABEL,
@@ -26,7 +24,6 @@ import {
   CONVERT_HTTP_PICK_FILE,
   CONVERT_HTTP_SUCCESS_PREFIX,
   CONVERT_HTTP_SUCCESS_SUFFIX,
-  DEFAULT_CLI_PATH,
   HTTP_FILE_EXTENSION,
   LOG_MSG_CONVERT_HTTP,
   LOG_MSG_CONVERT_HTTP_RESULT,
@@ -40,17 +37,11 @@ interface ConvertResult {
   readonly warnings: number;
 }
 
-interface ConvertContext {
+export interface ConvertContext {
   readonly explorer: ExplorerAdapter;
   readonly logger: Logger;
+  readonly getCliPath: () => string;
 }
-
-const resolveCliPath = (): string => {
-  const configured = vscode.workspace
-    .getConfiguration(CONFIG_SECTION)
-    .get<string>(CONFIG_CLI_PATH, '');
-  return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
-};
 
 const buildConvertArgs = (inputPath: string, outDir: string): readonly string[] => [
   CLI_CMD_CONVERT,
@@ -109,15 +100,20 @@ const spawnConvert = (inputPath: string, outDir: string, ctx: ExecContext): void
   );
 };
 
+interface ConvertParams {
+  readonly inputPath: string;
+  readonly outDir: string;
+  readonly logger: Logger;
+  readonly getCliPath: () => string;
+}
+
 export const callCliConvert = async (
-  inputPath: string,
-  outDir: string,
-  logger: Logger,
+  params: ConvertParams,
 ): Promise<Result<ConvertResult, string>> =>
   new Promise((resolve) => {
-    const cliPath = resolveCliPath();
-    logger.info(`${LOG_MSG_CONVERT_HTTP} ${cliPath} ${inputPath} → ${outDir}`);
-    spawnConvert(inputPath, outDir, { cliPath, logger, resolve });
+    const cliPath = params.getCliPath();
+    params.logger.info(`${LOG_MSG_CONVERT_HTTP} ${cliPath} ${params.inputPath} → ${params.outDir}`);
+    spawnConvert(params.inputPath, params.outDir, { cliPath, logger: params.logger, resolve });
   });
 
 const handleConvertSuccess = (generated: ConvertResult, ctx: ConvertContext): void => {
@@ -133,7 +129,12 @@ const runConvert = async (
   outDir: string,
   ctx: ConvertContext,
 ): Promise<void> => {
-  const result = await callCliConvert(inputPath, outDir, ctx.logger);
+  const result = await callCliConvert({
+    inputPath,
+    outDir,
+    logger: ctx.logger,
+    getCliPath: ctx.getCliPath,
+  });
   if (!result.ok) {
     await vscode.window.showErrorMessage(`${CONVERT_HTTP_ERROR_PREFIX}${result.error}`);
     return;
@@ -154,11 +155,7 @@ const pickHttpFile = async (): Promise<vscode.Uri | undefined> => {
   return picked?.[0];
 };
 
-export const convertHttpFile = async (
-  explorer: ExplorerAdapter,
-  logger: Logger,
-  fileUri?: vscode.Uri,
-): Promise<void> => {
+export const convertHttpFile = async (ctx: ConvertContext, fileUri?: vscode.Uri): Promise<void> => {
   const uri = fileUri ?? (await pickHttpFile());
   if (uri === undefined) {
     return;
@@ -168,7 +165,7 @@ export const convertHttpFile = async (
     return;
   }
   const outDir = path.dirname(uri.fsPath);
-  await runConvert(uri.fsPath, outDir, { explorer, logger });
+  await runConvert(uri.fsPath, outDir, ctx);
 };
 
 const pickHttpDirectory = async (): Promise<vscode.Uri | undefined> => {
@@ -181,10 +178,7 @@ const pickHttpDirectory = async (): Promise<vscode.Uri | undefined> => {
   return picked?.[0];
 };
 
-export const convertHttpDirectory = async (
-  explorer: ExplorerAdapter,
-  logger: Logger,
-): Promise<void> => {
+export const convertHttpDirectory = async (ctx: ConvertContext): Promise<void> => {
   const uri = await pickHttpDirectory();
   if (uri === undefined) {
     return;
@@ -194,5 +188,5 @@ export const convertHttpDirectory = async (
     await vscode.window.showWarningMessage(CONVERT_HTTP_NO_FILES);
     return;
   }
-  await runConvert(uri.fsPath, uri.fsPath, { explorer, logger });
+  await runConvert(uri.fsPath, uri.fsPath, ctx);
 };

@@ -17,9 +17,6 @@ import {
   CLI_PARSE_FAILED_PREFIX,
   CLI_SPAWN_FAILED_PREFIX,
   CLI_SUBCMD_OPENAPI,
-  CONFIG_CLI_PATH,
-  CONFIG_SECTION,
-  DEFAULT_CLI_PATH,
   LOG_MSG_OPENAPI_AI_CHOICE,
   LOG_MSG_OPENAPI_AI_MODEL_SELECTED,
   LOG_MSG_OPENAPI_AI_NO_MODEL,
@@ -81,6 +78,7 @@ interface PickedPaths {
 interface ImportContext {
   readonly explorer: ExplorerAdapter;
   readonly logger: Logger;
+  readonly getCliPath: () => string;
 }
 
 interface LmRequestParams {
@@ -104,12 +102,6 @@ interface EnrichmentContext {
 }
 
 const MAX_PREVIEW_LENGTH = 200,
-  resolveCliPath = (): string => {
-    const configured = vscode.workspace
-      .getConfiguration(CONFIG_SECTION)
-      .get<string>(CONFIG_CLI_PATH, '');
-    return configured.length > 0 ? configured : DEFAULT_CLI_PATH;
-  },
   pickSpecFile = (): Thenable<readonly vscode.Uri[] | undefined> =>
     vscode.window.showOpenDialog({
       canSelectFiles: true,
@@ -178,11 +170,11 @@ const MAX_PREVIEW_LENGTH = 200,
   callCliGenerate = async (
     specPath: string,
     outDir: string,
-    logger: Logger,
+    ctx: ImportContext,
   ): Promise<Result<GenerateResult, string>> => {
-    const cliPath = resolveCliPath(),
+    const cliPath = ctx.getCliPath(),
       args = buildGenerateArgs(specPath, outDir);
-    logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
+    ctx.logger.info(`${LOG_MSG_OPENAPI_GENERATE_CLI} ${cliPath} ${specPath} → ${outDir}`);
     return new Promise((resolve) => {
       spawnGenerate(cliPath, args, resolve);
     });
@@ -359,7 +351,7 @@ const generateAndEnrich = async (
     return;
   }
   ctx.logger.info(`${LOG_MSG_OPENAPI_AI_CHOICE} ${choice}`);
-  const result = await callCliGenerate(specPath, outDir, ctx.logger);
+  const result = await callCliGenerate(specPath, outDir, ctx);
   if (!result.ok) {
     await vscode.window.showErrorMessage(`${OPENAPI_ERROR_PREFIX}${result.error}`);
     return;
@@ -407,6 +399,7 @@ const downloadWithProgress = async (url: string): Promise<Result<string, string>
 export const importOpenApiFromUrl = async (
   explorer: ExplorerAdapter,
   logger: Logger,
+  getCliPath: () => string,
 ): Promise<void> => {
   const url = await askForUrl();
   if (url === undefined || url.length === 0) {
@@ -421,16 +414,21 @@ export const importOpenApiFromUrl = async (
   if (specPath === undefined) {
     return;
   }
-  await generateAndEnrich(specPath, outDir, { explorer, logger });
+  await generateAndEnrich(specPath, outDir, { explorer, logger, getCliPath });
 };
 
 export const importOpenApiFromFile = async (
   explorer: ExplorerAdapter,
   logger: Logger,
+  getCliPath: () => string,
 ): Promise<void> => {
   const paths = await pickPaths();
   if (paths === undefined) {
     return;
   }
-  await generateAndEnrich(paths.specFile.fsPath, paths.outFolder.fsPath, { explorer, logger });
+  await generateAndEnrich(paths.specFile.fsPath, paths.outFolder.fsPath, {
+    explorer,
+    logger,
+    getCliPath,
+  });
 };

@@ -46,6 +46,9 @@ jobs:
       - name: Unit tests with coverage
         run: npm run test:unit
 
+      - name: Add CLI to PATH
+        run: echo "${{ github.workspace }}/src/Napper.VsCode/bin" >> "$GITHUB_PATH"
+
       - name: E2E tests
         run: xvfb-run --auto-servernum npm test
 

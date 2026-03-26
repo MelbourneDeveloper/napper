@@ -169,3 +169,6 @@ https://developers.google.com/search/docs/fundamentals/seo-starter-guide
 
 https://studiohawk.com.au/blog/how-to-optimise-ai-overviews/
 https://about.ads.microsoft.com/en/blog/post/october-2025/optimizing-your-content-for-inclusion-in-ai-search-answers
+
+Never stamp commits with this. You ARE NOT THE COAUTHOR!!!
+Co-Authored-By: C*** <noreply@anthropic.com>
