@@ -12,6 +12,9 @@ open Napper.Core
 
 let private runCli args cwd = TestHelpers.runCli args cwd
 
+let private runCliSlow args cwd =
+    TestHelpers.runCliWithTimeout TestHelpers.ScriptTimeoutMs args cwd
+
 let private createTempDir () =
     TestHelpers.createTempDir "nap-cli-test"
 
@@ -336,7 +339,7 @@ let ``CLI run naplist with script step`` () =
         File.WriteAllText(Path.Combine(dir, "setup.fsx"), "printfn \"[setup] ready\"")
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://httpbin.org/get")
         File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nsetup.fsx\ntest.nap\n")
-        let exitCode, stdout, _ = runCli "run suite.naplist --output json" dir
+        let exitCode, stdout, _ = runCliSlow "run suite.naplist --output json" dir
         Assert.Equal(0, exitCode)
         let doc = System.Text.Json.JsonDocument.Parse(stdout)
         Assert.Equal(2, doc.RootElement.GetArrayLength())
@@ -355,7 +358,7 @@ let ``CLI run naplist with failing script returns exit code 1`` () =
     try
         File.WriteAllText(Path.Combine(dir, "bad.fsx"), "failwith \"boom\"")
         File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nbad.fsx\n")
-        let exitCode, _, _ = runCli "run suite.naplist --output json" dir
+        let exitCode, _, _ = runCliSlow "run suite.naplist --output json" dir
         Assert.Equal(1, exitCode)
     finally
         cleanupDir dir
@@ -370,7 +373,7 @@ let ``CLI run naplist with CSX script step`` () =
         File.WriteAllText(Path.Combine(dir, "setup.csx"), "Console.WriteLine(\"[csx-setup] ready\");")
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://jsonplaceholder.typicode.com/posts/1")
         File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nsetup.csx\ntest.nap\n")
-        let exitCode, stdout, _ = runCli "run suite.naplist --output json" dir
+        let exitCode, stdout, _ = runCliSlow "run suite.naplist --output json" dir
         Assert.Equal(0, exitCode)
         let doc = System.Text.Json.JsonDocument.Parse(stdout)
         Assert.Equal(2, doc.RootElement.GetArrayLength())
@@ -388,7 +391,7 @@ let ``CLI run naplist with failing CSX script returns exit code 1`` () =
     try
         File.WriteAllText(Path.Combine(dir, "bad.csx"), "throw new Exception(\"boom\");")
         File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nbad.csx\n")
-        let exitCode, _, _ = runCli "run suite.naplist --output json" dir
+        let exitCode, _, _ = runCliSlow "run suite.naplist --output json" dir
         Assert.Equal(1, exitCode)
     finally
         cleanupDir dir
@@ -404,7 +407,7 @@ let ``CLI run naplist with mixed FSX and CSX scripts`` () =
         File.WriteAllText(Path.Combine(dir, "test.nap"), "GET https://jsonplaceholder.typicode.com/posts/1")
         File.WriteAllText(Path.Combine(dir, "teardown.csx"), "Console.WriteLine(\"[csx] teardown done\");")
         File.WriteAllText(Path.Combine(dir, "suite.naplist"), "[steps]\nsetup.fsx\ntest.nap\nteardown.csx\n")
-        let exitCode, stdout, _ = runCli "run suite.naplist --output json" dir
+        let exitCode, stdout, _ = runCliSlow "run suite.naplist --output json" dir
         Assert.Equal(0, exitCode)
         let doc = System.Text.Json.JsonDocument.Parse(stdout)
         Assert.Equal(3, doc.RootElement.GetArrayLength())

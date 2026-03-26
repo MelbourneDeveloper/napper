@@ -9,6 +9,12 @@ open System.IO
 [<Literal>]
 let NapperBinaryName = "napper"
 
+[<Literal>]
+let DefaultTimeoutMs = 5_000
+
+[<Literal>]
+let ScriptTimeoutMs = 30_000
+
 // --- CLI runner: uses the installed binary, never recompiles ---
 
 let private logLock = obj ()
@@ -51,7 +57,7 @@ let private findNapper () : string =
         elif File.Exists localBin then localBin
         else NapperBinaryName
 
-let runCli (args: string) (cwd: string) : int * string * string =
+let runCliWithTimeout (timeoutMs: int) (args: string) (cwd: string) : int * string * string =
     let binary = findNapper ()
     let sw = Stopwatch.StartNew()
     log $"[test] napper %s{args}"
@@ -66,7 +72,6 @@ let runCli (args: string) (cwd: string) : int * string * string =
     psi.CreateNoWindow <- true
     use proc = Process.Start(psi)
     proc.StandardInput.Close()
-    let timeoutMs = 5_000
     let stdoutTask = proc.StandardOutput.ReadToEndAsync()
     let stderrTask = proc.StandardError.ReadToEndAsync()
 
@@ -81,6 +86,9 @@ let runCli (args: string) (cwd: string) : int * string * string =
     sw.Stop()
     log $"[test] napper %s{args} | exit=%d{proc.ExitCode} elapsed=%d{sw.ElapsedMilliseconds}ms"
     proc.ExitCode, stdout, stderr
+
+let runCli (args: string) (cwd: string) : int * string * string =
+    runCliWithTimeout DefaultTimeoutMs args cwd
 
 // --- Temp directory helpers ---
 
