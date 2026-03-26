@@ -18,6 +18,7 @@ import {
   CMD_CONVERT_HTTP_FILE,
   ENCODING_UTF8,
   NAP_EXTENSION,
+  SECTION_ASSERT,
   SECTION_REQUEST,
 } from '../../constants';
 
@@ -46,7 +47,11 @@ const generatedNapFilesInWorkspace = (): string[] => {
   const root = workspaceRoot();
   return collectNapFiles(root).filter((f) => {
     const content = fs.readFileSync(f, ENCODING_UTF8);
-    return content.includes('jsonplaceholder.typicode.com') && content.includes(SECTION_REQUEST);
+    return (
+      content.includes('jsonplaceholder.typicode.com') &&
+      content.includes(SECTION_REQUEST) &&
+      !content.includes(SECTION_ASSERT)
+    );
   });
 };
 
@@ -157,6 +162,9 @@ suite('HTTP Convert — Execute via VSCode Command', () => {
     const httpFilePath = path.join(workspaceRoot(), FIXTURE_HTTP_FILE);
     assert.ok(fs.existsSync(httpFilePath), `Fixture .http file must exist at ${httpFilePath}`);
 
+    const fixturePath = path.join(workspaceRoot(), 'post-jsonplaceholder.nap');
+    assert.ok(fs.existsSync(fixturePath), 'Hand-written fixture must survive cleanup');
+
     const napFilesBefore = generatedNapFilesInWorkspace();
     assert.strictEqual(
       napFilesBefore.length,
@@ -201,6 +209,14 @@ suite('HTTP Convert — Execute via VSCode Command', () => {
         `${path.basename(napFile)} must preserve the URL`,
       );
       assert.ok(content.length > 10, `${path.basename(napFile)} must have substantive content`);
+      assert.ok(
+        !content.includes(SECTION_ASSERT),
+        `${path.basename(napFile)} must not have [assert] section (generated, not hand-written)`,
+      );
+      assert.ok(
+        content.includes('method'),
+        `${path.basename(napFile)} must specify an HTTP method`,
+      );
     }
   });
 
@@ -247,6 +263,14 @@ suite('HTTP Convert — Execute via VSCode Command', () => {
     assert.ok(content.includes('Content-Type'), 'POST .nap must preserve Content-Type header');
     assert.ok(content.includes('application/json'), 'POST .nap must preserve application/json');
     assert.ok(content.includes('John Doe'), 'POST .nap must preserve request body content');
+    assert.ok(
+      content.includes('jsonplaceholder.typicode.com'),
+      'POST .nap must preserve the target URL',
+    );
+    assert.ok(
+      !content.includes(SECTION_ASSERT),
+      'POST .nap must not have [assert] section (converter output)',
+    );
   });
 
   test('running convert command twice does not fail', async function () {
@@ -265,5 +289,16 @@ suite('HTTP Convert — Execute via VSCode Command', () => {
       napFiles.length >= EXPECTED_REQUEST_COUNT,
       `Must still have at least ${EXPECTED_REQUEST_COUNT} .nap files after re-running`,
     );
+    for (const napFile of napFiles) {
+      const content = fs.readFileSync(napFile, ENCODING_UTF8);
+      assert.ok(
+        content.includes(SECTION_REQUEST),
+        `${path.basename(napFile)} must still have [request] after re-run`,
+      );
+      assert.ok(
+        !content.includes(SECTION_ASSERT),
+        `${path.basename(napFile)} must still be a generated file (no [assert]) after re-run`,
+      );
+    }
   });
 });
