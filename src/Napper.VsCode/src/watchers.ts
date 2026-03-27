@@ -18,10 +18,7 @@ import {
 const isNapperFile = (fileName: string): boolean =>
   fileName.endsWith(NAP_EXTENSION) || fileName.endsWith(NAPLIST_EXTENSION);
 
-const onAllEvents = (
-  watcher: vscode.FileSystemWatcher,
-  handler: () => void,
-): void => {
+const onAllEvents = (watcher: vscode.FileSystemWatcher, handler: () => void): void => {
   watcher.onDidCreate(handler);
   watcher.onDidDelete(handler);
   watcher.onDidChange(handler);
