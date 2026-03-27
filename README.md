@@ -38,17 +38,60 @@ Everything you need for API testing. Nothing you don't.
 - **OpenAPI Import** (`openapi-generate`) &mdash; Generate test files from any OpenAPI spec. Point it at a file, and Napper creates `.nap` files with requests, headers, bodies, and assertions. Optionally enhance with AI via GitHub Copilot (`vscode-openapi-ai`).
 - **Plain Text, Git Friendly** (`nap-file`) &mdash; Every request is a `.nap` file. Every environment is a `.napenv` file (`env-file`). Version control everything. No binary blobs, no lock-in.
 
-## Quick Start
+## Installation
 
-### Install the VS Code Extension
+### VS Code Extension
+
+Install from the marketplace in one command:
 
 ```sh
 code --install-extension nimblesite.napper
 ```
 
-### Or grab the CLI binary
+Or search **"Napper"** in the VS Code Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`) and click Install.
 
-Download from the [latest release](https://github.com/MelbourneDeveloper/napper/releases).
+To install a specific `.vsix` manually: open the Extensions panel → `...` menu → **Install from VSIX...**.
+
+> **Requirements:** VS Code 1.95.0 or later. The extension shells out to the CLI, so install the CLI binary too.
+
+### CLI Binary
+
+The CLI is a self-contained binary with **no runtime dependencies**.
+
+| Platform | Download |
+|----------|----------|
+| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64) |
+| macOS (Intel) | [`napper-osx-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-x64) |
+| Linux (x64) | [`napper-linux-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64) |
+| Windows (x64) | [`napper-win-x64.exe`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-win-x64.exe) |
+
+**macOS / Linux:**
+```sh
+chmod +x napper-osx-arm64
+mv napper-osx-arm64 /usr/local/bin/napper
+napper --version
+```
+
+**Install script (macOS / Linux):**
+```sh
+curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash
+```
+
+**Install script (Windows PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.ps1 | iex
+```
+
+**Build from source** (requires .NET SDK + `make`):
+```sh
+git clone https://github.com/MelbourneDeveloper/napper.git && cd napper && make install-binaries
+```
+
+> **Note:** F# (`.fsx`) and C# (`.csx`) script hooks require the [.NET 10 SDK](https://dotnet.microsoft.com/download). Plain `.nap` and `.naplist` files need nothing extra.
+
+See the [full installation guide](https://napperapi.dev/docs/installation/) for VSIX manual install, troubleshooting, and macOS Gatekeeper notes.
+
+## Quick Start
 
 ## How do you use Napper?
 
@@ -188,7 +231,9 @@ Variable priority (highest wins):
 
 ## OpenAPI Import
 
-Generate `.nap` test files automatically from any OpenAPI specification. Available from the CLI and the VS Code extension.
+Generate `.nap` test files automatically from any OpenAPI or Swagger spec. Napper creates one file per operation, a `.naplist` playlist, and a `.napenv` environment file — giving you a working test suite in seconds.
+
+**Supported formats:** OpenAPI 3.0.x, OpenAPI 3.1.x, Swagger 2.0 (JSON input).
 
 ### From the CLI
 
@@ -196,36 +241,48 @@ Generate `.nap` test files automatically from any OpenAPI specification. Availab
 # Generate from a local spec file
 napper generate openapi ./petstore.json --output-dir ./tests
 
-# Output as JSON (for programmatic use)
-napper generate openapi ./spec.yaml --output-dir ./tests --output json
+# Output a JSON summary for scripting
+napper generate openapi ./spec.json --output-dir ./tests --output json
 ```
 
 ### From VS Code
 
-The extension provides two commands (accessible via the Command Palette):
+Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and choose:
 
-- **Napper: Import OpenAPI from URL** &mdash; Enter a URL to an OpenAPI spec (e.g. `https://petstore3.swagger.io/api/v3/openapi.json`). The extension downloads the spec, generates `.nap` files, and creates a `.naplist` playlist.
-- **Napper: Import OpenAPI from File** &mdash; Select a local OpenAPI spec file (JSON or YAML) and an output folder.
+- **Napper: Import OpenAPI from URL** &mdash; paste a URL (e.g. `https://petstore3.swagger.io/api/v3/openapi.json`). Napper downloads the spec and generates files.
+- **Napper: Import OpenAPI from File** &mdash; browse to a local `.json` spec file.
 
-Both commands prompt you to choose between basic generation or AI-enhanced generation (requires GitHub Copilot). AI enhancement adds smarter assertions, realistic test data, and reorders the playlist for logical test flow.
+Both commands prompt for an output folder and offer basic or AI-enhanced generation.
 
 ### What gets generated
 
-| File | Purpose |
-|------|---------|
-| `01_get-users.nap`, `02_post-users.nap`, ... | One `.nap` file per API endpoint with request, headers, body, and assertions |
-| `api-name.naplist` | Playlist referencing all generated files in order |
-| `.napenv` | Environment file with the API base URL |
+Endpoints are grouped into subdirectories by API tag:
 
-### AI Enhancement (Optional)
+```
+tests/
+├── pets/
+│   ├── get-pets.nap
+│   ├── post-pets.nap
+│   └── get-pets-petId.nap
+├── store/
+│   └── get-store-inventory.nap
+├── petstore.naplist
+└── .napenv
+```
 
-When GitHub Copilot is available, you can opt for AI-enhanced generation which:
+Each `.nap` file includes the method, URL (with path params as `{{variables}}`), auth headers, request body (from schema), and status code assertions. The `.napenv` file contains the base URL from the spec's `servers` field and variable placeholders for auth tokens.
 
-- Adds semantic assertions beyond basic status checks (e.g. `body.email contains @`)
-- Generates realistic test data for request bodies
-- Reorders the playlist for logical flow (auth first, then CRUD operations)
+### AI Enhancement (optional)
 
-If Copilot is not available, a warning is shown and basic generation proceeds normally.
+With GitHub Copilot available, choose AI-enhanced generation to get:
+
+- Semantic assertions beyond status codes (e.g. `body.email contains @`)
+- Realistic test data in request bodies instead of placeholder values
+- Logical playlist ordering (auth first, then CRUD in dependency order)
+
+Falls back to basic generation automatically if Copilot is unavailable.
+
+See the [full OpenAPI import guide](https://napperapi.dev/docs/openapi-import/) for authentication handling, `$ref` resolution, customisation tips, and troubleshooting.
 
 ## CLI Reference
 
@@ -241,6 +298,7 @@ Options:
   --var <key=value>         Variable override (repeatable) (cli-var)
   --output <format>         Output: pretty, junit, json, ndjson (cli-output)
   --output-dir <dir>        Output directory for generate command (cli-output-dir)
+  --version                 Print the installed CLI version
   --verbose                 Enable debug-level logging (cli-verbose)
 ```
 

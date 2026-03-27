@@ -344,7 +344,10 @@ let private buildRequest (ep: EndpointInfo) : string list =
     let url =
         sprintf "%s%s%s" BaseUrlVar (convertPathParams ep.UrlPath) (buildQuery ep.QueryParams)
 
-    [ SectionRequest; sprintf "%s %s" (ep.Method.ToUpperInvariant()) url; "" ]
+    [ SectionRequest
+      sprintf "%s = %s" KeyMethod (ep.Method.ToUpperInvariant())
+      sprintf "%s = %s" KeyUrl url
+      "" ]
 
 let private buildHeaders (ep: EndpointInfo) : string list =
     let hasBody = methodHasBody ep.Method

@@ -61,6 +61,12 @@ let KeyName = "name"
 let KeyDescription = "description"
 
 [<Literal>]
+let KeyMethod = "method"
+
+[<Literal>]
+let KeyUrl = "url"
+
+[<Literal>]
 let KeyGenerated = "generated"
 
 [<Literal>]

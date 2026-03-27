@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import {
   activateExtension,
   closeAllEditors,
+  deleteFixtureDir,
   deleteFixtureFile,
   getFixturePath,
   openDocument,
@@ -154,6 +155,41 @@ suite('Explorer Tree View', () => {
       getPetChild.contextValue,
       CONTEXT_REQUEST_FILE,
       'get-pet.nap must be a requestFile (leaf node)',
+    );
+  });
+
+  test('folder deletion triggers tree refresh via watcher', async function () {
+    this.timeout(20000);
+    const testDir = 'watcher-folder-test',
+      testFile = `${testDir}/probe.nap`,
+      napContent = '[request]\nmethod = "GET"\nurl = "https://httpbin.org/get"\n';
+
+    // Create a folder with a .nap file so it appears in the tree
+    writeFixtureFile(testFile, napContent);
+    await sleep(3000);
+
+    const provider = getExplorerProvider(),
+      nodesAfterCreate = provider.getChildren(),
+      folderNode = findNodeByLabel(nodesAfterCreate, testDir);
+    assert.ok(folderNode, `Folder "${testDir}" must appear in explorer after creation`);
+
+    // Listen for onDidChangeTreeData — this is what VS Code uses to know
+    // it should call getChildren() again and repaint the tree
+    let refreshFired = false;
+    const disposable = provider.onDidChangeTreeData(() => {
+      refreshFired = true;
+    });
+
+    // Delete the entire folder from disk (not individual files)
+    deleteFixtureDir(testDir);
+
+    // Wait for the watcher to fire a refresh
+    await sleep(5000);
+    disposable.dispose();
+
+    assert.ok(
+      refreshFired,
+      'onDidChangeTreeData must fire after a folder is deleted — the tree must react to folder removal',
     );
   });
 

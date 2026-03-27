@@ -7,6 +7,7 @@ import type { Logger } from './logger';
 import {
   CONFIG_AUTO_RUN,
   CONFIG_SECTION,
+  DIRECTORY_GLOB,
   LOG_MSG_TREE_REFRESH,
   NAPLIST_EXTENSION,
   NAPLIST_GLOB,
@@ -17,6 +18,12 @@ import {
 const isNapperFile = (fileName: string): boolean =>
   fileName.endsWith(NAP_EXTENSION) || fileName.endsWith(NAPLIST_EXTENSION);
 
+const onAllEvents = (watcher: vscode.FileSystemWatcher, handler: () => void): void => {
+  watcher.onDidCreate(handler);
+  watcher.onDidDelete(handler);
+  watcher.onDidChange(handler);
+};
+
 export const registerWatchers = (
   context: vscode.ExtensionContext,
   explorer: ExplorerAdapter,
@@ -24,17 +31,16 @@ export const registerWatchers = (
 ): void => {
   const napWatcher = vscode.workspace.createFileSystemWatcher(NAP_GLOB),
     naplistWatcher = vscode.workspace.createFileSystemWatcher(NAPLIST_GLOB),
+    dirWatcher = vscode.workspace.createFileSystemWatcher(DIRECTORY_GLOB),
     refreshExplorer = (): void => {
       log.debug(LOG_MSG_TREE_REFRESH);
       explorer.refresh();
     };
-  napWatcher.onDidCreate(refreshExplorer);
-  napWatcher.onDidDelete(refreshExplorer);
-  napWatcher.onDidChange(refreshExplorer);
-  naplistWatcher.onDidCreate(refreshExplorer);
-  naplistWatcher.onDidDelete(refreshExplorer);
-  naplistWatcher.onDidChange(refreshExplorer);
-  context.subscriptions.push(napWatcher, naplistWatcher);
+  onAllEvents(napWatcher, refreshExplorer);
+  onAllEvents(naplistWatcher, refreshExplorer);
+  dirWatcher.onDidCreate(refreshExplorer);
+  dirWatcher.onDidDelete(refreshExplorer);
+  context.subscriptions.push(napWatcher, naplistWatcher, dirWatcher);
 };
 
 export const registerAutoRun = (
