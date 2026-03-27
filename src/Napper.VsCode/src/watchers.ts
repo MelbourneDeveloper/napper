@@ -18,6 +18,15 @@ import {
 const isNapperFile = (fileName: string): boolean =>
   fileName.endsWith(NAP_EXTENSION) || fileName.endsWith(NAPLIST_EXTENSION);
 
+const onAllEvents = (
+  watcher: vscode.FileSystemWatcher,
+  handler: () => void,
+): void => {
+  watcher.onDidCreate(handler);
+  watcher.onDidDelete(handler);
+  watcher.onDidChange(handler);
+};
+
 export const registerWatchers = (
   context: vscode.ExtensionContext,
   explorer: ExplorerAdapter,
@@ -30,12 +39,8 @@ export const registerWatchers = (
       log.debug(LOG_MSG_TREE_REFRESH);
       explorer.refresh();
     };
-  napWatcher.onDidCreate(refreshExplorer);
-  napWatcher.onDidDelete(refreshExplorer);
-  napWatcher.onDidChange(refreshExplorer);
-  naplistWatcher.onDidCreate(refreshExplorer);
-  naplistWatcher.onDidDelete(refreshExplorer);
-  naplistWatcher.onDidChange(refreshExplorer);
+  onAllEvents(napWatcher, refreshExplorer);
+  onAllEvents(naplistWatcher, refreshExplorer);
   dirWatcher.onDidCreate(refreshExplorer);
   dirWatcher.onDidDelete(refreshExplorer);
   context.subscriptions.push(napWatcher, naplistWatcher, dirWatcher);

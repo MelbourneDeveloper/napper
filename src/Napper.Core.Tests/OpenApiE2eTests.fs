@@ -483,7 +483,9 @@ let ``Beeceptor checkout endpoint asserts 201 status`` () =
             allNaps
             |> Array.filter (fun f ->
                 let content = File.ReadAllText(f)
-                content.Contains("method = POST") && content.Contains("url = {{baseUrl}}/checkout"))
+
+                content.Contains("method = POST")
+                && content.Contains("url = {{baseUrl}}/checkout"))
 
         Assert.True(checkoutFiles.Length >= 1, "Must have checkout endpoint")
         let content = File.ReadAllText(checkoutFiles[0])
