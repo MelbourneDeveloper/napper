@@ -74,12 +74,7 @@ This phase **deletes duplicated TypeScript parsing code** and replaces it with L
 
 ### Phase 4 — Polish & Distribution
 
-CLI install rewrite — implement [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition):
-
-- [ ] Implement steps 1–5 of the resolver in a new module; delete `src/Napper.VsCode/src/cliInstaller.ts` and its raw-download/checksum constants
-- [ ] Wrap steps 3 and 4 in `vscode.window.withProgress`; stream all spawned process I/O to the Napper output channel
-- [ ] Unit tests: mock `execFile` and assert the exact command sequence per OS (PATH match / dotnet present / dotnet missing+brew / dotnet missing+no PM / install fails → tank)
-- [ ] E2e tests: stub `napper` / `dotnet` / package manager binaries on PATH and assert the right resolution path runs
+- CLI install rewrite — see [IDE-EXTENSION-INSTALL-PLAN.md](./IDE-EXTENSION-INSTALL-PLAN.md).
 
 Other Phase 4:
 - [ ] Split editor layout (request panel webview)
@@ -89,13 +84,14 @@ Other Phase 4:
 
 ### Phase 5 — AOT collapse (blocked on [`cli-aot-migration`](../specs/CLI-SPEC.md#cli-aot-migration))
 
-- [ ] Drop steps 2–3 of [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition); replace step 4 with `brew install napper` / `scoop install napper`
+- [ ] Drop steps 2–4 of [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition); replace step 5 with `brew install napper` / `scoop install napper`
 - [ ] Drop the `vscode-cli-acq-pm-prompt` path
 
 ---
 
 ## Related Specs
 
-- [LSP Specification](./LSP-SPEC.md) — Language server capabilities
+- [LSP Specification](../specs/LSP-SPEC.md) — Language server capabilities
 - [LSP Plan](./LSP-PLAN.md) — LSP implementation phases and TODO
-- [IDE Extension Spec](./IDE-EXTENSION-SPEC.md) — Feature matrix and shared behaviour
+- [IDE Extension Spec](../specs/IDE-EXTENSION-SPEC.md) — Feature matrix and shared behaviour
+- [IDE Extension Install Plan](./IDE-EXTENSION-INSTALL-PLAN.md) — VSIX CLI install resolver

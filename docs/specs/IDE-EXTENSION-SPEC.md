@@ -367,7 +367,8 @@ Resolution runs on activation, idempotent, first match wins:
 
 1. **`vscode-cli-acq-path-probe`** — `<nap.cliPath || 'napper'> --version` equals VSIX version → done.
 2. **`vscode-cli-acq-dotnet-probe`** — `dotnet --version` succeeds → skip to 4.
-3. **`vscode-cli-acq-install-dotnet`** — Install .NET SDK via package manager:
+3. **`vscode-cli-acq-dotnet-consent`** — Detect package manager. Show modal: `Napper needs the .NET 10 SDK. Install it now via <pm>?` with **Install** / **Cancel** buttons. Cancel → `vscode-cli-acq-tank`.
+4. **`vscode-cli-acq-install-dotnet`** — On consent, install .NET SDK:
 
    | OS      | Detect | Command |
    |---------|--------|---------|
@@ -377,8 +378,8 @@ Resolution runs on activation, idempotent, first match wins:
    | Windows | `choco` | `choco install dotnet-sdk -y` |
 
    No detected package manager → `vscode-cli-acq-pm-prompt`. After install, if `dotnet` still not on PATH (process env not refreshed), prompt user to restart VS Code.
-4. **`vscode-cli-acq-dotnet-tool-install`** — `dotnet tool install -g napper --version <VSIX_VERSION>` (or `update -g` if present), re-probe.
-5. **`vscode-cli-acq-tank`** — Hard error notification with buttons: **Open install guide** (`https://napperapi.dev/docs/installation/`), **Open GitHub release** (`…/releases/tag/v<VSIX_VERSION>`), **Open output log**. CLI-dependent commands fail with the same message until resolved.
+5. **`vscode-cli-acq-dotnet-tool-install`** — `dotnet tool install -g napper --version <VSIX_VERSION>` (or `update -g` if present), re-probe.
+6. **`vscode-cli-acq-tank`** — Hard error notification with buttons: **Open install guide** (`https://napperapi.dev/docs/installation/`), **Open GitHub release** (`…/releases/tag/v<VSIX_VERSION>`), **Open output log**. CLI-dependent commands fail with the same message until resolved.
 
 `vscode-cli-acq-pm-prompt` — When no package manager is detected: notification with link buttons to `brew.sh` (mac/Linux) or `scoop.sh` + `chocolatey.org/install` (Windows), plus **Open install guide**.
 
@@ -386,7 +387,7 @@ Resolution runs on activation, idempotent, first match wins:
 
 `vscode-cli-acq-tap-coexist` — Users can `brew install napper` / `scoop install napper` themselves via [`Nimblesite/homebrew-tap`](https://github.com/Nimblesite/homebrew-tap) and [`Nimblesite/scoop-bucket`](https://github.com/Nimblesite/scoop-bucket). If the user-installed version matches, step 1 finds it and the chain stops. If not, step 4 installs the matching version alongside; the VSIX never touches the user-managed binary.
 
-> When [`cli-aot-migration`](./CLI-SPEC.md#cli-aot-migration) lands, steps 2–3 disappear and step 4 becomes `brew install napper` / `scoop install napper` directly.
+> When [`cli-aot-migration`](./CLI-SPEC.md#cli-aot-migration) lands, steps 2–4 disappear and step 5 becomes `brew install napper` / `scoop install napper` directly.
 
 ### Zed
 
@@ -407,7 +408,8 @@ Resolution runs on activation, idempotent, first match wins:
 ## Related Specs
 
 - [LSP Specification](./LSP-SPEC.md) — Language server capabilities, architecture, and protocol details
-- [LSP Plan](./LSP-PLAN.md) — LSP implementation phases and TODO
-- [IDE Extension Plan (VSCode)](./IDE-EXTENSION-PLAN.md) — VSCode implementation phases and TODO
-- [IDE Extension Plan (Zed)](./ZED-EXTENSION-PLAN.md) — Zed implementation phases and TODO
+- [LSP Plan](../plans/LSP-PLAN.md) — LSP implementation phases and TODO
+- [IDE Extension Plan (VSCode)](../plans/IDE-EXTENSION-PLAN.md) — VSCode implementation phases and TODO
+- [IDE Extension Install Plan](../plans/IDE-EXTENSION-INSTALL-PLAN.md) — VSIX CLI install resolver
+- [IDE Extension Plan (Zed)](../plans/ZED-EXTENSION-PLAN.md) — Zed implementation phases and TODO
 - [OpenAPI Generation (Extension)](./IDE-EXTENION-OPENAPI-GENERATION-SPEC.md) — Import command and AI enrichment
