@@ -1,4 +1,12 @@
-.PHONY: build-all build-cli build-extension build-vsix build-zed bump-version clean-install dump-cli-help install-binaries package-vsix test-fsharp test-rust test-vsix test clean format lint
+# =============================================================================
+# Standard Makefile — Napper
+# All primary targets are language-agnostic. Language-specific helpers below.
+# =============================================================================
+
+.PHONY: build test lint fmt fmt-check clean check ci coverage coverage-check \
+        build-all build-cli build-extension build-vsix build-zed bump-version \
+        clean-install-vsix dump-cli-help install-binaries package-vsix \
+        test-fsharp test-rust test-vsix format
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -28,6 +36,121 @@ DOTHTTP_COVERAGE_DIR := coverage/dothttp
 LSP_COVERAGE_DIR := coverage/lsp
 TS_COVERAGE_DIR := coverage/typescript
 RUST_COVERAGE_DIR := coverage/rust
+
+# Coverage threshold (override in CI via env var or per-repo)
+COVERAGE_THRESHOLD ?= 90
+
+# =============================================================================
+# PRIMARY TARGETS (uniform interface — do not rename)
+# =============================================================================
+
+## build: Compile/assemble all artifacts
+build: build-all
+
+## test: Run full test suite with coverage
+test: test-fsharp test-rust test-vsix
+	@echo ""
+	@echo "========================================="
+	@echo "  Coverage Reports"
+	@echo "========================================="
+	@echo "  Napper.Core:   $(FSHARP_COVERAGE_DIR)/report/index.html"
+	@echo "  DotHttp:    $(DOTHTTP_COVERAGE_DIR)/report/index.html"
+	@echo "  Rust:       $(RUST_COVERAGE_DIR)/report/index.html"
+	@echo "  TypeScript: $(TS_COVERAGE_DIR)/report/index.html"
+	@echo "========================================="
+
+## lint: Run all linters (fails on any warning)
+lint:
+	@echo "==> F# build (warnings as errors)..."
+	dotnet build --nologo -warnaserror
+	@echo "==> TypeScript (ESLint)..."
+	cd src/Napper.VsCode && npm run lint
+	@echo "==> Rust (clippy)..."
+	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml
+	@echo "==> All projects linted"
+
+## fmt: Format all code in-place
+fmt:
+	@echo "==> F# (Fantomas)..."
+	dotnet fantomas src/
+	@echo "==> TypeScript (Prettier)..."
+	cd src/Napper.VsCode && npx prettier --write "src/**/*.ts"
+	@echo "==> Rust (cargo fmt)..."
+	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml
+	@echo "==> All projects formatted"
+
+## fmt-check: Check formatting without modifying (used in CI)
+fmt-check:
+	@echo "==> Checking F# formatting (Fantomas)..."
+	dotnet fantomas --check src/
+	@echo "==> Checking TypeScript formatting (Prettier)..."
+	cd src/Napper.VsCode && npx prettier --check "src/**/*.ts"
+	@echo "==> Checking Rust formatting (cargo fmt)..."
+	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check
+	@echo "==> All format checks passed"
+
+## clean: Remove all build artifacts
+clean:
+	@echo "==> Cleaning all build artifacts..."
+	rm -rf out/
+	rm -rf src/Napper.Core/bin/ src/Napper.Core/obj/
+	rm -rf src/Napper.Cli/bin/ src/Napper.Cli/obj/
+	rm -rf tests/Napper.Core.Tests/bin/ tests/Napper.Core.Tests/obj/
+	rm -rf src/Napper.VsCode/bin/
+	rm -rf src/Napper.VsCode/dist/
+	rm -rf src/Napper.VsCode/out/
+	rm -f  src/Napper.VsCode/*.vsix
+	rm -rf coverage/
+	@echo "==> Clean complete"
+
+## check: lint + test (pre-commit)
+check: lint test
+
+## ci: lint + test + build (full CI simulation)
+ci: lint test build
+
+## coverage: Generate and open coverage report
+coverage: test
+	@echo "==> Opening coverage reports..."
+ifeq ($(OS),Darwin)
+	@open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+	@open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+else
+	@xdg-open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+	@xdg-open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+endif
+
+## coverage-check: Assert thresholds (exits non-zero if below)
+coverage-check:
+	@echo "==> Checking coverage thresholds..."
+	@echo "--- F# Napper.Core ---"
+	@if [ -f "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" ]; then \
+	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
+	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
+	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+	@echo "--- F# DotHttp ---"
+	@if [ -f "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" ]; then \
+	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
+	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
+	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+	@echo "--- Rust ---"
+	@if [ -f "$(RUST_COVERAGE_DIR)/report/cobertura.xml" ]; then \
+	  LINE_RATE=$$(sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' "$(RUST_COVERAGE_DIR)/report/cobertura.xml" 2>/dev/null | head -1); \
+	  COV=$$(echo "$${LINE_RATE:-0} * 100" | bc -l | xargs printf "%.1f"); \
+	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
+	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+
+# Keep `format` as an alias for backward compatibility
+format: fmt
 
 # ============================================================
 # Build targets
@@ -75,19 +198,6 @@ package-vsix: build-extension
 	@echo "==> Packaging universal VSIX..."
 	cd src/Napper.VsCode && npx @vscode/vsce package --no-dependencies --skip-license
 	@echo "==> VSIX packaged"
-
-clean:
-	@echo "==> Cleaning all build artifacts..."
-	rm -rf out/
-	rm -rf src/Napper.Core/bin/ src/Napper.Core/obj/
-	rm -rf src/Napper.Cli/bin/ src/Napper.Cli/obj/
-	rm -rf tests/Napper.Core.Tests/bin/ tests/Napper.Core.Tests/obj/
-	rm -rf src/Napper.VsCode/bin/
-	rm -rf src/Napper.VsCode/dist/
-	rm -rf src/Napper.VsCode/out/
-	rm -f  src/Napper.VsCode/*.vsix
-	rm -rf coverage/
-	@echo "==> Clean complete"
 
 build-all: clean build-cli
 	@echo "==> Building VS Code extension..."
@@ -286,39 +396,6 @@ test-vsix: build-cli build-extension
 	  --report-dir "../../$(TS_COVERAGE_DIR)/report" \
 	  --reporter html --reporter text --reporter lcov 2>&1 | tee "../../$(LOG_DIR)/test-vsix-coverage.log"
 
-test: test-fsharp test-rust test-vsix
-	@echo ""
-	@echo "========================================="
-	@echo "  Coverage Reports"
-	@echo "========================================="
-	@echo "  Napper.Core:   $(FSHARP_COVERAGE_DIR)/report/index.html"
-	@echo "  DotHttp:    $(DOTHTTP_COVERAGE_DIR)/report/index.html"
-	@echo "  Rust:       $(RUST_COVERAGE_DIR)/report/index.html"
-	@echo "  TypeScript: $(TS_COVERAGE_DIR)/report/index.html"
-	@echo "========================================="
-
-# ============================================================
-# Format & Lint
-# ============================================================
-
-format:
-	@echo "==> F# (Fantomas)..."
-	dotnet fantomas src/
-	@echo "==> TypeScript (Prettier)..."
-	cd src/Napper.VsCode && npx prettier --write "src/**/*.ts"
-	@echo "==> Rust (cargo fmt)..."
-	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml
-	@echo "==> All projects formatted"
-
-lint:
-	@echo "==> F# build (warnings as errors)..."
-	dotnet build --nologo -warnaserror
-	@echo "==> TypeScript (ESLint)..."
-	cd src/Napper.VsCode && npm run lint
-	@echo "==> Rust (clippy)..."
-	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml
-	@echo "==> All projects linted"
-
 # ============================================================
 # Docs
 # ============================================================
@@ -414,3 +491,25 @@ dump-cli-help:
 	  echo '| 2    | Runtime error (network, script error, parse error) |'; \
 	} > docs/cli-reference.md; \
 	echo "==> Written to docs/cli-reference.md"
+
+# ============================================================
+# HELP
+# ============================================================
+help:
+	@echo "Available targets:"
+	@echo "  build          - Compile/assemble all artifacts"
+	@echo "  test           - Run full test suite with coverage"
+	@echo "  lint           - Run all linters (errors mode)"
+	@echo "  fmt            - Format all code in-place"
+	@echo "  fmt-check      - Check formatting (no modification)"
+	@echo "  clean          - Remove build artifacts"
+	@echo "  check          - lint + test (pre-commit)"
+	@echo "  ci             - lint + test + build (full CI)"
+	@echo "  coverage       - Generate and open coverage report"
+	@echo "  coverage-check - Assert coverage thresholds"
+	@echo "  build-cli      - Build CLI binary only"
+	@echo "  build-vsix     - Build CLI + extension + package VSIX"
+	@echo "  build-zed      - Build Zed extension (WASM)"
+	@echo "  test-fsharp    - Run F# tests only"
+	@echo "  test-rust      - Run Rust tests only"
+	@echo "  test-vsix      - Run TypeScript tests only"

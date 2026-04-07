@@ -1,57 +1,112 @@
+# =============================================================================
+# UNIVERSAL
+# =============================================================================
+
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# .NET build output
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Portfolio-wide tooling
+.too_many_cooks/
+.commandtree/
+.playwright-mcp/
+coordination/
+logs/
+nohup.out
+
+# Coverage artifacts (all languages)
+coverage/
+lcov.info
+*.profraw
+*.profdata
+htmlcov/
+.coverage
+coverage.xml
+coverage.out
+coverage-summary.json
+TestResults/
+mutants.out/
+
+# Secrets / local overrides
+.env
+.env.local
+.env.*.local
+*.local
+*.secret
+*.pem
+*.key
+!*.pub.key
+.napenv.local
+
+# Temporary
+tmp/
+temp/
+scratch/
+
+# =============================================================================
+# F# / .NET
+# =============================================================================
 bin/
 obj/
 publish/
+.ionide/
 
-# Node / TypeScript build output
+# =============================================================================
+# TypeScript / Node
+# =============================================================================
 node_modules/
 dist/
 out/
+build/
+*.vsix
+*.tgz
+.npm/
+.cache/
+.vscode-test/
+.vscode-test-web/
+.nyc_output/
 
-# VSCode extension
+# =============================================================================
+# Rust
+# =============================================================================
+src/Napper.Zed/target/
+*.wasm
+
+# =============================================================================
+# Project-specific
+# =============================================================================
 src/Napper.VsCode/node_modules/
 src/Napper.VsCode/dist/
 src/Napper.VsCode/out/
 src/Napper.VsCode/*.vsix
 src/Napper.VsCode/.vscode-test/
-
-# IDE settings
-.vscode/
-
-# Secrets
-.napenv.local
-
-# Test output
-coverage/
-TestResults/
-
-# Tools
-.too_many_cooks/
-.commandtree/
-.playwright-mcp/
+src/Napper.VsCode/.nyc_output/
 
 # Generated files
 website/_site/
 examples/httpbin/advanced-report.html
+examples/httpbin/all-methods-report.html
 
 # Cached test specs
 tests/Napper.Core.Tests/.spec-cache/
 
-examples/httpbin/all-methods-report.html
-
-src/Napper.Zed/target/
-
-src/Napper.Zed/extension.wasm
-
-src/Napper.Zed/grammars/nap.wasm
-
-src/Napper.Zed/grammars/napenv.wasm
-
-*.wasm
-
+# Script logs
 scripts/logs/
-
-src/Napper.VsCode/.nyc_output/

@@ -1,20 +1,49 @@
 root = true
 
+# ============================================================
+# Universal settings
+# ============================================================
 [*]
+charset = utf-8
+end_of_line = lf
 indent_style = space
 indent_size = 4
-end_of_line = lf
-charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
+max_line_length = 120
 
-[*.{fs,fsx}]
+# ============================================================
+# Web / config formats — 2-space indent
+# ============================================================
+[*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}]
+indent_size = 2
+
+[*.{json,jsonc}]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{css,scss,less,html,htm,svelte,vue}]
+indent_size = 2
+
+[*.{md,mdx}]
+indent_size = 2
+trim_trailing_whitespace = false
+
+# ============================================================
+# Language-specific
+# ============================================================
+[*.rs]
 indent_size = 4
+max_line_length = 100
 
-# F# compiler diagnostics — all unused things are errors
+[*.{fs,fsx,fsi}]
+indent_size = 4
+dotnet_diagnostic.FS0025.severity = error
+dotnet_diagnostic.FS0026.severity = error
+dotnet_diagnostic.FS0067.severity = error
 dotnet_diagnostic.FS1182.severity = error
-
-# Opt-in warnings elevated to errors
 dotnet_diagnostic.FS3388.severity = error
 dotnet_diagnostic.FS3389.severity = error
 dotnet_diagnostic.FS3390.severity = error
@@ -24,14 +53,9 @@ dotnet_diagnostic.FS3559.severity = error
 dotnet_diagnostic.FS3560.severity = error
 dotnet_diagnostic.FS3582.severity = error
 
-[*.ts]
-indent_size = 2
-
-[*.json]
-indent_size = 2
-
-[*.{yml,yaml}]
-indent_size = 2
-
-[*.rs]
+[Makefile]
+indent_style = tab
 indent_size = 4
+
+[*.sh]
+indent_size = 2
