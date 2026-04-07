@@ -106,6 +106,15 @@ napper generate openapi ./petstore.json --output-dir ./petstore/
 
 See [CLI OpenAPI Generation](./CLI-OPENAPI-GENERATION.md) for full details.
 
+### `cli-lsp` — Language Server
+
+```sh
+# Start the Nap language server (LSP 3.17 over stdio)
+napper lsp
+```
+
+`napper lsp` runs the language server in the same process as the CLI. **The LSP and CLI are one binary** ([`lsp-one-binary`](./LSP-SPEC.md#lsp-one-binary)) — there is no separate `napper-lsp`. IDE extensions spawn `napper lsp` as a child process and communicate via JSON-RPC over stdin/stdout. While `lsp` is the active subcommand, the process MUST NOT write anything to stdout outside LSP framing — all logs go to stderr or to a file. See [LSP Specification](./LSP-SPEC.md) for capabilities and protocol details.
+
 ---
 
 ## CLI Flags
@@ -145,5 +154,7 @@ See [CLI OpenAPI Generation](./CLI-OPENAPI-GENERATION.md) for full details.
 
 - [File Formats](./FILE-FORMATS-SPEC.md) — `.nap`, `.napenv`, `.naplist` format specifications
 - [Scripting](./SCRIPTING-SPEC.md) — F# and C# scripting model, NapContext, NapRunner
-- [CLI Plan](./CLI-PLAN.md) — Parser, project layout, implementation phases
+- [CLI Plan](../plans/CLI-PLAN.md) — Parser, project layout, implementation phases
+- [LSP Specification](./LSP-SPEC.md) — `napper lsp` subcommand: protocol, capabilities, transport
+- [LSP Plan](../plans/LSP-PLAN.md) — LSP implementation phases (same `napper` binary)
 - [OpenAPI Generation (CLI)](./CLI-OPENAPI-GENERATION.md) — Test suite generation from OpenAPI specs

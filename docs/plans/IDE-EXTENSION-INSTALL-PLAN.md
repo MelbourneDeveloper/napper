@@ -4,6 +4,8 @@ Implements [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-
 
 The VSIX guarantees that a `napper` binary on PATH reports a version exactly equal to the VSIX `package.json` version. The canonical install channel is **`dotnet tool install -g napper --version X`** because it is the only channel that pins to a historical version. Brew/Scoop/Choco are used **only** to install the .NET SDK prerequisite when missing — never to install `napper` itself. The VSIX never downloads binaries directly.
 
+**One install gives you both the CLI and the LSP.** The Nap language server is the **`napper lsp` subcommand** of the same `napper` binary ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)). After this resolver puts a version-matched `napper` on PATH, the VSIX can launch `<resolvedNapperPath> lsp` to start the language server with no further discovery, no second install, no second version pin. There is no `napper-lsp` and there never will be.
+
 ---
 
 ## Resolution Algorithm
@@ -172,6 +174,10 @@ Place a stub `napper` shell script on the test workspace's PATH (via `process.en
 - [ ] In `src/Napper.VsCode/src/extension.ts`, replace `ensureCliInstalled` (lines 159–180) with `await cliResolverUi.ensureCli({ vsixVersion, logger, outputChannel, storageDir })`
 - [ ] Drop the `bundledCliPath` / extension `bin/` lookup if no longer needed (extension stops bundling a CLI binary)
 - [ ] After successful install, persist the resolved absolute `cliPath` to extension globalState; warm-start probes the cached path before re-running the resolver
+
+### LSP wire-up (depends on [LSP-PLAN.md Phase 2.5](./LSP-PLAN.md))
+- [ ] After the resolver returns `ok`, pass the resolved `cliPath` to `vscode-languageclient` as `command` with `args: ['lsp']`. The LSP and CLI are the same binary ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)) — no second discovery, no second version pin.
+- [ ] If the resolver tanks, the LSP client is **not** started. Diagnostics, completions, and hover are unavailable until the user resolves the install issue and reloads VS Code.
 
 ### Cleanup
 - [ ] Delete `src/Napper.VsCode/src/cliInstaller.ts`

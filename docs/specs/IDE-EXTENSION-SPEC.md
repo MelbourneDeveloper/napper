@@ -26,9 +26,8 @@ graph TB
         NV[Neovim Plugin<br/>Lua]
     end
 
-    subgraph "Nap Toolchain"
-        LSP[nap-lsp<br/>F# binary]
-        CLI[nap CLI<br/>F# binary]
+    subgraph "Nap Toolchain (single napper binary)"
+        NAPPER["napper<br/>F# binary<br/>(run / check / generate / convert / lsp)"]
     end
 
     subgraph "Napper.Core (shared F# library)"
@@ -39,35 +38,31 @@ graph TB
         OPENAPI[OpenApiGenerator.fs]
     end
 
-    VS -->|stdio / LSP| LSP
-    ZD -->|stdio / LSP| LSP
-    NV -->|stdio / LSP| LSP
+    VS -->|spawns 'napper lsp', stdio| NAPPER
+    ZD -->|spawns 'napper lsp', stdio| NAPPER
+    NV -->|spawns 'napper lsp', stdio| NAPPER
 
-    VS -->|shell out| CLI
-    ZD -->|shell out| CLI
-    NV -->|shell out| CLI
+    VS -->|spawns 'napper run', exec| NAPPER
+    ZD -->|spawns 'napper run', exec| NAPPER
+    NV -->|spawns 'napper run', exec| NAPPER
 
-    LSP --> PARSER
-    LSP --> TYPES
-    LSP --> ENV
-
-    CLI --> PARSER
-    CLI --> TYPES
-    CLI --> ENV
-    CLI --> RUNNER
-    CLI --> OPENAPI
+    NAPPER --> PARSER
+    NAPPER --> TYPES
+    NAPPER --> ENV
+    NAPPER --> RUNNER
+    NAPPER --> OPENAPI
 ```
 
 ```mermaid
 graph LR
-    subgraph "IDE ↔ LSP (language intelligence)"
+    subgraph "IDE ↔ napper lsp (language intelligence)"
         direction LR
-        IDE1[IDE] -->|completions, diagnostics,<br/>hover, symbols| LSP1[nap-lsp]
+        IDE1[IDE] -->|completions, diagnostics,<br/>hover, symbols| LSP1["napper lsp<br/>(subcommand)"]
     end
 
-    subgraph "IDE ↔ CLI (execution)"
+    subgraph "IDE ↔ napper run (execution)"
         direction LR
-        IDE2[IDE] -->|nap run, nap generate| CLI1[nap CLI]
+        IDE2[IDE] -->|napper run, napper generate| CLI1["napper<br/>(other subcommands)"]
     end
 ```
 
@@ -85,13 +80,13 @@ graph LR
 
 ## `ide-lsp` — Portable Core: Nap Language Server (LSP)
 
-The foundation for cross-IDE feature parity is a **Nap Language Server** (`napper-lsp`) — an F# binary that speaks LSP 3.17 over stdio. It reuses `Napper.Core` directly (parser, types, environment) with zero duplicated logic.
+The foundation for cross-IDE feature parity is the **Nap Language Server**, which runs as the **`napper lsp` subcommand** of the `napper` CLI. **One binary, one install** — see [`lsp-one-binary`](./LSP-SPEC.md#lsp-one-binary). IDE extensions spawn `napper lsp` and speak LSP 3.17 over stdio. The LSP layer reuses `Napper.Core` directly (parser, types, environment) with zero duplicated logic.
 
 **The LSP replaces duplicated logic in IDE extensions.** The VSIX currently re-parses `.nap` files in TypeScript to extract HTTP methods, URLs, playlist steps, and environment names. This logic already exists in `Napper.Core` F#. After the LSP cutover, all IDEs ask the LSP for this data instead of reimplementing parsing in their own language. **Less TypeScript, less Rust, MORE F#.**
 
 IDE extensions become **thin UI shells** — they render data from the LSP and handle IDE-specific UI (CodeLens, tree views, status bars). They do NOT parse `.nap` files themselves.
 
-See **[LSP Specification](./LSP-SPEC.md)** for the full capability spec and **[LSP Plan](./LSP-PLAN.md)** for implementation phases.
+See **[LSP Specification](./LSP-SPEC.md)** for the full capability spec and **[LSP Plan](../plans/LSP-PLAN.md)** for implementation phases.
 
 ---
 
@@ -149,7 +144,7 @@ Every IDE must support running a `.nap` file or `.naplist` file from within the 
 
 ### Language Intelligence (via LSP)
 
-All IDEs connect to the Nap Language Server (`nap-lsp`) for completions, diagnostics, hover, and document symbols. See **[LSP Specification](./LSP-SPEC.md)** for the full details.
+All IDEs connect to the Nap Language Server by spawning `napper lsp` and speaking JSON-RPC 2.0 over stdio. The LSP provides completions, diagnostics, hover, and document symbols. See **[LSP Specification](./LSP-SPEC.md)** for the full details.
 
 ---
 
@@ -400,7 +395,7 @@ Resolution runs on activation, idempotent, first match wins:
 ### Shared
 
 - All extensions shell out to `nap run` for execution. No IDE re-implements HTTP logic.
-- All extensions connect to `nap-lsp` for language intelligence. See **[LSP Specification](./LSP-SPEC.md)**.
+- All extensions launch the LSP by spawning `napper lsp` over stdio. See **[LSP Specification](./LSP-SPEC.md)**.
 - Grammar definitions (TextMate and Tree-sitter) are both derived from the same ANTLR `.g4` grammar to prevent drift.
 
 ---

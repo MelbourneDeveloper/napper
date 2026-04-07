@@ -1,6 +1,14 @@
 # Nap Language Server — Specification
 
-> A standalone LSP binary that provides language intelligence for `.nap`, `.naplist`, and `.napenv` files across all IDEs. Built in F#, reusing **Napper.Core** modules directly.
+> The Napper language server is **not a separate binary**. It is a subcommand of the `napper` CLI: `napper lsp` runs the LSP over stdio. **One binary. One install. One version.** The LSP and CLI are the same artifact.
+
+---
+
+## `lsp-one-binary` — One Binary
+
+The CLI and the LSP ship as a single `napper` executable. Running `napper run …` executes a `.nap` file. Running `napper lsp` starts the language server, reads JSON-RPC from stdin, and writes JSON-RPC to stdout. There is no `napper-lsp`, no `nap-lsp`, no separate NuGet package, no separate brew formula, no separate version-resolution path. The version reported by `napper --version` is the version of every capability in the binary, including the LSP.
+
+This is non-negotiable. Any change that splits the LSP back out into its own binary is a regression. When [`cli-aot-migration`](./CLI-SPEC.md#cli-aot-migration) lands, the AOT-compiled `napper` binary still contains the LSP — exactly the same way.
 
 ---
 
@@ -14,57 +22,40 @@ graph TB
         NV[Neovim Plugin<br/>Lua]
     end
 
-    subgraph "nap-lsp (F# binary)"
-        JSONRPC[JSON-RPC over stdio]
-        HANDLERS[LSP Handlers]
+    subgraph "napper (single F# binary)"
+        ENTRY["Program.fs<br/>napper run / check / lsp / ..."]
+        CLI_HANDLERS[CLI subcommands]
+        LSP_HANDLERS["LSP handlers<br/>(napper lsp subcommand)"]
         subgraph "Napper.Core (shared library)"
-            PARSER[Parser.fs<br/>FParsec]
-            ENV[Environment.fs<br/>Variable Resolution]
-            TYPES[Types.fs<br/>Domain Model]
+            PARSER[Parser.fs]
+            ENV[Environment.fs]
+            TYPES[Types.fs]
+            LOGGER[Logger.fs]
         end
     end
 
-    VS -->|stdio| JSONRPC
-    ZD -->|stdio| JSONRPC
-    NV -->|stdio| JSONRPC
-    JSONRPC --> HANDLERS
-    HANDLERS --> PARSER
-    HANDLERS --> ENV
-    HANDLERS --> TYPES
-```
-
-```mermaid
-graph LR
-    subgraph "Napper.Core (shared)"
-        T[Types.fs]
-        P[Parser.fs]
-        E[Environment.fs]
-        L[Logger.fs]
-    end
-
-    subgraph "Consumers"
-        CLI[Napper.Cli]
-        LSP[Napper.Lsp]
-    end
-
-    CLI --> T
-    CLI --> P
-    CLI --> E
-    CLI --> L
-    LSP --> T
-    LSP --> P
-    LSP --> E
-    LSP --> L
+    VS -->|spawn 'napper lsp', stdio| ENTRY
+    ZD -->|spawn 'napper lsp', stdio| ENTRY
+    NV -->|spawn 'napper lsp', stdio| ENTRY
+    VS -->|spawn 'napper run', exec| ENTRY
+    ZD -->|spawn 'napper run', exec| ENTRY
+    ENTRY --> CLI_HANDLERS
+    ENTRY --> LSP_HANDLERS
+    CLI_HANDLERS --> PARSER
+    CLI_HANDLERS --> ENV
+    LSP_HANDLERS --> PARSER
+    LSP_HANDLERS --> ENV
+    LSP_HANDLERS --> TYPES
 ```
 
 ---
 
 ## Design Principles
 
-- **⚠️ ZERO duplicated logic — this is the #1 rule.** `Napper.Lsp` MUST NOT contain any parsing, type definitions, environment resolution, or domain logic. ALL of that lives in `Napper.Core`. The LSP is a thin protocol adapter that calls `Napper.Core` functions and translates results to LSP responses. If you find yourself writing domain logic in `Napper.Lsp`, STOP — it belongs in `Napper.Core` where the CLI can use it too.
-- **Napper.Core is the single source of truth.** `Napper.Cli` and `Napper.Lsp` are both thin consumers of `Napper.Core`. They share the exact same parser, types, environment resolution, and logger. Any new capability needed by the LSP that could be useful to the CLI MUST be added to `Napper.Core`, not to `Napper.Lsp`.
-- **Standalone binary.** Published as a self-contained `nap-lsp` executable via `dotnet publish`. No .NET runtime required on the user's machine.
-- **Protocol-only coupling.** IDE extensions communicate exclusively via LSP over stdio. No IDE-specific code in the LSP binary.
+- **One binary.** [`lsp-one-binary`](#lsp-one-binary). The LSP is a subcommand of `napper`, not a separate executable.
+- **⚠️ ZERO duplicated logic.** LSP handler code MUST NOT contain parsing, types, environment resolution, or any domain logic. Those live in `Napper.Core` and are shared with the CLI subcommands. The LSP layer is a thin protocol adapter that calls `Napper.Core` functions and translates results to LSP responses.
+- **Napper.Core is the single source of truth.** Every CLI subcommand and every LSP handler calls into `Napper.Core`. Any new capability the LSP needs that could be useful to the CLI MUST be added to `Napper.Core`.
+- **Protocol-only coupling.** IDE extensions communicate with the LSP exclusively via JSON-RPC over stdio. No IDE-specific code in the F# binary.
 - **Incremental.** Each LSP capability ships independently. The server advertises only what it supports.
 
 ---
@@ -73,12 +64,12 @@ graph LR
 
 | Property | Value |
 |----------|-------|
+| Launch | `napper lsp` (subcommand) |
 | Transport | stdio (stdin/stdout) |
 | Protocol | JSON-RPC 2.0 (LSP 3.17) |
 | Encoding | UTF-8 |
-| Binary name | `nap-lsp` |
 
-IDE extensions launch `nap-lsp` as a child process and communicate over stdin/stdout. No TCP, no WebSocket, no HTTP.
+IDE extensions spawn `napper lsp` as a child process and communicate over stdin/stdout. No TCP, no WebSocket, no HTTP. The `napper lsp` subcommand takes over stdio for the lifetime of the process — it MUST NOT print anything to stdout outside of LSP framing, and MUST log to stderr or to a file (never stdout).
 
 ---
 
@@ -215,26 +206,26 @@ The LSP accepts configuration via `workspace/didChangeConfiguration` and `initia
 
 ## Distribution
 
-| Platform | Binary | Notes |
-|----------|--------|-------|
-| macOS (arm64) | `nap-lsp` | Self-contained, single file |
-| macOS (x64) | `nap-lsp` | Self-contained, single file |
-| Linux (x64) | `nap-lsp` | Self-contained, single file |
-| Windows (x64) | `nap-lsp.exe` | Self-contained, single file |
+The LSP has no separate distribution. It ships inside `napper`:
 
-Built with `dotnet publish -c Release -r <rid> --self-contained -p:PublishSingleFile=true`.
+- **NuGet** — `dotnet tool install -g napper` ([`cli-install-dotnet-tool`](./CLI-SPEC.md#cli-install-dotnet-tool)). The LSP is the same binary; you launch it via `napper lsp`.
+- **Homebrew tap** — `brew install napper` ([`cli-install-homebrew`](./CLI-SPEC.md#cli-install-homebrew)).
+- **Scoop bucket** — `scoop install napper` ([`cli-install-scoop`](./CLI-SPEC.md#cli-install-scoop)).
 
-IDE extensions discover the binary by:
-1. Checking `nap.cliPath` setting (if configured)
-2. Looking for `nap-lsp` on `PATH`
-3. Downloading from GitHub releases (future)
+The VSIX install resolver ([`vscode-cli-acquisition`](./IDE-EXTENSION-SPEC.md#vscode-cli-acquisition)) installs `napper` once. That single install gives you the LSP for free — no second download, no second version pin, no second discovery step.
+
+## Discovery
+
+IDE extensions launch the language server by spawning `<resolved-napper-path> lsp`. The resolved path is whatever the install resolver settled on (`napper` from `nap.cliPath`, the user's `PATH`, or the dotnet tools directory). There is no separate `nap-lsp` lookup — the LSP is reachable iff the CLI is reachable, by definition.
 
 ---
 
 ## Related Specs
 
+- [CLI Spec](./CLI-SPEC.md) — `napper` CLI subcommands including `napper lsp`
 - [IDE Extension Spec](./IDE-EXTENSION-SPEC.md) — Feature matrix and IDE-specific behaviour
-- [IDE Extension Plan (VSCode)](./IDE-EXTENSION-PLAN.md) — VSCode implementation phases
-- [Zed Extension Plan](./ZED-EXTENSION-PLAN.md) — Zed implementation phases
+- [IDE Extension Install Plan](../plans/IDE-EXTENSION-INSTALL-PLAN.md) — VSIX CLI install resolver (the same install gives you the LSP)
+- [IDE Extension Plan (VSCode)](../plans/IDE-EXTENSION-PLAN.md) — VSCode implementation phases
+- [Zed Extension Plan](../plans/ZED-EXTENSION-PLAN.md) — Zed implementation phases
 - [File Formats Spec](./FILE-FORMATS-SPEC.md) — `.nap`, `.naplist`, `.napenv` format definitions
-- [LSP Implementation Plan](./LSP-PLAN.md) — Implementation phases and TODO
+- [LSP Implementation Plan](../plans/LSP-PLAN.md) — Implementation phases and TODO

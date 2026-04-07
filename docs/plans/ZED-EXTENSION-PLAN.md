@@ -54,12 +54,12 @@ Build the Tree-sitter grammar for `.nap` and `.naplist` files. Write all query f
 
 ### Phase 3 — LSP Integration
 
-The Zed extension launches `nap-lsp` (the shared F# LSP binary) via `language_server_command`. The LSP itself is a separate project — see **[LSP Spec](./LSP-SPEC.md)** and **[LSP Plan](./LSP-PLAN.md)** for details.
+The Zed extension launches the language server by spawning **`napper lsp`** — the LSP is a subcommand of the `napper` CLI ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)), not a separate binary. Same `napper` install gives you the LSP for free. See **[LSP Spec](../specs/LSP-SPEC.md)** and **[LSP Plan](./LSP-PLAN.md)**.
 
-- Implement `language_server_command` in `lib.rs` to launch `nap-lsp` binary
+- Implement `language_server_command` in `lib.rs` to return `{ command: "napper", args: ["lsp"] }`
 - Register the language server in `extension.toml` for `.nap` and `.naplist` languages
 - The LSP provides completions, diagnostics, hover, symbols — no Zed-specific code needed
-- Handle LSP binary discovery (check PATH, fallback to download)
+- Discovery: check `PATH` for `napper`. If missing, surface a notification linking to the install guide. Zed extensions cannot install dotnet tools themselves; the user runs `dotnet tool install -g napper` (or `brew install napper`) once.
 
 ### Phase 4 — Slash Commands + Redactions
 
@@ -97,10 +97,10 @@ The Zed extension launches `nap-lsp` (the shared F# LSP binary) via `language_se
 - [ ] Add runnable label showing HTTP method + URL
 
 ### Phase 3 — LSP Integration
-- [ ] Implement `language_server_command` in `lib.rs`
+- [ ] Implement `language_server_command` in `lib.rs` to return `{ command: "napper", args: ["lsp"] }`
 - [ ] Register language server in `extension.toml`
 - [ ] Test completions, diagnostics, hover via LSP
-- [ ] Handle LSP binary discovery (PATH lookup)
+- [ ] PATH lookup for `napper`; surface a notification with install instructions if missing
 
 ### Phase 4 — Slash Commands + Redactions
 - [ ] Implement `/nap-run` slash command
@@ -119,6 +119,6 @@ The Zed extension launches `nap-lsp` (the shared F# LSP binary) via `language_se
 
 ## Related Specs
 
-- [LSP Specification](./LSP-SPEC.md) — Language server capabilities, architecture, and protocol details
+- [LSP Specification](../specs/LSP-SPEC.md) — Language server capabilities, architecture, and protocol details
 - [LSP Plan](./LSP-PLAN.md) — LSP implementation phases and TODO
-- [IDE Extension Spec](./IDE-EXTENSION-SPEC.md) — Feature matrix and shared/IDE-specific behaviour
+- [IDE Extension Spec](../specs/IDE-EXTENSION-SPEC.md) — Feature matrix and shared/IDE-specific behaviour

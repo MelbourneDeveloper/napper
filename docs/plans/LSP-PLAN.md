@@ -1,20 +1,22 @@
 # Nap Language Server — Implementation Plan
 
-The LSP is a **thin F# project** (`Napper.Lsp`) that references `Napper.Core` directly. It contains ONLY LSP protocol adapters — all parsing, types, environment resolution, and logging come from `Napper.Core`, the same shared library used by `Napper.Cli`. **Zero duplicated domain logic. Period.**
+The LSP is **a subcommand of `napper`**, not a separate binary. The F# project `Napper.Lsp` is a library (no `OutputType=Exe`, no `Program.fs`) referenced by `Napper.Cli`. When the user runs `napper lsp`, the CLI entry point hands stdio to the LSP layer. **One binary, one install, one version.** See [`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary).
+
+LSP handler code contains ONLY protocol adapters — all parsing, types, environment resolution, and logging come from `Napper.Core`, the same shared library used by every CLI subcommand. **Zero duplicated domain logic. Period.**
 
 ---
 
 ## ⛔️ DO NOT BREAK EXISTING FUNCTIONALITY
 
-**The LSP is a PARALLEL project.** It does NOT touch the existing VSIX, CLI, or tests until the cutover phase.
+The LSP layer is built incrementally inside the existing solution. It does NOT touch the existing VSIX, CLI subcommands, or tests except via the explicit `napper lsp` subcommand wire-up.
 
-- **DO NOT modify any existing TypeScript files in `src/Napper.VsCode/`**
-- **DO NOT modify any existing F# files in `src/Napper.Core/` or `src/Napper.Cli/`** (unless adding new public functions for LSP consumption — and those MUST NOT change existing signatures or behaviour)
-- **DO NOT modify or delete any existing tests**
-- **ALL existing tests MUST continue to pass at all times**
-- **The cutover happens ONLY after the LSP is stable and its own tests pass**
+- **DO NOT modify any existing TypeScript files in `src/Napper.VsCode/`** outside the LSP cutover phase.
+- **DO NOT modify any existing F# files in `src/Napper.Core/` or `src/Napper.Cli/`** beyond (a) adding the `lsp` subcommand dispatch in `Napper.Cli/Program.fs` and (b) adding new public functions in `Napper.Core` for LSP consumption. Existing signatures and behaviour stay untouched.
+- **DO NOT modify or delete any existing tests**.
+- **ALL existing tests MUST continue to pass at all times**.
+- **The cutover happens ONLY after the LSP layer is stable and its own tests pass**.
 
-If you need to add a function to `Napper.Core` for the LSP, that's fine — but it's an ADDITION, not a modification. Existing code stays untouched.
+If you need to add a function to `Napper.Core` for the LSP, that's fine — but it's an ADDITION, not a modification.
 
 ---
 
@@ -24,20 +26,20 @@ The goal is to **move logic OUT of TypeScript/Rust and INTO F#**. The VSIX curre
 
 ```mermaid
 graph LR
-    subgraph "Phase 1-2: Build LSP (parallel)"
-        LSP[Napper.Lsp project] -->|references| CORE[Napper.Core]
+    subgraph "Phase 1-2: Build LSP layer (parallel)"
+        LSP[Napper.Lsp library] -->|references| CORE[Napper.Core]
+        CLI[Napper.Cli] -->|references| LSP
         LSPT[Napper.Lsp.Tests] -->|tests| LSP
     end
 
     subgraph "Existing (UNTOUCHED)"
-        CLI[Napper.Cli] -->|references| CORE
         VSIX[Napper.VsCode VSIX]
         TESTS[All existing tests]
     end
 
     subgraph "Phase 3: Cutover"
-        VSIX2[VSIX wires up<br/>vscode-languageclient] -->|stdio| LSP2[napper-lsp binary]
-        ZED[Zed extension] -->|stdio| LSP2
+        VSIX2[VSIX wires up<br/>vscode-languageclient] -->|spawns 'napper lsp', stdio| NAPPER[napper binary]
+        ZED[Zed extension] -->|spawns 'napper lsp', stdio| NAPPER
     end
 ```
 
@@ -65,11 +67,11 @@ graph TB
         ZED_RS[Zed Rust<br/>would need same logic] --> FILES
     end
 
-    subgraph "AFTER: Single source of truth in LSP"
-        VS2[VSCode — thin UI shell] -->|LSP requests| LSP[napper-lsp F#]
-        ZED2[Zed — thin UI shell] -->|LSP requests| LSP
-        NV2[Neovim — thin UI shell] -->|LSP requests| LSP
-        LSP -->|calls| CORE[Napper.Core<br/>Parser.fs / Environment.fs]
+    subgraph "AFTER: Single source of truth in the napper binary"
+        VS2[VSCode — thin UI shell] -->|spawns 'napper lsp'| NAPPER[napper binary<br/>LSP subcommand]
+        ZED2[Zed — thin UI shell] -->|spawns 'napper lsp'| NAPPER
+        NV2[Neovim — thin UI shell] -->|spawns 'napper lsp'| NAPPER
+        NAPPER -->|calls| CORE[Napper.Core<br/>Parser.fs / Environment.fs]
         CORE --> FILES2[.nap / .naplist / .napenv files]
     end
 ```
@@ -78,19 +80,24 @@ graph TB
 
 ## Project Structure
 
+`Napper.Lsp` is a **library** (no `OutputType=Exe`, no `Program.fs`) referenced by `Napper.Cli`. The single executable is `napper`. The CLI entry point dispatches `napper lsp` to a `Napper.Lsp.Server.start` function that takes over stdio.
+
 ```
 src/Napper.Lsp/
-├── Napper.Lsp.fsproj       # References Napper.Core, depends on Ionide.LanguageServerProtocol
-├── Client.fs                # LSP client wrapper for notifications back to IDE
-├── Server.fs                # LSP server — lifecycle, document sync, symbols, custom requests
-├── Workspace.fs             # Workspace state: open documents, loaded environments
-└── Program.fs               # Entry point: stdio transport, server init
+├── Napper.Lsp.fsproj       # Library. References Napper.Core, depends on Ionide.LanguageServerProtocol
+├── Client.fs               # LSP client wrapper for notifications back to IDE
+├── Server.fs               # LSP server — lifecycle, document sync, symbols, custom requests
+└── Workspace.fs            # Workspace state: open documents, loaded environments
+
+src/Napper.Cli/
+├── Napper.Cli.fsproj       # References Napper.Core AND Napper.Lsp
+└── Program.fs              # Entry point. 'napper lsp' subcommand calls Napper.Lsp.Server.start
 ```
 
 ```mermaid
 graph TD
-    PROGRAM[Program.fs<br/>Entry point + stdio] --> SERVER[Server.fs<br/>Lifecycle + handlers]
-    SERVER --> WS[Workspace.fs<br/>Docs + env state]
+    PROGRAM["Napper.Cli Program.fs<br/>napper lsp subcommand"] --> SERVER[Napper.Lsp.Server<br/>Lifecycle + handlers]
+    SERVER --> WS[Napper.Lsp.Workspace<br/>Docs + env state]
 
     WS --> CORE_P[Napper.Core.Parser]
     WS --> CORE_E[Napper.Core.Environment]
@@ -102,7 +109,7 @@ graph TD
 
 ## ⚠️ Code Sharing with Napper.Core — MANDATORY
 
-**`Napper.Lsp` contains ONLY LSP protocol glue.** All domain logic lives in `Napper.Core` and is shared with `Napper.Cli`. If the LSP needs a capability that doesn't exist in `Napper.Core` yet, ADD IT TO `Napper.Core` — do NOT put it in `Napper.Lsp`. This is non-negotiable.
+**`Napper.Lsp` contains ONLY LSP protocol glue.** All domain logic lives in `Napper.Core` and is shared with every CLI subcommand. If the LSP needs a capability that doesn't exist in `Napper.Core` yet, ADD IT TO `Napper.Core` — do NOT put it in `Napper.Lsp`. This is non-negotiable.
 
 The rule is simple: **if it's not LSP protocol code, it goes in `Napper.Core`.**
 
@@ -114,6 +121,7 @@ Examples of what belongs where:
 - Generating a curl command → `Napper.Core` (add new module)
 - Listing environment names → `Napper.Core.Environment` (add new function)
 - Formatting an LSP CompletionItem → `Napper.Lsp` (protocol glue)
+- Dispatching `napper lsp` subcommand → `Napper.Cli/Program.fs` (CLI glue)
 
 | Napper.Core Module | LSP Usage |
 |-------------------|-----------|
@@ -131,16 +139,15 @@ Examples of what belongs where:
 
 ## Implementation Phases
 
-### Phase 1 — Project Scaffold + Document Sync
+### Phase 1 — Library Scaffold + Document Sync
 
-Set up the F# project, wire up JSON-RPC over stdio, and implement document synchronization. **No existing code is modified.**
+Set up the F# library project, wire up JSON-RPC over stdio, and implement document synchronization. **No existing code is modified except adding the `Napper.Lsp` project to `Napper.slnx`.**
 
-- Create `Napper.Lsp.fsproj` referencing `Napper.Core` and `Ionide.LanguageServerProtocol`
+- Create `Napper.Lsp.fsproj` as a **library** (`<OutputType>` removed) referencing `Napper.Core` and `Ionide.LanguageServerProtocol`
 - Add project to `Napper.slnx`
-- Implement `Program.fs` — stdio transport, server lifecycle
-- Implement `Server.fs` — `initialize`/`initialized`/`shutdown` handlers, capability advertisement
+- Implement `Server.fs` — `initialize`/`initialized`/`shutdown` handlers, capability advertisement, exposed as `Server.start : Stream -> Stream -> int`
 - Implement `Workspace.fs` — in-memory document store (`didOpen`, `didChange`, `didClose`)
-- Verify the server starts, handshakes, and tracks open documents
+- Verify the library builds; integration tests in `Napper.Lsp.Tests` drive `Server.start` directly with in-process pipes
 
 ### Phase 2 — Shared Features + Tests
 
@@ -155,11 +162,11 @@ Build the LSP features that REPLACE duplicated TypeScript/Rust logic. These are 
 - `napper/environments` — scan workspace for `.napenv.*` files, return list of environment names
 - `napper/curlCommand` — given a `.nap` file URI, return the curl command string
 
-**Napper.Core additions** (shared with CLI):
+**Napper.Core additions** (shared with every CLI subcommand):
 - `Environment.detectEnvironmentNames` — scan a directory for `.napenv.*` files and return env names
 - `CurlGenerator.toCurl` — generate curl string from a `NapRequest`
 
-**Tests** — every test launches the real `napper-lsp` binary and talks JSON-RPC over stdio:
+**Tests** — every test runs `Napper.Lsp.Server.start` against in-process pipes (or shells out to `napper lsp` once Phase 2.5 lands) and talks JSON-RPC:
 - All Phase 1 lifecycle tests (already done)
 - Test: `textDocument/documentSymbol` returns sections for valid `.nap` file
 - Test: `textDocument/documentSymbol` returns sections for valid `.naplist` file
@@ -169,13 +176,25 @@ Build the LSP features that REPLACE duplicated TypeScript/Rust logic. These are 
 - **ALL existing F# tests still pass**
 - **ALL existing VSIX e2e tests still pass**
 
+### Phase 2.5 — `napper lsp` Subcommand
+
+Wire the LSP layer into the CLI entry point so `napper lsp` is a real command users (and IDE extensions) can launch.
+
+- `Napper.Cli.fsproj` adds a project reference to `Napper.Lsp`
+- `Napper.Cli/Program.fs` matches `lsp` as a subcommand, calls `Napper.Lsp.Server.start (Console.OpenStandardInput()) (Console.OpenStandardOutput())`
+- `Napper.Cli` MUST NOT print anything to stdout when `lsp` is the active subcommand — every log line goes to stderr or to a file. The CLI's banner / `--verbose` output is suppressed for `lsp`.
+- `napper help` lists `lsp` as a valid subcommand: `napper lsp     Run the language server (LSP 3.17 over stdio)`
+- A `Napper.Cli.Tests` integration test spawns `napper lsp` as a subprocess, sends an `initialize` request over stdin, and asserts the `initialize` response on stdout
+- **Delete `Napper.Lsp/Program.fs`** if it still exists from earlier scaffolding
+- **Delete the `napper-lsp` `AssemblyName` and `OutputType=Exe`** from `Napper.Lsp.fsproj`
+
 ### Phase 3 — Cutover (VSIX + Zed Wire Up)
 
-**Only after Phase 2 is complete and all tests pass.**
+**Only after Phase 2.5 is complete and all tests pass.**
 
 - Add `vscode-languageclient` dependency to VSIX
-- Wire up VSIX to launch `napper-lsp` over stdio on activation
-- Zed extension: implement `language_server_command` in `lib.rs` to launch `napper-lsp`
+- Wire up VSIX to launch `<resolved-napper-path> lsp` over stdio on activation. The resolved path comes from [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition); no separate LSP discovery
+- Zed extension: implement `language_server_command` in `lib.rs` to launch `napper lsp`
 - **DELETE** duplicated TypeScript parsing code (`extractHttpMethod`, `parseMethodAndUrl`, `parsePlaylistStepPaths`, `detectEnvironments`) — replace with LSP calls
 - Verify: existing VSIX features work exactly as before (now powered by LSP)
 - **Run ALL existing VSIX e2e tests — every single one must pass**
@@ -191,7 +210,7 @@ These are genuinely NEW capabilities that don't exist in any IDE today.
 - Configuration — `workspace/didChangeConfiguration` for environment name and mask settings
 - File watching — `.napenv` changes trigger revalidation
 
-Each feature gets its own LSP integration tests (same approach: real binary, real JSON-RPC, real assertions).
+Each feature gets its own LSP integration tests (same approach: real `napper lsp` subprocess, real JSON-RPC, real assertions).
 
 ---
 
@@ -200,7 +219,7 @@ Each feature gets its own LSP integration tests (same approach: real binary, rea
 **No unit tests. No mocks. LSP integration tests ONLY.**
 
 Every test:
-1. Launches the `napper-lsp` binary as a subprocess
+1. Spawns `napper lsp` as a subprocess (or, in early Phase 1/2, drives `Napper.Lsp.Server.start` directly with in-process pipes)
 2. Sends LSP JSON-RPC messages over stdin (the exact same protocol VSCode/Zed use)
 3. Reads LSP JSON-RPC responses from stdout
 4. Asserts on the responses
@@ -226,11 +245,11 @@ No other dependencies. The LSP is lightweight by design.
 
 ## TODO
 
-### Phase 1 — Project Scaffold + Document Sync
+### Phase 1 — Library Scaffold + Document Sync
 - [x] Create `Napper.Lsp.fsproj` with `Napper.Core` project reference
 - [x] Add `Ionide.LanguageServerProtocol` package reference
 - [x] Add `Napper.Lsp` to `Napper.slnx`
-- [x] Implement `Program.fs` — stdio transport and server lifecycle
+- [x] Implement `Program.fs` — stdio transport and server lifecycle (will move to `Napper.Cli/Program.fs` in Phase 2.5)
 - [x] Implement `Server.fs` — initialize/shutdown, capability registration
 - [x] Implement `Workspace.fs` — document store (didOpen/didChange/didClose)
 
@@ -263,10 +282,22 @@ No other dependencies. The LSP is lightweight by design.
 - [ ] Verify ALL existing F# tests pass
 - [ ] Verify ALL existing VSIX e2e tests pass
 
+### Phase 2.5 — `napper lsp` Subcommand
+- [ ] Convert `Napper.Lsp.fsproj` from executable to library: remove `<OutputType>Exe</OutputType>` and the `napper-lsp` `<AssemblyName>`
+- [ ] Delete `src/Napper.Lsp/Program.fs` (its logic moves into the CLI entry point)
+- [ ] Expose `Napper.Lsp.Server.start : Stream -> Stream -> int` as the public entry point used by both CLI dispatch and tests
+- [ ] Add `Napper.Lsp` project reference to `src/Napper.Cli/Napper.Cli.fsproj`
+- [ ] Add `lsp` subcommand dispatch in `src/Napper.Cli/Program.fs` that calls `Napper.Lsp.Server.start`
+- [ ] Suppress all stdout output from the CLI when `lsp` is the active subcommand (logs go to stderr or file)
+- [ ] Update `napper help` to list `napper lsp`
+- [ ] Add a `Napper.Cli.Tests` integration test that spawns `napper lsp`, sends `initialize`, and asserts the response
+- [ ] Update `Napper.Lsp.Tests` to drive `Server.start` directly via in-process pipes (no subprocess) — this stays the fast unit-ish integration path
+- [ ] `napper --version` returns the same version regardless of subcommand
+
 ### Phase 3 — Cutover
 - [ ] Add `vscode-languageclient` to VSIX
-- [ ] Wire VSIX to launch `napper-lsp` on activation
-- [ ] Wire Zed `language_server_command` to launch `napper-lsp`
+- [ ] Wire VSIX to launch `<resolvedNapperPath> lsp` on activation (path comes from the install resolver — no separate LSP discovery)
+- [ ] Wire Zed `language_server_command` to launch `napper lsp`
 - [ ] Delete duplicated TS parsing code, replace with LSP calls
 - [ ] Verify existing VSIX features unchanged
 - [ ] Run ALL existing VSIX e2e tests — must pass

@@ -19,7 +19,7 @@
 
 ### Phase 3 — LSP Cutover
 
-Connect the VSCode extension to `napper-lsp` via `vscode-languageclient`. The LSP itself is a separate project — see **[LSP Plan](./LSP-PLAN.md)**.
+Connect the VSCode extension to the language server via `vscode-languageclient`. The language server is the **`napper lsp` subcommand** of the resolved `napper` binary — same binary the install resolver already put on PATH ([`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition)). No separate discovery, no separate version pin. See **[LSP Plan](./LSP-PLAN.md)**.
 
 This phase **deletes duplicated TypeScript parsing code** and replaces it with LSP calls. After this phase, the VSIX is a thin UI shell — it renders data from the LSP, it does NOT parse `.nap` files itself.
 
@@ -32,7 +32,7 @@ This phase **deletes duplicated TypeScript parsing code** and replaces it with L
 - Curl generation (TS) → use `napper/curlCommand` from LSP
 
 **Wire up:**
-- `vscode-languageclient` to launch `napper-lsp` over stdio
+- `vscode-languageclient` configured with `command: <resolvedNapperPath>`, `args: ['lsp']` — spawn the same binary as a subprocess in LSP mode
 - Environment switcher (status bar + quick-pick — data from LSP `napper/environments`)
 - Hover, completions, diagnostics (provided by LSP)
 
@@ -61,7 +61,7 @@ This phase **deletes duplicated TypeScript parsing code** and replaces it with L
 
 ### Phase 3 — LSP Cutover
 - [ ] Add `vscode-languageclient` dependency
-- [ ] Wire up to launch `napper-lsp` over stdio on activation
+- [ ] Wire up to launch `<resolvedNapperPath> lsp` over stdio on activation (use the install resolver's resolved path; no separate LSP discovery)
 - [ ] Delete `extractHttpMethod` — use documentSymbol
 - [ ] Delete `parseMethodAndUrl` — use `napper/requestInfo`
 - [ ] Delete `parsePlaylistStepPaths` — use documentSymbol
