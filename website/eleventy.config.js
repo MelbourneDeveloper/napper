@@ -16,7 +16,7 @@ export default function (eleventyConfig) {
         url: "https://napperapi.dev",
         logo: "/assets/images/logo.png",
         sameAs: [
-          "https://github.com/MelbourneDeveloper/napper",
+          "https://github.com/Nimblesite/napper",
           "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper",
         ],
       },

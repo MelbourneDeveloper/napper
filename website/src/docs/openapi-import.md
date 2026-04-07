@@ -292,7 +292,7 @@ napper run ./tests/petstore.naplist --output junit > results.xml
 
 - Verify the spec is valid JSON. YAML is not supported yet — convert it first.
 - Check that the spec is valid OpenAPI 3.x or Swagger 2.0 using the [Swagger Editor](https://editor.swagger.io/).
-- Some specs with complex `$ref` chains may not resolve correctly. Open an issue on [GitHub](https://github.com/MelbourneDeveloper/napper/issues) with the spec attached.
+- Some specs with complex `$ref` chains may not resolve correctly. Open an issue on [GitHub](https://github.com/Nimblesite/napper/issues) with the spec attached.
 
 **URL import fails with a network error**
 

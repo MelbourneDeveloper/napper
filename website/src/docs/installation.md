@@ -43,10 +43,10 @@ ext install nimblesite.napper
 
 ### Install a VSIX manually
 
-If you need a specific version or are working in an air-gapped environment, download the `.vsix` file from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases) and install it manually.
+If you need a specific version or are working in an air-gapped environment, download the `.vsix` file from [GitHub Releases](https://github.com/Nimblesite/napper/releases) and install it manually.
 
 **Via the VS Code UI:**
-1. Download `napper-<version>.vsix` from the [Releases page](https://github.com/MelbourneDeveloper/napper/releases)
+1. Download `napper-<version>.vsix` from the [Releases page](https://github.com/Nimblesite/napper/releases)
 2. Open the Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`)
 3. Click the `...` menu (top-right of the panel)
 4. Select **Install from VSIX...**
@@ -79,14 +79,14 @@ The CLI is a self-contained binary with **no runtime dependencies** — no .NET,
 
 ### Download from GitHub Releases
 
-Download the binary for your platform from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases). The current release is **v0.10.0**.
+Download the binary for your platform from [GitHub Releases](https://github.com/Nimblesite/napper/releases). The current release is **v0.10.0**.
 
 | Platform | Binary |
 |----------|--------|
-| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64) |
-| macOS (Intel) | [`napper-osx-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-x64) |
-| Linux (x64) | [`napper-linux-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64) |
-| Windows (x64) | [`napper-win-x64.exe`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-win-x64.exe) |
+| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-osx-arm64) |
+| macOS (Intel) | [`napper-osx-x64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-osx-x64) |
+| Linux (x64) | [`napper-linux-x64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-linux-x64) |
+| Windows (x64) | [`napper-win-x64.exe`](https://github.com/Nimblesite/napper/releases/latest/download/napper-win-x64.exe) |
 
 **macOS / Linux — make it executable and move to PATH:**
 ```bash
@@ -104,18 +104,18 @@ Move `napper-win-x64.exe` to a folder on your `PATH`, or rename it to `napper.ex
 The install script auto-detects your platform and verifies the SHA256 checksum:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.sh | bash
 ```
 
 Install a specific version:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash -s 0.10.0
+curl -fsSL https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.sh | bash -s 0.10.0
 ```
 
 ### Install script (Windows)
 
 ```powershell
-irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.ps1 | iex
 ```
 
 Install a specific version:
@@ -128,7 +128,7 @@ Install a specific version:
 If you have the .NET SDK and `make` installed, you can build from source:
 
 ```bash
-git clone https://github.com/MelbourneDeveloper/napper.git
+git clone https://github.com/Nimblesite/napper.git
 cd napper
 make install-binaries
 ```
