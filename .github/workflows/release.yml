@@ -2,45 +2,157 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
-  workflow_dispatch:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
-  bump-versions:
+  validate-tag:
+    name: Validate tag
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: startsWith(github.ref, 'refs/tags/v')
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      tag: ${{ steps.parse.outputs.tag }}
+    steps:
+      - name: Parse and validate tag
+        id: parse
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' does not match required format vMAJOR.MINOR.PATCH (e.g. v0.11.0)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG (version $VERSION)"
+
+  build-cli:
+    name: Build CLI ${{ matrix.rid }}
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: osx-arm64
+            archive: tar.gz
+          - rid: osx-x64
+            archive: tar.gz
+          - rid: linux-x64
+            archive: tar.gz
+          - rid: win-x64
+            archive: zip
+    env:
+      VERSION: ${{ needs.validate-tag.outputs.version }}
+      TAG: ${{ needs.validate-tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
         with:
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          dotnet-version: "10.0.x"
 
-      - uses: actions/setup-node@v4
+      - name: Publish CLI (${{ matrix.rid }})
+        shell: bash
+        run: |
+          dotnet publish src/Napper.Cli/Napper.Cli.fsproj \
+            -r ${{ matrix.rid }} \
+            --self-contained \
+            -p:PublishTrimmed=true \
+            -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$VERSION \
+            -p:FileVersion=$VERSION \
+            -p:InformationalVersion=$VERSION \
+            -o out/${{ matrix.rid }} \
+            --nologo
+
+      - name: Verify binary version matches tag (Unix)
+        if: matrix.rid != 'win-x64'
+        shell: bash
+        run: |
+          chmod +x out/${{ matrix.rid }}/napper
+          ACTUAL=$(out/${{ matrix.rid }}/napper --version)
+          echo "Binary reports: $ACTUAL"
+          if [ "$ACTUAL" != "$VERSION" ]; then
+            echo "::error::Binary version '$ACTUAL' does not match tag version '$VERSION'"
+            exit 1
+          fi
+
+      - name: Verify binary version is embedded (Windows .exe, scanned on Linux)
+        if: matrix.rid == 'win-x64'
+        shell: bash
+        run: |
+          # Cannot execute the Windows .exe on Linux. .NET embeds InformationalVersion
+          # as a UTF-16LE string in the PE metadata. Scan for both ASCII and UTF-16LE.
+          BIN=out/${{ matrix.rid }}/napper.exe
+          test -s "$BIN"
+          echo "napper.exe built ($(stat -c %s "$BIN") bytes)"
+          if strings -a "$BIN" | grep -Fq "$VERSION"; then
+            echo "Found version $VERSION in ASCII strings"
+          elif strings -a -e l "$BIN" | grep -Fq "$VERSION"; then
+            echo "Found version $VERSION in UTF-16LE strings"
+          else
+            echo "::error::Version $VERSION not found in $BIN metadata"
+            exit 1
+          fi
+
+      - name: Stage raw binary asset
+        shell: bash
+        run: |
+          mkdir -p assets
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+            cp out/${{ matrix.rid }}/napper.exe assets/napper-${{ matrix.rid }}.exe
+          else
+            cp out/${{ matrix.rid }}/napper assets/napper-${{ matrix.rid }}
+            chmod +x assets/napper-${{ matrix.rid }}
+          fi
+
+      - name: Stage archive asset
+        shell: bash
+        run: |
+          STAGE=$(mktemp -d)
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+            cp out/${{ matrix.rid }}/napper.exe "$STAGE/napper.exe"
+            (cd "$STAGE" && zip -q -9 "$GITHUB_WORKSPACE/assets/napper-$TAG-${{ matrix.rid }}.zip" napper.exe)
+          else
+            cp out/${{ matrix.rid }}/napper "$STAGE/napper"
+            chmod +x "$STAGE/napper"
+            tar -C "$STAGE" -czf "assets/napper-$TAG-${{ matrix.rid }}.tar.gz" napper
+          fi
+          ls -la assets/
+
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: 22
-
-      - name: Extract version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-
-      - name: Bump versions and push
-        run: make bump-version VERSION="$VERSION" COMMIT=true
+          name: cli-${{ matrix.rid }}
+          path: assets/*
+          if-no-files-found: error
 
   build-vsix:
-    needs: [bump-versions]
+    name: Build VSIX
+    needs: validate-tag
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      VERSION: ${{ needs.validate-tag.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: src/Napper.VsCode/package-lock.json
+
+      - name: Set extension version from tag
+        working-directory: src/Napper.VsCode
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Install extension dependencies
         working-directory: src/Napper.VsCode
@@ -54,96 +166,53 @@ jobs:
         working-directory: src/Napper.VsCode
         run: npx @vscode/vsce package --no-dependencies --skip-license
 
-      - name: Upload VSIX
-        uses: actions/upload-artifact@v4
+      - name: Stage VSIX into assets
+        shell: bash
+        run: |
+          mkdir -p assets
+          cp src/Napper.VsCode/*.vsix assets/
+
+      - uses: actions/upload-artifact@v4
         with:
           name: vsix
-          path: src/Napper.VsCode/*.vsix
-
-  build-cli:
-    needs: [bump-versions]
-    strategy:
-      matrix:
-        include:
-          - rid: osx-arm64
-            asset: napper-osx-arm64
-          - rid: osx-x64
-            asset: napper-osx-x64
-          - rid: linux-x64
-            asset: napper-linux-x64
-          - rid: win-x64
-            asset: napper-win-x64.exe
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Publish CLI (${{ matrix.rid }})
-        run: |
-          dotnet publish src/Napper.Cli/Napper.Cli.fsproj \
-            -r ${{ matrix.rid }} \
-            --self-contained \
-            -p:PublishTrimmed=true \
-            -p:PublishSingleFile=true \
-            -o out/${{ matrix.rid }} \
-            --nologo
-
-      - name: Prepare asset
-        run: |
-          if [ "${{ matrix.rid }}" = "win-x64" ]; then
-            mv out/${{ matrix.rid }}/napper.exe ${{ matrix.asset }}
-          else
-            mv out/${{ matrix.rid }}/napper ${{ matrix.asset }}
-            chmod +x ${{ matrix.asset }}
-          fi
-
-      - name: Upload CLI binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: cli-${{ matrix.rid }}
-          path: ${{ matrix.asset }}
+          path: assets/*.vsix
+          if-no-files-found: error
 
   publish-nuget:
-    needs: [bump-versions]
+    name: Publish to NuGet
+    needs: validate-tag
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      VERSION: ${{ needs.validate-tag.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-
-      - name: Extract version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Pack dotnet tool
         run: |
           dotnet pack src/Napper.Cli/Napper.Cli.fsproj \
             -c Release \
-            -p:Version=${{ env.VERSION }} \
+            -p:Version=$VERSION \
             --nologo
 
       - name: Push to NuGet
         run: |
-          dotnet nuget push src/Napper.Cli/nupkg/napper.${{ env.VERSION }}.nupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
-            --source https://api.nuget.org/v3/index.json
+          dotnet nuget push src/Napper.Cli/nupkg/napper.${VERSION}.nupkg \
+            --api-key ${{ secrets.NIMBLESITE_NUGET_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
 
   release:
-    needs: [build-vsix, build-cli, publish-nuget]
+    name: Create GitHub Release
+    needs: [validate-tag, build-cli, build-vsix, publish-nuget]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: startsWith(github.ref, 'refs/tags/')
+    env:
+      TAG: ${{ needs.validate-tag.outputs.tag }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -153,12 +222,189 @@ jobs:
 
       - name: Generate SHA256 checksums
         working-directory: assets
-        run: sha256sum * > ../checksums-sha256.txt
+        shell: bash
+        run: |
+          ls -la
+          sha256sum * > ../checksums-sha256.txt
+          cat ../checksums-sha256.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: ${{ env.TAG }}
           files: |
             assets/*
             checksums-sha256.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: [validate-tag, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: ${{ needs.validate-tag.outputs.tag }}
+      VERSION: ${{ needs.validate-tag.outputs.version }}
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: Nimblesite/homebrew-tap
+          token: ${{ secrets.BREW_SCOOP_PAT }}
+
+      - name: Download release archives and compute SHA256s
+        shell: bash
+        run: |
+          BASE="https://github.com/Nimblesite/napper/releases/download/${TAG}"
+          curl -fsSL -o macos-arm64.tar.gz "${BASE}/napper-${TAG}-osx-arm64.tar.gz"
+          curl -fsSL -o macos-x64.tar.gz   "${BASE}/napper-${TAG}-osx-x64.tar.gz"
+          curl -fsSL -o linux-x64.tar.gz   "${BASE}/napper-${TAG}-linux-x64.tar.gz"
+          {
+            echo "SHA256_MACOS_ARM64=$(sha256sum macos-arm64.tar.gz | cut -d ' ' -f 1)"
+            echo "SHA256_MACOS_X64=$(sha256sum macos-x64.tar.gz | cut -d ' ' -f 1)"
+            echo "SHA256_LINUX_X64=$(sha256sum linux-x64.tar.gz | cut -d ' ' -f 1)"
+          } >> "$GITHUB_ENV"
+
+      - name: Write formula
+        shell: bash
+        run: |
+          mkdir -p Formula
+          cat > Formula/napper.rb <<FORMULA
+          # typed: false
+          # frozen_string_literal: true
+
+          class Napper < Formula
+            desc "CLI-first, test-oriented HTTP API testing tool. Send requests, run assertions, manage environments."
+            homepage "https://napperapi.dev"
+            license "MIT"
+            version "${VERSION}"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/Nimblesite/napper/releases/download/${TAG}/napper-${TAG}-osx-arm64.tar.gz"
+                sha256 "${SHA256_MACOS_ARM64}"
+              end
+              on_intel do
+                url "https://github.com/Nimblesite/napper/releases/download/${TAG}/napper-${TAG}-osx-x64.tar.gz"
+                sha256 "${SHA256_MACOS_X64}"
+              end
+            end
+
+            on_linux do
+              on_intel do
+                url "https://github.com/Nimblesite/napper/releases/download/${TAG}/napper-${TAG}-linux-x64.tar.gz"
+                sha256 "${SHA256_LINUX_X64}"
+              end
+            end
+
+            def install
+              bin.install "napper"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("\#{bin}/napper --version")
+            end
+          end
+          FORMULA
+          cat Formula/napper.rb
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/napper.rb
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update napper to ${TAG}"
+          git push
+
+  update-scoop:
+    name: Update Scoop Manifest
+    needs: [validate-tag, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: ${{ needs.validate-tag.outputs.tag }}
+      VERSION: ${{ needs.validate-tag.outputs.version }}
+    steps:
+      - name: Checkout scoop-bucket
+        uses: actions/checkout@v4
+        with:
+          repository: Nimblesite/scoop-bucket
+          token: ${{ secrets.BREW_SCOOP_PAT }}
+
+      - name: Download release asset and compute SHA256
+        shell: bash
+        run: |
+          ASSET_URL="https://github.com/Nimblesite/napper/releases/download/${TAG}/napper-${TAG}-win-x64.zip"
+          curl -fsSL -o napper.zip "$ASSET_URL"
+          {
+            echo "SHA256=$(sha256sum napper.zip | cut -d ' ' -f 1)"
+            echo "ASSET_URL=$ASSET_URL"
+          } >> "$GITHUB_ENV"
+
+      - name: Write manifest
+        shell: bash
+        run: |
+          mkdir -p bucket
+          jq -n \
+            --arg version "$VERSION" \
+            --arg url "$ASSET_URL" \
+            --arg hash "$SHA256" \
+            '{
+              version: $version,
+              description: "CLI-first, test-oriented HTTP API testing tool. Send requests, run assertions, manage environments.",
+              homepage: "https://napperapi.dev",
+              license: "MIT",
+              architecture: {
+                "64bit": {
+                  url: $url,
+                  hash: $hash,
+                  bin: "napper.exe"
+                }
+              },
+              checkver: {
+                github: "https://github.com/Nimblesite/napper"
+              },
+              autoupdate: {
+                architecture: {
+                  "64bit": {
+                    url: "https://github.com/Nimblesite/napper/releases/download/v$version/napper-v$version-win-x64.zip"
+                  }
+                }
+              }
+            }' > bucket/napper.json
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/napper.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update napper to ${TAG}"
+          git push
+
+  deploy-website:
+    name: Deploy Website
+    needs: [validate-tag, update-homebrew, update-scoop]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger Pages deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run deploy-pages.yml \
+            --repo ${{ github.repository }} \
+            --ref main

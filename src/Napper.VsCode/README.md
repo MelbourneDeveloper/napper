@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/logo.png" alt="Napper" width="128">
+  <img src="https://raw.githubusercontent.com/Nimblesite/napper/main/logo.png" alt="Napper" width="128">
 </p>
 
 <h1 align="center">Napper</h1>
@@ -8,11 +8,11 @@
 
 Napper is a free, open-source API testing tool that runs from the command line and integrates natively with VS Code. Define HTTP requests as plain text `.nap` files, add declarative assertions, chain them into test suites, and run everything in CI/CD with JUnit output. As simple as curl for quick requests. As powerful as F# and C# for full test suites.
 
-[Documentation](https://napperapi.dev) | [GitHub Repository](https://github.com/MelbourneDeveloper/napper) | [Releases](https://github.com/MelbourneDeveloper/napper/releases)
+[Documentation](https://napperapi.dev) | [GitHub Repository](https://github.com/Nimblesite/napper) | [Releases](https://github.com/Nimblesite/napper/releases)
 
 ---
 
-![Napper VS Code extension showing playlist test results with response headers and body inspection](https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/screenshot.png)
+![Napper VS Code extension showing playlist test results with response headers and body inspection](https://raw.githubusercontent.com/Nimblesite/napper/main/screenshot.png)
 
 ---
 
@@ -37,7 +37,7 @@ code --install-extension nimblesite.napper
 
 ### Or grab the CLI binary
 
-Download from the [latest release](https://github.com/MelbourneDeveloper/napper/releases).
+Download from the [latest release](https://github.com/Nimblesite/napper/releases).
 
 ## How do you use Napper?
 

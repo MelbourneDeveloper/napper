@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MelbourneDeveloper/napper"
+    "url": "https://github.com/Nimblesite/napper"
   },
-  "homepage": "https://github.com/MelbourneDeveloper/napper",
+  "homepage": "https://github.com/Nimblesite/napper",
   "bugs": {
-    "url": "https://github.com/MelbourneDeveloper/napper/issues"
+    "url": "https://github.com/Nimblesite/napper/issues"
   },
   "keywords": [
     "api",

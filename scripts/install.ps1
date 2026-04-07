@@ -1,5 +1,5 @@
 # Install Napper CLI on Windows
-# Usage: irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.ps1 | iex
 # Or:    .\scripts\install.ps1 [-Version 0.2.0] [-InstallDir C:\tools]
 
 param(
@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repo = "MelbourneDeveloper/napper"
+$repo = "Nimblesite/napper"
 $asset = "napper-win-x64.exe"
 $checksumFile = "checksums-sha256.txt"
 

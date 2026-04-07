@@ -14,7 +14,7 @@ keywords: "API testing, VS Code extension, C# scripting, F# scripting, CLI API t
 
 API testing tools have a problem. They're either too simple ([.http files](/docs/vs-http-files/) with no assertions and no CLI) or too heavy ([Postman](/docs/vs-postman/) with its mandatory accounts, cloud sync, and paid tiers). [Bruno](/docs/vs-bruno/) moved the needle with git-friendly collections, but it's still a GUI-first tool with sandboxed JavaScript.
 
-**[Napper](https://github.com/MelbourneDeveloper/napper)** takes a different approach. It's a free, open-source API testing tool where the CLI is the primary interface, everything is stored as plain text, and you get full C# and F# scripting with access to the entire [.NET](https://dotnet.microsoft.com/) ecosystem.
+**[Napper](https://github.com/Nimblesite/napper)** takes a different approach. It's a free, open-source API testing tool where the CLI is the primary interface, everything is stored as plain text, and you get full C# and F# scripting with access to the entire [.NET](https://dotnet.microsoft.com/) ecosystem.
 
 ## The CLI is the product
 
@@ -31,7 +31,7 @@ napper run ./smoke.naplist
 napper run ./tests/ --env staging --output junit > results.xml
 ```
 
-The CLI binary is self-contained with no runtime dependencies. It runs on Windows, macOS, and Linux. Download it from [GitHub Releases](https://github.com/MelbourneDeveloper/napper/releases) and you're ready to go.
+The CLI binary is self-contained with no runtime dependencies. It runs on Windows, macOS, and Linux. Download it from [GitHub Releases](https://github.com/Nimblesite/napper/releases) and you're ready to go.
 
 ## Plain text everything — git-friendly by design
 
@@ -228,7 +228,7 @@ jobs:
 
       - name: Download Napper CLI
         run: |
-          curl -L -o napper https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64
+          curl -L -o napper https://github.com/Nimblesite/napper/releases/latest/download/napper-linux-x64
           chmod +x napper
           sudo mv napper /usr/local/bin/
 
@@ -307,4 +307,4 @@ code --install-extension nimblesite.napper
 6. Write [C# scripts](/docs/csharp-scripting/) or [F# scripts](/docs/fsharp-scripting/) for advanced flows
 7. Run everything in [CI/CD](/docs/ci-integration/) with JUnit XML output
 
-Napper is free, open source, and [MIT licensed](https://github.com/MelbourneDeveloper/napper/blob/main/LICENSE). Browse the source code and examples on [GitHub](https://github.com/MelbourneDeveloper/napper).
+Napper is free, open source, and [MIT licensed](https://github.com/Nimblesite/napper/blob/main/LICENSE). Browse the source code and examples on [GitHub](https://github.com/Nimblesite/napper).

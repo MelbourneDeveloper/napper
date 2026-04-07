@@ -7,7 +7,7 @@
   "language": "en",
   "themeColor": "#1B4965",
   "stylesheet": "/assets/css/styles.css",
-  "github": "https://github.com/MelbourneDeveloper/napper",
+  "github": "https://github.com/Nimblesite/napper",
   "ogImage": "/assets/images/logo.png",
   "ogImageWidth": "800",
   "ogImageHeight": "800",
@@ -21,7 +21,7 @@
     "url": "https://napperapi.dev",
     "logo": "/assets/images/logo.png",
     "sameAs": [
-      "https://github.com/MelbourneDeveloper/napper",
+      "https://github.com/Nimblesite/napper",
       "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper"
     ]
   }

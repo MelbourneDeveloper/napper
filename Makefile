@@ -4,7 +4,7 @@
 # =============================================================================
 
 .PHONY: build test lint fmt fmt-check clean check ci coverage coverage-check \
-        build-all build-cli build-extension build-vsix build-zed bump-version \
+        build-all build-cli build-extension build-vsix build-zed \
         clean-install-vsix dump-cli-help install-binaries package-vsix \
         test-fsharp test-rust test-vsix format
 
@@ -237,40 +237,6 @@ build-zed:
 	@echo "  1. Open Zed"
 	@echo "  2. Run: zed: install dev extension"
 	@echo "  3. Select: $$(pwd)/src/Napper.Zed"
-
-# ============================================================
-# Version management
-# ============================================================
-
-# Usage: make bump-version VERSION=0.2.0 [COMMIT=true]
-bump-version:
-ifndef VERSION
-	$(error Usage: make bump-version VERSION=x.y.z [COMMIT=true])
-endif
-	@echo "==> Bumping all projects to v$(VERSION)"
-	sed -i.bak 's|<Version>.*</Version>|<Version>$(VERSION)</Version>|' Directory.Build.props
-	rm -f Directory.Build.props.bak
-	@echo "    Directory.Build.props → $(VERSION)"
-	cd src/Napper.VsCode && npm version "$(VERSION)" --no-git-tag-version --allow-same-version
-	@echo "    src/Napper.VsCode/package.json → $(VERSION)"
-	@if [ -f Cargo.toml ]; then \
-	  sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' Cargo.toml; \
-	  rm -f Cargo.toml.bak; \
-	  echo "    Cargo.toml → $(VERSION)"; \
-	fi
-	@echo "==> All projects bumped to v$(VERSION)"
-ifeq ($(COMMIT),true)
-	@echo "==> Committing and pushing version bump..."
-	@if [ -n "$${CI:-}" ]; then \
-	  git config user.name "github-actions[bot]"; \
-	  git config user.email "github-actions[bot]@users.noreply.github.com"; \
-	fi
-	git add Directory.Build.props src/Napper.VsCode/package.json src/Napper.VsCode/package-lock.json
-	@[ -f Cargo.toml ] && git add Cargo.toml || true
-	git commit -m "release: update version to v$(VERSION)"
-	git push
-	@echo "==> Committed and pushed v$(VERSION)"
-endif
 
 # ============================================================
 # Install

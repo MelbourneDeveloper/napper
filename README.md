@@ -15,7 +15,7 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=Nimblesite.napper">VS Code Marketplace</a> &middot;
   <a href="https://napperapi.dev">Website</a> &middot;
   <a href="https://napperapi.dev/docs/">Documentation</a> &middot;
-  <a href="https://github.com/MelbourneDeveloper/napper/releases">Releases</a>
+  <a href="https://github.com/Nimblesite/napper/releases">Releases</a>
 </p>
 
 ---
@@ -60,10 +60,10 @@ The CLI is a self-contained binary with **no runtime dependencies**.
 
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-arm64) |
-| macOS (Intel) | [`napper-osx-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-osx-x64) |
-| Linux (x64) | [`napper-linux-x64`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-linux-x64) |
-| Windows (x64) | [`napper-win-x64.exe`](https://github.com/MelbourneDeveloper/napper/releases/latest/download/napper-win-x64.exe) |
+| macOS (Apple Silicon) | [`napper-osx-arm64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-osx-arm64) |
+| macOS (Intel) | [`napper-osx-x64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-osx-x64) |
+| Linux (x64) | [`napper-linux-x64`](https://github.com/Nimblesite/napper/releases/latest/download/napper-linux-x64) |
+| Windows (x64) | [`napper-win-x64.exe`](https://github.com/Nimblesite/napper/releases/latest/download/napper-win-x64.exe) |
 
 **macOS / Linux:**
 ```sh
@@ -74,17 +74,17 @@ napper --version
 
 **Install script (macOS / Linux):**
 ```sh
-curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.sh | bash
 ```
 
 **Install script (Windows PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.ps1 | iex
 ```
 
 **Build from source** (requires .NET SDK + `make`):
 ```sh
-git clone https://github.com/MelbourneDeveloper/napper.git && cd napper && make install-binaries
+git clone https://github.com/Nimblesite/napper.git && cd napper && make install-binaries
 ```
 
 > **Note:** F# (`.fsx`) and C# (`.csx`) script hooks require the [.NET 10 SDK](https://dotnet.microsoft.com/download). Plain `.nap` and `.naplist` files need nothing extra.

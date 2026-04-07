@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Install Napper CLI on macOS / Linux
-# Usage: curl -fsSL https://raw.githubusercontent.com/MelbourneDeveloper/napper/main/scripts/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Nimblesite/napper/main/scripts/install.sh | bash
 # Or:    ./scripts/install.sh [version]
 #   e.g. ./scripts/install.sh 0.2.0
 set -euo pipefail
 
-REPO="MelbourneDeveloper/napper"
+REPO="Nimblesite/napper"
 VERSION="${1:-latest}"
 INSTALL_DIR="${NAPPER_INSTALL_DIR:-$HOME/.local/bin}"
 CHECKSUM_FILE="checksums-sha256.txt"

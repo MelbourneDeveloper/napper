@@ -142,9 +142,9 @@ export const PROP_FILE_PATH = 'filePath';
 // CLI installer (binary download)
 export const CLI_BINARY_NAME = 'napper';
 export const CLI_BIN_DIR = 'bin';
-export const CLI_DOWNLOAD_REPO = 'MelbourneDeveloper/napper';
+export const CLI_DOWNLOAD_REPO = 'Nimblesite/napper';
 export const CLI_DOWNLOAD_BASE_URL =
-  'https://github.com/MelbourneDeveloper/napper/releases/download';
+  'https://github.com/Nimblesite/napper/releases/download';
 export const CLI_CHECKSUMS_FILE = 'checksums-sha256.txt';
 export const CLI_ASSET_PREFIX = 'napper-';
 export const CLI_WIN_EXE_SUFFIX = '.exe';

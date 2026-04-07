@@ -2,7 +2,7 @@
   "main": [
     { "text": "Docs", "url": "/docs/" },
     { "text": "Blog", "url": "/blog/" },
-    { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper", "external": true }
+    { "text": "GitHub", "url": "https://github.com/Nimblesite/napper", "external": true }
   ],
   "docs": [
     {
@@ -54,8 +54,8 @@
     {
       "title": "Community",
       "items": [
-        { "text": "GitHub", "url": "https://github.com/MelbourneDeveloper/napper" },
-        { "text": "Issues", "url": "https://github.com/MelbourneDeveloper/napper/issues" },
+        { "text": "GitHub", "url": "https://github.com/Nimblesite/napper" },
+        { "text": "Issues", "url": "https://github.com/Nimblesite/napper/issues" },
         { "text": "VS Code Marketplace", "url": "https://marketplace.visualstudio.com/items?itemName=nimblesite.napper" }
       ]
     },
