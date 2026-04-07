@@ -359,6 +359,35 @@ These settings apply across all IDEs where the extension supports configuration.
 - The `.nap` language grammar (TextMate `.tmLanguage.json`) is generated from the ANTLR grammar to avoid drift.
 - Published to the **VS Code Marketplace** and the **Open VSX Registry** (for VSCodium / Cursor / Windsurf users).
 
+#### `vscode-cli-acquisition` — CLI install resolution
+
+The CLI version MUST exactly match the VSIX `package.json` version. The VSIX is the source of truth. The canonical channel is `dotnet tool install -g napper --version X` because it is the only channel that pins to an arbitrary historical version. Brew/scoop/choco are used **only to install the .NET SDK prerequisite** — never `napper` itself. The VSIX MUST NOT download binaries directly over HTTPS.
+
+Resolution runs on activation, idempotent, first match wins:
+
+1. **`vscode-cli-acq-path-probe`** — `<nap.cliPath || 'napper'> --version` equals VSIX version → done.
+2. **`vscode-cli-acq-dotnet-probe`** — `dotnet --version` succeeds → skip to 4.
+3. **`vscode-cli-acq-install-dotnet`** — Install .NET SDK via package manager:
+
+   | OS      | Detect | Command |
+   |---------|--------|---------|
+   | macOS   | `brew` | `brew install --cask dotnet-sdk` |
+   | Linux   | `brew` | `brew install dotnet-sdk` |
+   | Windows | `scoop` | `scoop bucket add extras && scoop install dotnet-sdk` |
+   | Windows | `choco` | `choco install dotnet-sdk -y` |
+
+   No detected package manager → `vscode-cli-acq-pm-prompt`. After install, if `dotnet` still not on PATH (process env not refreshed), prompt user to restart VS Code.
+4. **`vscode-cli-acq-dotnet-tool-install`** — `dotnet tool install -g napper --version <VSIX_VERSION>` (or `update -g` if present), re-probe.
+5. **`vscode-cli-acq-tank`** — Hard error notification with buttons: **Open install guide** (`https://napperapi.dev/docs/installation/`), **Open GitHub release** (`…/releases/tag/v<VSIX_VERSION>`), **Open output log**. CLI-dependent commands fail with the same message until resolved.
+
+`vscode-cli-acq-pm-prompt` — When no package manager is detected: notification with link buttons to `brew.sh` (mac/Linux) or `scoop.sh` + `chocolatey.org/install` (Windows), plus **Open install guide**.
+
+`vscode-cli-acq-progress` — Steps 3 and 4 run inside `vscode.window.withProgress` (`ProgressLocation.Notification`, non-cancellable). All spawned process stdout/stderr streams to the Napper output channel. No terminal windows.
+
+`vscode-cli-acq-tap-coexist` — Users can `brew install napper` / `scoop install napper` themselves via [`Nimblesite/homebrew-tap`](https://github.com/Nimblesite/homebrew-tap) and [`Nimblesite/scoop-bucket`](https://github.com/Nimblesite/scoop-bucket). If the user-installed version matches, step 1 finds it and the chain stops. If not, step 4 installs the matching version alongside; the VSIX never touches the user-managed binary.
+
+> When [`cli-aot-migration`](./CLI-SPEC.md#cli-aot-migration) lands, steps 2–3 disappear and step 4 becomes `brew install napper` / `scoop install napper` directly.
+
 ### Zed
 
 - Built in **Rust**, compiled to **WebAssembly** via `zed_extension_api` crate.
