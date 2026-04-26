@@ -1,8 +1,6 @@
 # =============================================================================
-# UNIVERSAL
-# =============================================================================
-
 # OS
+# =============================================================================
 .DS_Store
 .DS_Store?
 ._*
@@ -12,7 +10,9 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# =============================================================================
 # IDE / Editor
+# =============================================================================
 .idea/
 *.swp
 *.swo
@@ -23,15 +23,29 @@ Desktop.ini
 *.sublime-project
 *.sublime-workspace
 
-# Portfolio-wide tooling
-.too_many_cooks/
-.commandtree/
-.playwright-mcp/
-coordination/
-logs/
-nohup.out
+# =============================================================================
+# Secrets / Local Overrides
+# =============================================================================
+.env
+.env.local
+.env.*.local
+*.local
+*.secret
+*.pem
+*.key
+!*.pub.key
+.napenv.local
 
-# Coverage artifacts (all languages)
+# =============================================================================
+# Temporary
+# =============================================================================
+tmp/
+temp/
+scratch/
+
+# =============================================================================
+# Coverage Artifacts
+# =============================================================================
 coverage/
 lcov.info
 *.profraw
@@ -43,22 +57,6 @@ coverage.out
 coverage-summary.json
 TestResults/
 mutants.out/
-
-# Secrets / local overrides
-.env
-.env.local
-.env.*.local
-*.local
-*.secret
-*.pem
-*.key
-!*.pub.key
-.napenv.local
-
-# Temporary
-tmp/
-temp/
-scratch/
 
 # =============================================================================
 # F# / .NET
@@ -90,28 +88,19 @@ src/Napper.Zed/target/
 *.wasm
 
 # =============================================================================
-# Project-specific
+# Tool Caches
 # =============================================================================
-src/Napper.VsCode/node_modules/
-src/Napper.VsCode/dist/
-src/Napper.VsCode/out/
-src/Napper.VsCode/*.vsix
-src/Napper.VsCode/.vscode-test/
-src/Napper.VsCode/.nyc_output/
+.commandtree/
+.deslop-cache/
+.ghissues/
 
-# Generated files
+# =============================================================================
+# Generated Files
+# =============================================================================
 website/_site/
 examples/httpbin/advanced-report.html
 examples/httpbin/all-methods-report.html
-
-# Cached test specs
 tests/Napper.Core.Tests/.spec-cache/
-
-# Script logs
 scripts/logs/
 
-
-.deslop-cache/
-
-
-.ghissues/
+scripts/.too_many_cooks/
