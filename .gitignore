@@ -13,7 +13,6 @@ ehthumbs.db
 Desktop.ini
 
 # IDE / Editor
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -110,3 +109,9 @@ tests/Napper.Core.Tests/.spec-cache/
 
 # Script logs
 scripts/logs/
+
+
+.deslop-cache/
+
+
+.ghissues/
