@@ -17,4 +17,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Napper.Cli\Napper.Cli.fsproj" />
+  </ItemGroup>
+
 </Project>

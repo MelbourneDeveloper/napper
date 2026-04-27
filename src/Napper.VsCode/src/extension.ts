@@ -29,6 +29,7 @@ import {
 } from './editAndImportCommands';
 import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
+import { startLspClient, stopLspClient } from './lspClient';
 import {
   CLI_BIN_DIR,
   CLI_BINARY_NAME,
@@ -74,6 +75,7 @@ import {
 } from './constants';
 
 let envStatusBar: EnvironmentStatusBar,
+  extensionContext: vscode.ExtensionContext,
   extensionDir: string,
   extensionVersion: string,
   explorerProvider: ExplorerAdapter,
@@ -81,6 +83,7 @@ let envStatusBar: EnvironmentStatusBar,
   lastPlaylistReport: (() => void) | undefined,
   lastResult: RunResult | undefined,
   logger: Logger,
+  outputChannel: vscode.OutputChannel,
   playlistPanel: PlaylistPanel,
   responsePanel: ResponsePanel,
   storageDir: string;
@@ -112,6 +115,7 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     }
     installedCliOverride = cliPath;
     logger.info(`${CLI_INSTALL_COMPLETE_MSG} (${cliPath})`);
+    startLspClient(cliPath, outputChannel, extensionContext);
     return true;
   },
   checkVersionMatch = async (): Promise<boolean> => {
@@ -370,7 +374,8 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     );
   },
   initLogger = (context: vscode.ExtensionContext): void => {
-    const outputChannel = vscode.window.createOutputChannel(LOG_CHANNEL_NAME);
+    extensionContext = context;
+    outputChannel = vscode.window.createOutputChannel(LOG_CHANNEL_NAME);
     context.subscriptions.push(outputChannel);
     logger = createLogger((msg) => {
       outputChannel.appendLine(msg);
@@ -407,6 +412,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   return { explorerProvider };
 }
 
-export function deactivate(): void {
+export async function deactivate(): Promise<void> {
   logger.info(LOG_MSG_DEACTIVATED);
+  await stopLspClient();
 }

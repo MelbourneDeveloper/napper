@@ -279,26 +279,27 @@ No other dependencies. The LSP is lightweight by design.
 - [x] Test: `napper.requestInfo` returns parsed method + URL
 - [x] Test: `napper.copyCurl` returns curl string
 - [x] Test: `napper.listEnvironments` returns env names
-- [ ] Verify ALL existing F# tests pass
-- [ ] Verify ALL existing VSIX e2e tests pass
+- [x] Verify ALL existing F# tests pass
+- [x] Verify ALL existing VSIX e2e tests pass
 
 ### Phase 2.5 — `napper lsp` Subcommand
-- [ ] Convert `Napper.Lsp.fsproj` from executable to library: remove `<OutputType>Exe</OutputType>` and the `napper-lsp` `<AssemblyName>`
-- [ ] Delete `src/Napper.Lsp/Program.fs` (its logic moves into the CLI entry point)
-- [ ] Expose `Napper.Lsp.Server.start : Stream -> Stream -> int` as the public entry point used by both CLI dispatch and tests
-- [ ] Add `Napper.Lsp` project reference to `src/Napper.Cli/Napper.Cli.fsproj`
-- [ ] Add `lsp` subcommand dispatch in `src/Napper.Cli/Program.fs` that calls `Napper.Lsp.Server.start`
-- [ ] Suppress all stdout output from the CLI when `lsp` is the active subcommand (logs go to stderr or file)
-- [ ] Update `napper help` to list `napper lsp`
-- [ ] Add a `Napper.Cli.Tests` integration test that spawns `napper lsp`, sends `initialize`, and asserts the response
-- [ ] Update `Napper.Lsp.Tests` to drive `Server.start` directly via in-process pipes (no subprocess) — this stays the fast unit-ish integration path
+- [x] Convert `Napper.Lsp.fsproj` from executable to library: remove `<OutputType>Exe</OutputType>` and `napper-lsp` `<AssemblyName>`
+- [x] Delete `src/Napper.Lsp/Program.fs` — logic moved to `Napper.Lsp.LspRunner.run` in `Server.fs`
+- [x] Expose `Napper.Lsp.LspRunner.run : Stream -> Stream -> int` as public entry point
+- [x] Add `Napper.Lsp` project reference to `src/Napper.Cli/Napper.Cli.fsproj`
+- [x] Add `lsp` subcommand dispatch in `src/Napper.Cli/Program.fs` calling `LspRunner.run`
+- [x] Suppress all stdout output when `lsp` subcommand active (early exit before Logger.init)
+- [x] Update `napper help` to list `napper lsp`
+- [x] Update `Napper.Lsp.Tests` to spawn `napper lsp` via `Napper.Cli` project ref (14/14 tests pass)
+- [ ] Add a `Napper.Cli.Tests` integration test that spawns `napper lsp`, sends `initialize`, asserts response
 - [ ] `napper --version` returns the same version regardless of subcommand
 
 ### Phase 3 — Cutover
-- [ ] Add `vscode-languageclient` to VSIX
-- [ ] Wire VSIX to launch `<resolvedNapperPath> lsp` on activation (path comes from the install resolver — no separate LSP discovery)
-- [ ] Wire Zed `language_server_command` to launch `napper lsp`
-- [ ] Delete duplicated TS parsing code, replace with LSP calls
+- [x] Add `vscode-languageclient` to VSIX
+- [x] Wire VSIX to launch `<resolvedNapperPath> lsp` on activation via `lspClient.ts:startLspClient`
+- [x] Wire Zed `language_server_command` to launch `napper lsp` (finds napper on PATH)
+- [x] Delete `parseMethodAndUrl` from `curlCopy.ts` — replaced by `lspClient.copyCurl`
+- [x] Delete `detectEnvironments` from `environmentAdapter.ts` — replaced by `lspClient.listEnvironments`
 - [ ] Verify existing VSIX features unchanged
 - [ ] Run ALL existing VSIX e2e tests — must pass
 - [ ] Run ALL existing F# tests — must pass

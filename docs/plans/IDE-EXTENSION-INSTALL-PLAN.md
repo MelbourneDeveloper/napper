@@ -176,14 +176,16 @@ Place a stub `napper` shell script on the test workspace's PATH (via `process.en
 - [ ] After successful install, persist the resolved absolute `cliPath` to extension globalState; warm-start probes the cached path before re-running the resolver
 
 ### LSP wire-up (depends on [LSP-PLAN.md Phase 2.5](./LSP-PLAN.md))
-- [ ] After the resolver returns `ok`, pass the resolved `cliPath` to `vscode-languageclient` as `command` with `args: ['lsp']`. The LSP and CLI are the same binary ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)) — no second discovery, no second version pin.
+- [x] After the resolver returns `ok`, pass the resolved `cliPath` to `vscode-languageclient` as `command` with `args: ['lsp']` via `src/lspClient.ts:startLspClient`. The LSP and CLI are the same binary ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)) — no second discovery, no second version pin.
+- [x] `vscode-languageclient` installed and wired in `extension.ts` — called from `checkVersionAt` on success.
 - [ ] If the resolver tanks, the LSP client is **not** started. Diagnostics, completions, and hover are unavailable until the user resolves the install issue and reloads VS Code.
 
 ### Cleanup
 - [ ] Delete `src/Napper.VsCode/src/cliInstaller.ts`
 - [ ] Delete the unused constants in `src/Napper.VsCode/src/constants.ts` (see Module Layout table)
 - [ ] Add new constants to `constants.ts` for consent text, progress titles, tank message, button labels — **one location only** per CLAUDE.md
-- [ ] Delete the bundled CLI staging step in `Makefile` `build-extension` if we stop bundling
+- [x] Keep VSIX packaging unbundled: `.vscodeignore` excludes `bin/**` and `build-extension` does not stage a bundled CLI binary
+- [ ] Delete the remaining local-dev CLI copy to `src/Napper.VsCode/bin/` from `Makefile build-cli` once no local workflow depends on it
 
 ### Tests
 - [ ] Create `src/Napper.VsCode/src/test/unit/cliResolver.test.ts` covering every scenario in the unit-test table above

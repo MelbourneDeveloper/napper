@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AssemblyName>napper-lsp</AssemblyName>
     <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
@@ -10,7 +8,6 @@
     <Compile Include="Workspace.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Server.fs" />
-    <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>

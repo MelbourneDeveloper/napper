@@ -1,14 +1,14 @@
+// Implements [LSP-VSCODE-ENV]
 // Specs: vscode-env-switcher, vscode-impl
 // VSCode adapter for the environment switcher
 // Status bar item and quick pick integration
 
 import * as vscode from 'vscode';
-import { detectEnvironments } from './environmentSwitcher';
+import { listEnvironments } from './lspClient';
 import {
   CMD_SWITCH_ENV,
   CONFIG_DEFAULT_ENV,
   CONFIG_SECTION,
-  NAPENV_GLOB,
   PROMPT_SELECT_ENV,
   STATUS_BAR_NO_ENV,
   STATUS_BAR_PREFIX,
@@ -49,8 +49,8 @@ export class EnvironmentStatusBar implements vscode.Disposable {
   }
 
   async showPicker(): Promise<void> {
-    const files = await vscode.workspace.findFiles(NAPENV_GLOB, '**/node_modules/**'),
-      envNames = detectEnvironments(files.map((f) => f.fsPath)),
+    const rootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const envNames = rootUri !== undefined ? (await listEnvironments(rootUri)) ?? [] : [],
       items = envNames.map((name) => ({
         label: name,
         picked: name === this._currentEnv,

@@ -1,9 +1,16 @@
+// Implements [LSP-SERVER]
 namespace Napper.Lsp
 
+open System
+open System.IO
+open System.Threading.Tasks
 open Ionide.LanguageServerProtocol
+open Ionide.LanguageServerProtocol.JsonUtils
 open Ionide.LanguageServerProtocol.Types
 open Napper.Core
+open Newtonsoft.Json
 open Newtonsoft.Json.Linq
+open StreamJsonRpc
 
 /// LSP server — lifecycle, document sync, symbols, code lens, and commands.
 /// All domain logic lives in Napper.Core. This file is protocol glue only.
@@ -286,3 +293,75 @@ type NapLspServer(client: Client) =
         }
 
     override _.Dispose() = ()
+
+/// Public entry point used by Napper.Cli and tests.
+module LspRunner =
+
+    let private defaultJsonRpcFormatter () =
+        let fmt = new JsonMessageFormatter()
+        fmt.JsonSerializer.NullValueHandling <- NullValueHandling.Ignore
+        fmt.JsonSerializer.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
+        fmt.JsonSerializer.MissingMemberHandling <- MissingMemberHandling.Ignore
+        fmt.JsonSerializer.Converters.Add(StrictNumberConverter())
+        fmt.JsonSerializer.Converters.Add(StrictStringConverter())
+        fmt.JsonSerializer.Converters.Add(StrictBoolConverter())
+        fmt.JsonSerializer.Converters.Add(SingleCaseUnionConverter())
+        fmt.JsonSerializer.Converters.Add(OptionConverter())
+        fmt.JsonSerializer.Converters.Add(ErasedUnionConverter())
+        fmt.JsonSerializer.ContractResolver <- OptionAndCamelCasePropertyNamesContractResolver()
+        fmt
+
+    let private createRpc (handler: IJsonRpcMessageHandler) : JsonRpc =
+        let rec (|HandleableException|_|) (e: exn) =
+            match e with
+            | :? LocalRpcException -> Some()
+            | :? TaskCanceledException -> Some()
+            | :? OperationCanceledException -> Some()
+            | :? JsonSerializationException -> Some()
+            | :? AggregateException as aex ->
+                aex.InnerExceptions |> Seq.tryHead |> Option.bind (|HandleableException|_|)
+            | _ -> None
+
+        let strategy = ActivityTracingStrategy()
+
+        { new JsonRpc(handler, ActivityTracingStrategy = strategy) with
+            member _.IsFatalException(ex: Exception) =
+                match ex with
+                | HandleableException -> false
+                | _ -> true
+
+            member this.CreateErrorDetails(request: Protocol.JsonRpcRequest, ex: Exception) =
+                match ex with
+                | :? JsonSerializationException as jex ->
+                    let isSerializable = this.ExceptionStrategy = ExceptionProcessing.ISerializable
+
+                    let data: obj =
+                        if isSerializable then (jex :> obj)
+                        else Protocol.CommonErrorData(jex)
+
+                    Protocol.JsonRpcError.ErrorDetail(
+                        Code = Protocol.JsonRpcErrorCode.ParseError,
+                        Message = jex.Message,
+                        Data = data)
+                | _ -> base.CreateErrorDetails(request, ex) }
+
+    /// Start the LSP server over the given streams. Returns the exit code.
+    /// Called by Napper.Cli for 'napper lsp' and by tests via in-process pipes.
+    let run (input: Stream) (output: Stream) : int =
+        try
+            let requestHandlings: Map<string, Mappings.ServerRequestHandling<_>> =
+                Server.defaultRequestHandlings ()
+
+            let result =
+                Server.start
+                    requestHandlings
+                    input
+                    output
+                    (fun (notifier, requester) -> new Client(notifier, requester))
+                    (fun client -> new NapLspServer(client))
+                    createRpc
+
+            int result
+        with ex ->
+            eprintfn $"napper lsp crashed: %A{ex}"
+            1

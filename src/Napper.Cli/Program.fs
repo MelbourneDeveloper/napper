@@ -93,6 +93,7 @@ let printHelp () =
     printfn "  nap check <file>                          Validate a .nap or .naplist file"
     printfn "  nap generate openapi <spec> --output-dir <dir>  Generate .nap files from OpenAPI spec"
     printfn "  nap convert http <file|dir> --output-dir <dir>  Convert .http files to .nap format"
+    printfn "  nap lsp                                   Run the language server (LSP 3.17 over stdio)"
     printfn "  nap help                                  Show this help"
     printfn ""
     printfn "Options:"
@@ -488,6 +489,12 @@ let convertHttp (args: CliArgs) : int =
 
 [<EntryPoint>]
 let main argv =
+    // LSP subcommand: take over stdio immediately, suppress all other stdout
+    if argv.Length > 0 && argv[0] = "lsp" then
+        let input = Console.OpenStandardInput()
+        let output = Console.OpenStandardOutput()
+        Environment.Exit(Napper.Lsp.LspRunner.run input output)
+
     let args = parseArgs argv
     Logger.init args.Verbose
     let joinedArgs = argv |> String.concat " "

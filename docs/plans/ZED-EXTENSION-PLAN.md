@@ -56,7 +56,7 @@ Build the Tree-sitter grammar for `.nap` and `.naplist` files. Write all query f
 
 The Zed extension launches the language server by spawning **`napper lsp`** — the LSP is a subcommand of the `napper` CLI ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)), not a separate binary. Same `napper` install gives you the LSP for free. See **[LSP Spec](../specs/LSP-SPEC.md)** and **[LSP Plan](./LSP-PLAN.md)**.
 
-- Implement `language_server_command` in `lib.rs` to return `{ command: "napper", args: ["lsp"] }`
+- Implement `language_server_command` in `lib.rs` to resolve `napper` from the worktree PATH and return `{ command: <resolved napper path>, args: ["lsp"] }`
 - Register the language server in `extension.toml` for `.nap` and `.naplist` languages
 - The LSP provides completions, diagnostics, hover, symbols — no Zed-specific code needed
 - Discovery: check `PATH` for `napper`. If missing, surface a notification linking to the install guide. Zed extensions cannot install dotnet tools themselves; the user runs `dotnet tool install -g napper` (or `brew install napper`) once.
@@ -81,32 +81,33 @@ The Zed extension launches the language server by spawning **`napper lsp`** — 
 ## TODO
 
 ### Phase 1 — Tree-sitter Grammar + Syntax Highlighting
-- [ ] Write `grammar.js` for `.nap` file format
-- [ ] Write `grammar.js` for `.naplist` file format (or combined grammar)
-- [ ] Write `highlights.scm`
-- [ ] Write `brackets.scm`
-- [ ] Write `outline.scm`
-- [ ] Write `indents.scm`
-- [ ] Write `config.toml` with language metadata
-- [ ] Register grammar in `extension.toml`
+- [x] Write `grammar.js` for `.nap` file format
+- [x] Write `grammar.js` for `.naplist` file format
+- [x] Write `grammar.js` for `.napenv` file format
+- [x] Write `highlights.scm`
+- [x] Write `brackets.scm`
+- [x] Write `outline.scm`
+- [x] Write `indents.scm`
+- [x] Write `config.toml` with language metadata
+- [x] Register grammar in `extension.toml`
 - [ ] Test highlighting matches VSCode TextMate grammar visually
 
 ### Phase 2 — Runnables
-- [ ] Write `runnables.scm` to detect `[request]` blocks
+- [x] Write `runnables.scm` to detect `[request]` blocks
 - [ ] Verify `nap run <file>` executes in Zed terminal
 - [ ] Add runnable label showing HTTP method + URL
 
 ### Phase 3 — LSP Integration
-- [ ] Implement `language_server_command` in `lib.rs` to return `{ command: "napper", args: ["lsp"] }`
-- [ ] Register language server in `extension.toml`
+- [x] Implement `language_server_command` in `lib.rs` — uses `worktree.which("napper")` and returns `{ command: napper_path, args: ["lsp"] }`
+- [x] Register language server in `extension.toml`
+- [x] PATH lookup for `napper` via Zed `Worktree::which`; surfaces error with install instructions if missing
 - [ ] Test completions, diagnostics, hover via LSP
-- [ ] PATH lookup for `napper`; surface a notification with install instructions if missing
 
 ### Phase 4 — Slash Commands + Redactions
-- [ ] Implement `/nap-run` slash command
-- [ ] Implement `/nap-import-openapi` slash command
-- [ ] Implement argument completion for slash commands
-- [ ] Write `redactions.scm` for `{{variable}}` masking
+- [x] Implement `/nap-run` slash command
+- [x] Implement `/nap-import-openapi` slash command
+- [x] Implement argument completion for slash commands
+- [x] Write `redactions.scm` for `{{variable}}` masking
 
 ### Phase 5 — Polish & Publishing
 - [ ] Test on macOS and Linux

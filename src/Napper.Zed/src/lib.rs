@@ -27,6 +27,9 @@ const NAP_LSP_ID: &str = "nap-lsp";
 /// CLI binary name.
 const NAP_CLI: &str = "nap";
 
+/// CLI binary name for the language server.
+const NAPPER_LSP_CLI: &str = "napper";
+
 /// Usage message for the nap-run command.
 const NAP_RUN_USAGE: &str = "Usage: /nap-run <file.nap>";
 
@@ -39,8 +42,12 @@ const CLI_LAUNCH_ERROR: &str = "Is `nap` installed and on PATH?";
 /// Stderr separator in error output.
 const STDERR_SEPARATOR: &str = "\n--- stderr ---\n";
 
-/// LSP not-yet-available message.
-const LSP_NOT_AVAILABLE: &str = "Nap Language Server not yet available — install when released";
+/// LSP subcommand argument.
+const LSP_SUBCOMMAND: &str = "lsp";
+
+/// Error message when napper binary is not found on PATH.
+const NAPPER_NOT_FOUND: &str =
+    "napper not found on PATH — install via: dotnet tool install -g napper";
 
 /// Nap Zed extension entry point — implements all Zed extension traits.
 pub struct NapExtension;
@@ -56,8 +63,7 @@ impl zed::Extension for NapExtension {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<Command, String> {
-        let _ = worktree;
-        resolve_language_server(language_server_id.as_ref())
+        resolve_language_server(language_server_id.as_ref(), worktree.which(NAPPER_LSP_CLI))
     }
 
     fn language_server_initialization_options(
@@ -103,12 +109,23 @@ impl zed::Extension for NapExtension {
 }
 
 /// Resolve language server command by ID.
-fn resolve_language_server(id: &str) -> Result<Command, String> {
+/// Implements [LSP-ZED-CLIENT]: launches 'napper lsp' over stdio.
+fn resolve_language_server(id: &str, napper_path: Option<String>) -> Result<Command, String> {
     if id != NAP_LSP_ID {
         return Err(format!("Unknown language server: {id}"));
     }
-    // TODO: LOUD — implement LSP binary discovery and launch
-    Err(LSP_NOT_AVAILABLE.to_string())
+    napper_path
+        .map(build_language_server_command)
+        .ok_or_else(|| NAPPER_NOT_FOUND.to_string())
+}
+
+/// Build the command used to launch 'napper lsp'.
+fn build_language_server_command(napper: String) -> Command {
+    Command {
+        command: napper,
+        args: vec![LSP_SUBCOMMAND.to_string()],
+        env: Vec::default(),
+    }
 }
 
 /// Route slash command argument completions by command name.

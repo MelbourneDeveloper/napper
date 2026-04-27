@@ -1,4 +1,5 @@
-/// Test client that launches napper-lsp and communicates via JSON-RPC over stdio.
+// Implements [LSP-TEST-CLIENT]
+/// Test client that launches 'napper lsp' and communicates via JSON-RPC over stdio.
 /// This is the exact same protocol VSCode and Zed use.
 module Napper.Lsp.Tests.LspClient
 
@@ -11,10 +12,10 @@ open System.Threading
 open System.Threading.Tasks
 open Xunit
 
-let private lspBinaryPath =
+let private napperBinaryPath =
     let baseDir = AppContext.BaseDirectory
     let repoRoot = DirectoryInfo(baseDir).Parent.Parent.Parent.Parent.Parent.FullName
-    Path.Combine(repoRoot, "src", "Napper.Lsp", "bin", "Debug", "net10.0", "napper-lsp")
+    Path.Combine(repoRoot, "src", "Napper.Cli", "bin", "Debug", "net10.0", "napper")
 
 /// Encode a JSON-RPC message with Content-Length header (LSP wire format)
 let private encodeMessage (json: string) : byte[] =
@@ -59,15 +60,16 @@ type LspServerProcess() =
     let mutable started = false
 
     member this.Start() : unit =
-        Assert.True(File.Exists(lspBinaryPath), $"LSP binary not found at {lspBinaryPath}")
-        proc.StartInfo.FileName <- lspBinaryPath
+        Assert.True(File.Exists(napperBinaryPath), $"napper binary not found at {napperBinaryPath}")
+        proc.StartInfo.FileName <- napperBinaryPath
+        proc.StartInfo.Arguments <- "lsp"
         proc.StartInfo.UseShellExecute <- false
         proc.StartInfo.RedirectStandardInput <- true
         proc.StartInfo.RedirectStandardOutput <- true
         proc.StartInfo.RedirectStandardError <- true
         proc.StartInfo.CreateNoWindow <- true
         let ok = proc.Start()
-        Assert.True(ok, "Failed to start napper-lsp process")
+        Assert.True(ok, "Failed to start 'napper lsp' process")
         started <- true
 
     member this.SendRequest(method: string, id: int, ?paramObj: JsonNode) : Task<JsonNode> =

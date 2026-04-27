@@ -156,6 +156,16 @@ fn cli_constant_is_nap() {
 }
 
 #[test]
+fn lsp_cli_constant_is_napper() {
+    assert_eq!(NAPPER_LSP_CLI, "napper");
+}
+
+#[test]
+fn lsp_subcommand_constant_is_lsp() {
+    assert_eq!(LSP_SUBCOMMAND, "lsp");
+}
+
+#[test]
 fn command_constants_match_extension_toml() {
     assert_eq!(NAP_RUN_COMMAND, "nap-run");
     assert_eq!(NAP_IMPORT_OPENAPI_COMMAND, "nap-import-openapi");
@@ -170,15 +180,24 @@ fn file_extension_constants() {
 // ─── resolve_language_server ────────────────────────────────
 
 #[test]
-fn resolve_known_lsp_returns_not_available() {
-    let result = resolve_language_server(NAP_LSP_ID);
+fn resolve_known_lsp_returns_napper_lsp_command() {
+    let napper_path = "/usr/local/bin/napper".to_string();
+    let result = resolve_language_server(NAP_LSP_ID, Some(napper_path.clone())).unwrap();
+    assert_eq!(result.command, napper_path);
+    assert_eq!(result.args, vec![LSP_SUBCOMMAND.to_string()]);
+    assert!(result.env.is_empty());
+}
+
+#[test]
+fn resolve_known_lsp_without_path_returns_install_error() {
+    let result = resolve_language_server(NAP_LSP_ID, None);
     let err = result.unwrap_err();
-    assert_eq!(err, LSP_NOT_AVAILABLE);
+    assert_eq!(err, NAPPER_NOT_FOUND);
 }
 
 #[test]
 fn resolve_unknown_lsp_returns_error_with_id() {
-    let result = resolve_language_server("some-other-lsp");
+    let result = resolve_language_server("some-other-lsp", Some(NAPPER_LSP_CLI.to_string()));
     let err = result.unwrap_err();
     assert!(err.contains("Unknown language server"));
     assert!(err.contains("some-other-lsp"));

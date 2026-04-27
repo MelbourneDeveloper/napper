@@ -143,8 +143,7 @@ export const PROP_FILE_PATH = 'filePath';
 export const CLI_BINARY_NAME = 'napper';
 export const CLI_BIN_DIR = 'bin';
 export const CLI_DOWNLOAD_REPO = 'Nimblesite/napper';
-export const CLI_DOWNLOAD_BASE_URL =
-  'https://github.com/Nimblesite/napper/releases/download';
+export const CLI_DOWNLOAD_BASE_URL = 'https://github.com/Nimblesite/napper/releases/download';
 export const CLI_CHECKSUMS_FILE = 'checksums-sha256.txt';
 export const CLI_ASSET_PREFIX = 'napper-';
 export const CLI_WIN_EXE_SUFFIX = '.exe';
@@ -177,6 +176,16 @@ export const CLI_TOOL_VERSION_FLAG = '--version';
 export const CLI_DOTNET_TOOL_INSTALL_TIMEOUT = 60000;
 export const CLI_DOTNET_FALLBACK_MSG = 'Binary install failed, falling back to dotnet tool';
 export const CLI_DOTNET_INSTALL_ERROR_PREFIX = 'dotnet tool install failed: ';
+export const CLI_RESOLVER_PM_BREW = 'brew';
+export const CLI_RESOLVER_PM_SCOOP = 'scoop';
+export const CLI_RESOLVER_PM_CHOCO = 'choco';
+export const CLI_RESOLVER_DOTNET_SDK = 'dotnet-sdk';
+export const CLI_RESOLVER_CASK_FLAG = '--cask';
+export const CLI_RESOLVER_BUCKET_ARG = 'bucket';
+export const CLI_RESOLVER_ADD_ARG = 'add';
+export const CLI_RESOLVER_EXTRAS_ARG = 'extras';
+export const CLI_RESOLVER_YES_FLAG = '-y';
+export const CLI_RESOLVER_UNKNOWN_ERROR = 'Unknown exec failure';
 
 // CLI installer (shared)
 export const CLI_INSTALL_MSG = 'Installing Napper CLI...';

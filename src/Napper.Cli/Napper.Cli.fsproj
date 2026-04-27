@@ -9,6 +9,7 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Description>CLI-first, test-oriented HTTP API testing tool</Description>
     <PackageTags>http;api;testing;cli;rest;fsharp;dotnet-tool</PackageTags>
+    <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Napper.Core\Napper.Core.fsproj" />
     <ProjectReference Include="..\DotHttp\DotHttp.fsproj" />
+    <ProjectReference Include="..\Napper.Lsp\Napper.Lsp.fsproj" />
   </ItemGroup>
 
 
