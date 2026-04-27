@@ -50,7 +50,7 @@ export class EnvironmentStatusBar implements vscode.Disposable {
 
   async showPicker(): Promise<void> {
     const rootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
-    const envNames = rootUri !== undefined ? (await listEnvironments(rootUri)) ?? [] : [],
+    const envNames = rootUri !== undefined ? ((await listEnvironments(rootUri)) ?? []) : [],
       items = envNames.map((name) => ({
         label: name,
         picked: name === this._currentEnv,

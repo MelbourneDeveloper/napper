@@ -48,7 +48,12 @@ export const startLspClient = (
   }
   const serverOptions = buildServerOptions(cliPath);
   const clientOptions = buildClientOptions(outputChannel);
-  const newClient = new LanguageClient(LSP_CLIENT_ID, LSP_CLIENT_NAME, serverOptions, clientOptions);
+  const newClient = new LanguageClient(
+    LSP_CLIENT_ID,
+    LSP_CLIENT_NAME,
+    serverOptions,
+    clientOptions,
+  );
   client = newClient;
   void newClient.start();
   context.subscriptions.push(newClient);
@@ -74,9 +79,11 @@ export const requestInfo = async (
   if (client === undefined) {
     return undefined;
   }
-  const result = await client.sendRequest<
-    { method: string; url: string; headers: Record<string, string> } | null
-  >('workspace/executeCommand', {
+  const result = await client.sendRequest<{
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+  } | null>('workspace/executeCommand', {
     command: 'napper.requestInfo',
     arguments: [uri.toString()],
   });

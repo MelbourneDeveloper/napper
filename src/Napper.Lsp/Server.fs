@@ -336,13 +336,16 @@ module LspRunner =
                     let isSerializable = this.ExceptionStrategy = ExceptionProcessing.ISerializable
 
                     let data: obj =
-                        if isSerializable then (jex :> obj)
-                        else Protocol.CommonErrorData(jex)
+                        if isSerializable then
+                            (jex :> obj)
+                        else
+                            Protocol.CommonErrorData(jex)
 
                     Protocol.JsonRpcError.ErrorDetail(
                         Code = Protocol.JsonRpcErrorCode.ParseError,
                         Message = jex.Message,
-                        Data = data)
+                        Data = data
+                    )
                 | _ -> base.CreateErrorDetails(request, ex) }
 
     /// Start the LSP server over the given streams. Returns the exit code.
