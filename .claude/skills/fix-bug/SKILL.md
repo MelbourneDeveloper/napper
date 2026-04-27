@@ -5,6 +5,8 @@ argument-hint: "[bug description]"
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
+<!-- agent-pmo:74cf183 -->
+
 # Bug Fix Skill — Test-First Workflow
 
 You MUST follow this exact workflow. Do NOT skip steps. Do NOT fix the bug before writing a failing test.
