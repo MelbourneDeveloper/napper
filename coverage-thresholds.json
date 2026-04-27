@@ -1,0 +1,25 @@
+{
+  "_agent_pmo": "74cf183",
+  "_doc": "Single source of truth for code coverage thresholds. See REPO-STANDARDS-SPEC.md §3.3 [COVERAGE-THRESHOLDS-JSON]. NO GitHub repo variables. NO env vars. This file is read by the internal `_coverage_check` recipe inside `make test`. `make test` exits non-zero if measured coverage < threshold. Thresholds are monotonically increasing — only ratchet UP, never down.",
+  "default_threshold": 80,
+  "projects": {
+    "src/Napper.Core.Tests": {
+      "threshold": 80,
+      "include": "[Napper.Core]*"
+    },
+    "src/DotHttp.Tests": {
+      "threshold": 80,
+      "include": "[DotHttp]*"
+    },
+    "src/Napper.Lsp.Tests": {
+      "threshold": 80,
+      "include": "[Napper.Lsp]*"
+    },
+    "src/Napper.VsCode": {
+      "threshold": 80
+    },
+    "src/Napper.Zed": {
+      "threshold": 80
+    }
+  }
+}

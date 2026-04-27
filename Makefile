@@ -1,32 +1,47 @@
+# agent-pmo:74cf183
 # =============================================================================
 # Standard Makefile — Napper
 # All primary targets are language-agnostic. Language-specific helpers below.
 # =============================================================================
 
-.PHONY: build test lint fmt fmt-check clean check ci coverage coverage-check \
+.PHONY: build test lint fmt clean ci setup \
         build-all build-cli build-extension build-vsix build-zed \
         clean-install-vsix dump-cli-help install-binaries package-vsix \
-        test-fsharp test-rust test-vsix format
+        test-fsharp test-rust test-vsix coverage fmt-check format
 
-SHELL := /usr/bin/env bash
-.SHELLFLAGS := -euo pipefail -c
-
-# --- Platform detection ---
-ARCH := $(shell uname -m)
-OS := $(shell uname -s)
-
-ifeq ($(OS),Darwin)
-  ifeq ($(ARCH),arm64)
-    NAP_RID ?= osx-arm64
-  else ifeq ($(ARCH),x86_64)
-    NAP_RID ?= osx-x64
-  else
-    $(error Unsupported arch: $(ARCH))
-  endif
-else ifeq ($(OS),Linux)
-  NAP_RID ?= linux-x64
+# --- Cross-platform support ---
+ifeq ($(OS),Windows_NT)
+  SHELL := powershell.exe
+  .SHELLFLAGS := -NoProfile -Command
+  RM = Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  MKDIR = New-Item -ItemType Directory -Force
+  HOME ?= $(USERPROFILE)
 else
-  $(error Unsupported OS: $(OS))
+  SHELL := /usr/bin/env bash
+  .SHELLFLAGS := -euo pipefail -c
+  RM = rm -rf
+  MKDIR = mkdir -p
+endif
+
+# --- Platform detection for .NET RID ---
+ifeq ($(OS),Windows_NT)
+  NAP_RID ?= win-x64
+else
+  ARCH := $(shell uname -m)
+  UNAME_S := $(shell uname -s)
+  ifeq ($(UNAME_S),Darwin)
+    ifeq ($(ARCH),arm64)
+      NAP_RID ?= osx-arm64
+    else ifeq ($(ARCH),x86_64)
+      NAP_RID ?= osx-x64
+    else
+      $(error Unsupported arch: $(ARCH))
+    endif
+  else ifeq ($(UNAME_S),Linux)
+    NAP_RID ?= linux-x64
+  else
+    $(error Unsupported OS: $(UNAME_S))
+  endif
 endif
 
 EXT_BIN := src/Napper.VsCode/bin
@@ -37,17 +52,14 @@ LSP_COVERAGE_DIR := coverage/lsp
 TS_COVERAGE_DIR := coverage/typescript
 RUST_COVERAGE_DIR := coverage/rust
 
-# Coverage threshold (override in CI via env var or per-repo)
-COVERAGE_THRESHOLD ?= 90
-
 # =============================================================================
-# PRIMARY TARGETS (uniform interface — do not rename)
+# Standard Targets
 # =============================================================================
 
 ## build: Compile/assemble all artifacts
 build: build-all
 
-## test: Run full test suite with coverage
+## test: Run full test suite with coverage and threshold enforcement
 test: test-fsharp test-rust test-vsix
 	@echo ""
 	@echo "========================================="
@@ -58,8 +70,9 @@ test: test-fsharp test-rust test-vsix
 	@echo "  Rust:       $(RUST_COVERAGE_DIR)/report/index.html"
 	@echo "  TypeScript: $(TS_COVERAGE_DIR)/report/index.html"
 	@echo "========================================="
+	@$(MAKE) _coverage_check
 
-## lint: Run all linters (fails on any warning)
+## lint: Run all linters (read-only, no formatting)
 lint:
 	@echo "==> F# build (warnings as errors)..."
 	dotnet build --nologo -warnaserror
@@ -79,6 +92,109 @@ fmt:
 	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml
 	@echo "==> All projects formatted"
 
+## clean: Remove all build artifacts
+clean:
+	@echo "==> Cleaning all build artifacts..."
+	$(RM) out/
+	$(RM) src/Napper.Core/bin/ src/Napper.Core/obj/
+	$(RM) src/Napper.Cli/bin/ src/Napper.Cli/obj/
+	$(RM) tests/Napper.Core.Tests/bin/ tests/Napper.Core.Tests/obj/
+	$(RM) src/Napper.VsCode/bin/
+	$(RM) src/Napper.VsCode/dist/
+	$(RM) src/Napper.VsCode/out/
+	$(RM) src/Napper.VsCode/*.vsix
+	$(RM) coverage/
+	@echo "==> Clean complete"
+
+## ci: lint + test + build (full CI simulation)
+ci: lint test build
+
+## setup: Install all dev tools and dependencies
+setup:
+	@echo "==> Installing .NET tools..."
+	dotnet tool restore
+	dotnet restore
+	@echo "==> Installing Node dependencies (VSCode extension)..."
+	cd src/Napper.VsCode && npm ci
+	@echo "==> Installing Node dependencies (website)..."
+	cd website && npm ci
+	@echo "==> Installing Rust toolchain components..."
+	rustup component add clippy rustfmt 2>/dev/null || true
+	@echo "==> Installing reportgenerator..."
+	dotnet tool install --global dotnet-reportgenerator-globaltool 2>/dev/null || true
+	@echo "==> Setup complete"
+
+# =============================================================================
+# Internal helpers (not in .PHONY — private)
+# =============================================================================
+
+_coverage_check:
+	@echo "==> Checking coverage thresholds (coverage-thresholds.json)..."
+	@THRESHOLD=$$(jq '.projects["src/Napper.Core.Tests"].threshold // .default_threshold' coverage-thresholds.json); \
+	echo "--- F# Napper.Core (threshold: $${THRESHOLD}%) ---"; \
+	if [ -f "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" ]; then \
+	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
+	  echo "  Line coverage: $${COV}%"; \
+	  if [ $$(echo "$${COV} < $${THRESHOLD}" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $${THRESHOLD}%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+	@THRESHOLD=$$(jq '.projects["src/DotHttp.Tests"].threshold // .default_threshold' coverage-thresholds.json); \
+	echo "--- F# DotHttp (threshold: $${THRESHOLD}%) ---"; \
+	if [ -f "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" ]; then \
+	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
+	  echo "  Line coverage: $${COV}%"; \
+	  if [ $$(echo "$${COV} < $${THRESHOLD}" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $${THRESHOLD}%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+	@THRESHOLD=$$(jq '.projects["src/Napper.Lsp.Tests"].threshold // .default_threshold' coverage-thresholds.json); \
+	echo "--- F# Napper.Lsp (threshold: $${THRESHOLD}%) ---"; \
+	if [ -f "$(LSP_COVERAGE_DIR)/report/Summary.txt" ]; then \
+	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(LSP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
+	  echo "  Line coverage: $${COV}%"; \
+	  if [ $$(echo "$${COV} < $${THRESHOLD}" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $${THRESHOLD}%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No coverage data found — run 'make test' first"; fi
+	@THRESHOLD=$$(jq '.projects["src/Napper.VsCode"].threshold // .default_threshold' coverage-thresholds.json); \
+	echo "--- TypeScript (threshold: $${THRESHOLD}%) ---"; \
+	if [ -f "$(TS_COVERAGE_DIR)/report/index.html" ]; then \
+	  COV=$$(cd src/Napper.VsCode && npx c8 report --reporter text 2>/dev/null | grep 'All files' | awk '{print $$4}' | tr -d '%' || echo "0"); \
+	  echo "  Line coverage: $${COV}%"; \
+	  if [ $$(echo "$${COV} < $${THRESHOLD}" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $${THRESHOLD}%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No TypeScript coverage data found — run 'make test' first"; fi
+	@THRESHOLD=$$(jq '.projects["src/Napper.Zed"].threshold // .default_threshold' coverage-thresholds.json); \
+	echo "--- Rust (threshold: $${THRESHOLD}%) ---"; \
+	if [ -f "$(RUST_COVERAGE_DIR)/report/cobertura.xml" ]; then \
+	  LINE_RATE=$$(sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' "$(RUST_COVERAGE_DIR)/report/cobertura.xml" 2>/dev/null | head -1); \
+	  COV=$$(echo "$${LINE_RATE:-0} * 100" | bc -l | xargs printf "%.1f"); \
+	  echo "  Line coverage: $${COV}%"; \
+	  if [ $$(echo "$${COV} < $${THRESHOLD}" | bc -l) -eq 1 ]; then \
+	    echo "  FAIL: $${COV}% < $${THRESHOLD}%"; exit 1; \
+	  else echo "  OK"; fi; \
+	else echo "  No Rust coverage data found — run 'make test' first"; fi
+	@echo "==> Coverage thresholds OK"
+
+# =============================================================================
+# Repo-Specific Targets
+# =============================================================================
+
+## coverage: Generate and open coverage report (calls test first)
+coverage: test
+	@echo "==> Opening coverage reports..."
+ifeq ($(OS),Windows_NT)
+	@start "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>$$null || true
+else ifeq ($(shell uname -s),Darwin)
+	@open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+	@open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+else
+	@xdg-open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+	@xdg-open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
+endif
+
 ## fmt-check: Check formatting without modifying (used in CI)
 fmt-check:
 	@echo "==> Checking F# formatting (Fantomas)..."
@@ -88,66 +204,6 @@ fmt-check:
 	@echo "==> Checking Rust formatting (cargo fmt)..."
 	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check
 	@echo "==> All format checks passed"
-
-## clean: Remove all build artifacts
-clean:
-	@echo "==> Cleaning all build artifacts..."
-	rm -rf out/
-	rm -rf src/Napper.Core/bin/ src/Napper.Core/obj/
-	rm -rf src/Napper.Cli/bin/ src/Napper.Cli/obj/
-	rm -rf tests/Napper.Core.Tests/bin/ tests/Napper.Core.Tests/obj/
-	rm -rf src/Napper.VsCode/bin/
-	rm -rf src/Napper.VsCode/dist/
-	rm -rf src/Napper.VsCode/out/
-	rm -f  src/Napper.VsCode/*.vsix
-	rm -rf coverage/
-	@echo "==> Clean complete"
-
-## check: lint + test (pre-commit)
-check: lint test
-
-## ci: lint + test + build (full CI simulation)
-ci: lint test build
-
-## coverage: Generate and open coverage report
-coverage: test
-	@echo "==> Opening coverage reports..."
-ifeq ($(OS),Darwin)
-	@open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
-	@open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
-else
-	@xdg-open "$(FSHARP_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
-	@xdg-open "$(TS_COVERAGE_DIR)/report/index.html" 2>/dev/null || true
-endif
-
-## coverage-check: Assert thresholds (exits non-zero if below)
-coverage-check:
-	@echo "==> Checking coverage thresholds..."
-	@echo "--- F# Napper.Core ---"
-	@if [ -f "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" ]; then \
-	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(FSHARP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
-	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
-	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
-	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
-	  else echo "  OK"; fi; \
-	else echo "  No coverage data found — run 'make test' first"; fi
-	@echo "--- F# DotHttp ---"
-	@if [ -f "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" ]; then \
-	  COV=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(DOTHTTP_COVERAGE_DIR)/report/Summary.txt" 2>/dev/null || echo "0"); \
-	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
-	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
-	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
-	  else echo "  OK"; fi; \
-	else echo "  No coverage data found — run 'make test' first"; fi
-	@echo "--- Rust ---"
-	@if [ -f "$(RUST_COVERAGE_DIR)/report/cobertura.xml" ]; then \
-	  LINE_RATE=$$(sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' "$(RUST_COVERAGE_DIR)/report/cobertura.xml" 2>/dev/null | head -1); \
-	  COV=$$(echo "$${LINE_RATE:-0} * 100" | bc -l | xargs printf "%.1f"); \
-	  echo "  Line coverage: $${COV}% (threshold: $(COVERAGE_THRESHOLD)%)"; \
-	  if [ $$(echo "$${COV} < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
-	    echo "  FAIL: $${COV}% < $(COVERAGE_THRESHOLD)%"; exit 1; \
-	  else echo "  OK"; fi; \
-	else echo "  No coverage data found — run 'make test' first"; fi
 
 # Keep `format` as an alias for backward compatibility
 format: fmt
@@ -166,10 +222,10 @@ build-cli:
 	  -o "out/$(NAP_RID)" \
 	  --nologo
 	@echo "==> CLI built → out/$(NAP_RID)/"
-	@mkdir -p "$(EXT_BIN)"
+	@$(MKDIR) "$(EXT_BIN)"
 	cp "out/$(NAP_RID)/napper" "$(EXT_BIN)/napper"
 	@echo "==> Copied CLI → $(EXT_BIN)/"
-	@mkdir -p "$(HOME)/.local/bin"
+	@$(MKDIR) "$(HOME)/.local/bin"
 	cp "out/$(NAP_RID)/napper" "$(HOME)/.local/bin/napper"
 	chmod +x "$(HOME)/.local/bin/napper"
 	@echo "==> Installed CLI → ~/.local/bin/napper"
@@ -266,9 +322,9 @@ test-fsharp:
 	@echo "========================================="
 	@echo "  Napper.Core Tests + Coverage"
 	@echo "========================================="
-	mkdir -p "$(LOG_DIR)"
-	rm -rf "$(FSHARP_COVERAGE_DIR)"
-	mkdir -p "$(FSHARP_COVERAGE_DIR)"
+	$(MKDIR) "$(LOG_DIR)"
+	$(RM) "$(FSHARP_COVERAGE_DIR)"
+	$(MKDIR) "$(FSHARP_COVERAGE_DIR)"
 	@echo "==> Running Napper.Core tests with coverage..."
 	dotnet test src/Napper.Core.Tests --nologo \
 	  --settings src/Napper.Core.Tests/coverage.runsettings \
@@ -287,8 +343,8 @@ test-fsharp:
 	@echo "========================================="
 	@echo "  DotHttp Tests + Coverage"
 	@echo "========================================="
-	rm -rf "$(DOTHTTP_COVERAGE_DIR)"
-	mkdir -p "$(DOTHTTP_COVERAGE_DIR)"
+	$(RM) "$(DOTHTTP_COVERAGE_DIR)"
+	$(MKDIR) "$(DOTHTTP_COVERAGE_DIR)"
 	@echo "==> Running DotHttp tests with coverage..."
 	dotnet test src/DotHttp.Tests --nologo \
 	  --settings src/DotHttp.Tests/coverage.runsettings \
@@ -307,8 +363,8 @@ test-fsharp:
 	@echo "========================================="
 	@echo "  Napper.Lsp Tests + Coverage"
 	@echo "========================================="
-	rm -rf "$(LSP_COVERAGE_DIR)"
-	mkdir -p "$(LSP_COVERAGE_DIR)"
+	$(RM) "$(LSP_COVERAGE_DIR)"
+	$(MKDIR) "$(LSP_COVERAGE_DIR)"
 	@echo "==> Running Napper.Lsp tests with coverage..."
 	dotnet test src/Napper.Lsp.Tests --nologo \
 	  --settings src/Napper.Lsp.Tests/coverage.runsettings \
@@ -328,9 +384,9 @@ test-rust:
 	@echo "========================================="
 	@echo "  Rust Tests + Coverage (Napper.Zed)"
 	@echo "========================================="
-	mkdir -p "$(LOG_DIR)"
-	rm -rf "$(RUST_COVERAGE_DIR)"
-	mkdir -p "$(RUST_COVERAGE_DIR)"
+	$(MKDIR) "$(LOG_DIR)"
+	$(RM) "$(RUST_COVERAGE_DIR)"
+	$(MKDIR) "$(RUST_COVERAGE_DIR)"
 	@echo "==> Running Rust checks..."
 	cargo fmt --manifest-path src/Napper.Zed/Cargo.toml -- --check 2>&1 | tee "$(LOG_DIR)/test-rust-fmt.log"
 	cargo clippy --manifest-path src/Napper.Zed/Cargo.toml 2>&1 | tee "$(LOG_DIR)/test-rust-clippy.log"
@@ -346,9 +402,9 @@ test-vsix: build-cli build-extension
 	@echo "========================================="
 	@echo "  TypeScript Tests + Coverage"
 	@echo "========================================="
-	mkdir -p "$(LOG_DIR)"
-	rm -rf "$(TS_COVERAGE_DIR)"
-	mkdir -p "$(TS_COVERAGE_DIR)"
+	$(MKDIR) "$(LOG_DIR)"
+	$(RM) "$(TS_COVERAGE_DIR)"
+	$(MKDIR) "$(TS_COVERAGE_DIR)"
 	cd src/Napper.VsCode && npm run compile && npm run compile:tests
 	@echo "==> Running unit tests..."
 	cd src/Napper.VsCode && NODE_V8_COVERAGE="../../$(TS_COVERAGE_DIR)/tmp" \
@@ -375,7 +431,7 @@ dump-cli-help:
 	fi; \
 	echo "==> Capturing CLI help output from $$CLI_PATH..."; \
 	HELP_OUTPUT=$$($$CLI_PATH help 2>&1); \
-	mkdir -p docs; \
+	$(MKDIR) docs; \
 	{ \
 	  echo '# Nap CLI Reference'; \
 	  echo ''; \
@@ -462,17 +518,18 @@ dump-cli-help:
 # HELP
 # ============================================================
 help:
-	@echo "Available targets:"
+	@echo "Standard targets:"
 	@echo "  build          - Compile/assemble all artifacts"
-	@echo "  test           - Run full test suite with coverage"
-	@echo "  lint           - Run all linters (errors mode)"
+	@echo "  test           - Run full test suite with coverage + threshold enforcement"
+	@echo "  lint           - Run all linters (read-only, no formatting)"
 	@echo "  fmt            - Format all code in-place"
-	@echo "  fmt-check      - Check formatting (no modification)"
 	@echo "  clean          - Remove build artifacts"
-	@echo "  check          - lint + test (pre-commit)"
-	@echo "  ci             - lint + test + build (full CI)"
+	@echo "  ci             - lint + test + build (full CI simulation)"
+	@echo "  setup          - Install dev tools and dependencies"
+	@echo ""
+	@echo "Repo-specific targets:"
 	@echo "  coverage       - Generate and open coverage report"
-	@echo "  coverage-check - Assert coverage thresholds"
+	@echo "  fmt-check      - Check formatting (no modification)"
 	@echo "  build-cli      - Build CLI binary only"
 	@echo "  build-vsix     - Build CLI + extension + package VSIX"
 	@echo "  build-zed      - Build Zed extension (WASM)"

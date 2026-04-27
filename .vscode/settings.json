@@ -1,4 +1,10 @@
 {
     "basilisk.testExplorer.enabled": true,
-    "basilisk.uv.enabled": true
+    "basilisk.uv.enabled": true,
+    "workbench.colorCustomizations": {
+        "titleBar.activeBackground": "#1B4965",
+        "titleBar.activeForeground": "#FFFFFF",
+        "titleBar.inactiveBackground": "#163d52",
+        "titleBar.inactiveForeground": "#FFFFFFcc"
+    }
 }
