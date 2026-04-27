@@ -133,96 +133,11 @@ export const NAP_NAME_KEY_SUFFIX = '"';
 // Property keys
 export const PROP_FILE_PATH = 'filePath';
 
-// CLI installer (binary download)
+// CLI binary name
 export const CLI_BINARY_NAME = 'napper';
-export const CLI_BIN_DIR = 'bin';
-export const CLI_DOWNLOAD_BASE_URL = 'https://github.com/Nimblesite/napper/releases/download';
-export const CLI_CHECKSUMS_FILE = 'checksums-sha256.txt';
-export const CLI_ASSET_PREFIX = 'napper-';
-export const CLI_WIN_EXE_SUFFIX = '.exe';
-export const CLI_PLATFORM_DARWIN = 'darwin';
-export const CLI_PLATFORM_LINUX = 'linux';
-export const CLI_PLATFORM_WIN32 = 'win32';
-export const CLI_ARCH_ARM64 = 'arm64';
-export const CLI_ARCH_X64 = 'x64';
-export const CLI_RID_OSX_ARM64 = 'osx-arm64';
-export const CLI_RID_OSX_X64 = 'osx-x64';
-export const CLI_RID_LINUX_X64 = 'linux-x64';
-export const CLI_RID_WIN_X64 = 'win-x64';
-export const CLI_UNSUPPORTED_PLATFORM_MSG = 'Unsupported platform: ';
-export const CLI_DOWNLOAD_ERROR_PREFIX = 'Binary download failed: ';
-export const CLI_CHECKSUM_MISMATCH_MSG = 'SHA256 checksum mismatch';
-export const CLI_CHECKSUM_NOT_FOUND_MSG = 'Asset not found in checksums file';
-export const CLI_FILE_MODE_EXECUTABLE = 0o755;
-export const CLI_MAX_REDIRECTS = 5;
-export const CLI_TOO_MANY_REDIRECTS = 'Too many redirects';
-export const CLI_REDIRECT_ERROR = 'Redirect with no location header';
 
-// CLI installer (dotnet tool fallback)
-export const CLI_DOTNET_CMD = 'dotnet';
-export const CLI_TOOL_ARG = 'tool';
-export const CLI_TOOL_INSTALL_ARG = 'install';
-export const CLI_TOOL_UPDATE_ARG = 'update';
-export const CLI_TOOL_LIST_ARG = 'list';
-export const CLI_TOOL_GLOBAL_FLAG = '-g';
-export const CLI_TOOL_VERSION_FLAG = '--version';
-export const CLI_DOTNET_TOOL_INSTALL_TIMEOUT = 60000;
-export const CLI_DOTNET_FALLBACK_MSG = 'Binary install failed, falling back to dotnet tool';
-export const CLI_DOTNET_INSTALL_ERROR_PREFIX = 'dotnet tool install failed: ';
-
-// CLI resolver — package managers and dotnet SDK install commands
-export const CLI_RESOLVER_PM_BREW = 'brew';
-export const CLI_RESOLVER_PM_SCOOP = 'scoop';
-export const CLI_RESOLVER_PM_CHOCO = 'choco';
-export const CLI_RESOLVER_DOTNET_SDK = 'dotnet-sdk';
-export const CLI_RESOLVER_CASK_FLAG = '--cask';
-export const CLI_RESOLVER_BUCKET_ARG = 'bucket';
-export const CLI_RESOLVER_ADD_ARG = 'add';
-export const CLI_RESOLVER_EXTRAS_ARG = 'extras';
-export const CLI_RESOLVER_YES_FLAG = '-y';
-export const CLI_RESOLVER_UNKNOWN_ERROR = 'Unknown exec failure';
-
-// CLI resolver UI — consent modal
-export const CLI_CONSENT_INSTALL_BTN = 'Install';
-export const CLI_CONSENT_CANCEL_BTN = 'Cancel';
-export const CLI_CONSENT_MSG_PREFIX = 'Napper needs the .NET 10 SDK. Install it now via ';
-export const CLI_CONSENT_MSG_SUFFIX = '?';
-
-// CLI resolver UI — progress titles
-export const CLI_PROGRESS_DOTNET_PREFIX = 'Installing .NET SDK via ';
-export const CLI_PROGRESS_DOTNET_SUFFIX = '...';
-export const CLI_PROGRESS_NAPPER_PREFIX = 'Installing Napper CLI v';
-export const CLI_PROGRESS_NAPPER_SUFFIX = ' via dotnet tool...';
-
-// CLI resolver UI — tank notification
-export const CLI_TANK_OPEN_BREW = 'Get Homebrew';
-export const CLI_TANK_OPEN_SCOOP = 'Get Scoop';
-export const CLI_TANK_OPEN_CHOCO = 'Get Chocolatey';
-export const CLI_TANK_RELOAD = 'Reload VS Code';
-export const CLI_TANK_BREW_URL = 'https://brew.sh';
-export const CLI_TANK_SCOOP_URL = 'https://scoop.sh';
-export const CLI_TANK_CHOCO_URL = 'https://chocolatey.org/install';
-export const CLI_TANK_MSG_PM_MISSING_PREFIX =
-  'Napper requires a package manager to install .NET. Install ';
-export const CLI_TANK_MSG_PM_MISSING_SUFFIX = ' then reload VS Code.';
-export const CLI_TANK_MSG_PM_FAILED_PREFIX = 'Package manager install failed via ';
-export const CLI_TANK_MSG_PM_FAILED_SUFFIX = '. Try running the command manually in a terminal.';
-export const CLI_TANK_MSG_TOOL_FAILED =
-  'Napper CLI install failed. Run: dotnet tool install -g napper';
-export const CLI_TANK_MSG_RESTART =
-  'Napper installed but PATH not updated yet. Please reload VS Code.';
-export const CLI_TANK_MSG_MISMATCH_PREFIX = 'Napper version mismatch: expected ';
-export const CLI_TANK_MSG_MISMATCH_MIDDLE = ', got ';
-export const CLI_TANK_MSG_MISMATCH_SUFFIX = '. Run: dotnet tool update -g napper';
-
-// CLI installer (shared)
-export const CLI_INSTALL_MSG = 'Installing Napper CLI...';
-export const CLI_INSTALL_COMPLETE_MSG = 'Napper CLI installed successfully';
-export const CLI_INSTALL_FAILED_MSG = 'Failed to install Napper CLI: ';
-export const CLI_VERSION_FLAG = '--version';
-export const CLI_VERSION_CHECK_TIMEOUT = 5000;
-export const CLI_VERSION_CHECK_ERROR = 'Failed to check CLI version: ';
-export const CLI_VERSION_MISMATCH_MSG = 'CLI version mismatch — re-installing';
+// CLI installer complete message
+export const CLI_INSTALL_COMPLETE_MSG = 'Napper CLI ready';
 
 // VSCode built-in commands
 export const CMD_VSCODE_OPEN = 'vscode.open';

@@ -5,17 +5,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { activateDeploymentToolkit } from '@nimblesite/shipwright-vscode';
 import { ExplorerAdapter } from './explorerAdapter';
 import { CodeLensProvider } from './codeLensProvider';
 import { EnvironmentStatusBar } from './environmentAdapter';
 import { ResponsePanel } from './responsePanel';
 import { PlaylistPanel } from './playlistPanel';
 import { runCli, streamCli } from './cliRunner';
-import type { ResolverPlatform, RunResult } from './types';
+import type { RunResult } from './types';
 import { parsePlaylistStepPaths } from './explorerProvider';
 import { generatePlaylistReport } from './reportGenerator';
 import { type Logger, createLogger } from './logger';
-import { ensureCli } from './cliResolverUi';
 import {
   registerEditCommands,
   registerHttpConvertCommands,
@@ -66,10 +66,9 @@ import {
 
 let envStatusBar: EnvironmentStatusBar,
   extensionContext: vscode.ExtensionContext,
-  extensionDir: string,
   extensionVersion: string,
   explorerProvider: ExplorerAdapter,
-  installedCliOverride: string | undefined,
+  resolvedCliPath: string | undefined,
   lastPlaylistReport: (() => void) | undefined,
   lastResult: RunResult | undefined,
   logger: Logger,
@@ -77,59 +76,42 @@ let envStatusBar: EnvironmentStatusBar,
   playlistPanel: PlaylistPanel,
   responsePanel: ResponsePanel;
 
-const platformToDtk = (): string => {
-    const p = process.platform,
-      a = process.arch;
-    if (p === 'darwin') {
-      return a === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
-    }
-    if (p === 'linux') {
-      return 'linux-x64';
-    }
-    return a === 'arm64' ? 'win32-arm64' : 'win32-x64';
-  },
-  bundledCliPath = (): string => {
-    const bin = process.platform === 'win32' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME;
-    return path.join(extensionDir, 'bin', platformToDtk(), bin);
-  },
-  getCliPath = (): string => {
+const getCliPath = (): string => {
     const configured = vscode.workspace
       .getConfiguration(CONFIG_SECTION)
       .get<string>(CONFIG_CLI_PATH, DEFAULT_CLI_PATH);
     if (configured !== DEFAULT_CLI_PATH) {
       return configured;
     }
-    if (installedCliOverride !== undefined) {
-      return installedCliOverride;
-    }
-    const bundled = bundledCliPath();
-    return fs.existsSync(bundled) ? bundled : CLI_BINARY_NAME;
-  },
-  resolverPlatform = (): ResolverPlatform => {
-    const p = process.platform;
-    if (p === 'darwin' || p === 'linux' || p === 'win32') {
-      return p;
-    }
-    return 'linux';
+    return resolvedCliPath ?? CLI_BINARY_NAME;
   },
   startCliAndLsp = (cliPath: string): void => {
-    installedCliOverride = cliPath;
+    resolvedCliPath = cliPath;
     logger.info(`${CLI_INSTALL_COMPLETE_MSG} (${cliPath})`);
     startLspClient(cliPath, outputChannel, extensionContext);
   },
-  runEnsureCli = async (): Promise<void> => {
-    logger.info('Resolving CLI...');
-    const configuredPath = vscode.workspace
-      .getConfiguration(CONFIG_SECTION)
-      .get<string>(CONFIG_CLI_PATH);
-    const cliPath = await ensureCli({
-      vsixVersion: extensionVersion,
-      configuredCliPath: configuredPath,
-      platform: resolverPlatform(),
-      outputChannel,
-    });
-    if (cliPath !== undefined) {
-      startCliAndLsp(cliPath);
+  makeVscodeAdapter = () => ({
+    workspace: vscode.workspace,
+    window: {
+      showErrorMessage: async (msg: string, opts: { modal: boolean }, ...items: string[]) =>
+        vscode.window.showErrorMessage(msg, opts, ...items) as Promise<string | undefined>,
+      showWarningMessage: async (msg: string, opts: { modal: boolean }, ...items: string[]) =>
+        vscode.window.showWarningMessage(msg, opts, ...items) as Promise<string | undefined>,
+    },
+  }),
+  logShipwrightResult = (result: Awaited<ReturnType<typeof activateDeploymentToolkit>>): void => {
+    outputChannel.appendLine(`Shipwright result: ok=${String(result.ok)}`);
+    for (const d of result.diagnostics) {
+      outputChannel.appendLine(`  [${d.componentId}] ${d.resolution.status}: ${d.message}`);
+    }
+  },
+  runShipwright = async (): Promise<void> => {
+    logger.info('Resolving CLI via Shipwright...');
+    const result = await activateDeploymentToolkit(extensionContext, { vscode: makeVscodeAdapter() });
+    logShipwrightResult(result);
+    if (result.ok) {
+      const napperDiag = result.diagnostics.find((d) => d.componentId === 'napper');
+      startCliAndLsp(napperDiag?.resolution.path ?? CLI_BINARY_NAME);
     }
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
@@ -246,12 +228,12 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     }
   },
   runSingleFile = async (fileUri: vscode.Uri, cwd: string): Promise<void> => {
-    const resolvedCliPath = getCliPath();
+    const resolvedPath = getCliPath();
     logger.info(`${LOG_MSG_RUN_FILE} ${fileUri.fsPath}`);
-    logger.info(`CLI path: ${resolvedCliPath}, cwd: ${cwd}`);
+    logger.info(`CLI path: ${resolvedPath}, cwd: ${cwd}`);
     const statusMsg = makeRunningStatus(fileUri.fsPath),
       result = await runCli({
-        cliPath: resolvedCliPath,
+        cliPath: resolvedPath,
         filePath: fileUri.fsPath,
         env: currentEnvOrUndefined(),
         cwd,
@@ -332,9 +314,8 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     });
     logger.info(LOG_MSG_ACTIVATED);
     extensionVersion = (context.extension.packageJSON as { version: string }).version;
-    extensionDir = context.extensionUri.fsPath;
     logger.info(`Extension version: ${extensionVersion}`);
-    runEnsureCli().catch(() => undefined);
+    runShipwright().catch(() => undefined);
   };
 
 export interface ExtensionApi {

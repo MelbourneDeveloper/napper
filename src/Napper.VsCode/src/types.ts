@@ -47,39 +47,3 @@ export const enum RunState {
   Error,
 }
 
-// CLI resolver types — [vscode-cli-acquisition]
-export const enum ResolverErrorKind {
-  PathMismatch = 'path-mismatch',
-  DotnetMissing = 'dotnet-missing',
-  ConsentDeclined = 'consent-declined',
-  PmMissing = 'pm-missing',
-  PmInstallFailed = 'pm-install-failed',
-  ToolInstallFailed = 'tool-install-failed',
-  RestartRequired = 'restart-required',
-}
-
-export type ResolverPlatform = 'darwin' | 'linux' | 'win32';
-
-export type PackageManager = 'brew' | 'scoop' | 'choco';
-
-export type ResolverError =
-  | {
-      readonly kind: ResolverErrorKind.PathMismatch;
-      readonly expected: string;
-      readonly actual: string;
-    }
-  | { readonly kind: ResolverErrorKind.DotnetMissing }
-  | { readonly kind: ResolverErrorKind.ConsentDeclined }
-  | { readonly kind: ResolverErrorKind.PmMissing; readonly os: ResolverPlatform }
-  | {
-      readonly kind: ResolverErrorKind.PmInstallFailed;
-      readonly pm: PackageManager;
-      readonly stderr: string;
-      readonly exitCode: number;
-    }
-  | {
-      readonly kind: ResolverErrorKind.ToolInstallFailed;
-      readonly stderr: string;
-      readonly exitCode: number;
-    }
-  | { readonly kind: ResolverErrorKind.RestartRequired };

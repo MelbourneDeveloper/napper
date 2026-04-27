@@ -2,9 +2,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "out",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "declaration": false,
     "declarationMap": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "out"]
+  "exclude": ["node_modules", "dist", "out", "src/extension.ts", "src/test/e2e"]
 }
