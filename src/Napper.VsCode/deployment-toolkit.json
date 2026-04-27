@@ -1,0 +1,42 @@
+{
+  "manifestVersion": 1,
+  "product": {
+    "id": "napper",
+    "displayName": "Napper",
+    "version": "${PRODUCT_VERSION}"
+  },
+  "components": [
+    {
+      "id": "napper",
+      "kind": "cli",
+      "language": "dotnet",
+      "binaryName": "napper",
+      "expectedVersion": "${PRODUCT_VERSION}",
+      "platforms": ["darwin-arm64", "darwin-x64", "linux-x64", "win32-x64"],
+      "bundled": {
+        "bundlePath": "bin/${platform}/${binaryName}${exe}",
+        "perPlatformArtifact": true
+      },
+      "sources": ["user-setting", "env", "bundled", "path", "dotnet-tool"],
+      "userSetting": "napper.cliPath",
+      "env": {
+        "pathVar": "NAPPER_PATH",
+        "dirVar": "NAPPER_BINARY_DIR"
+      },
+      "dotnetTool": {
+        "package": "napper",
+        "command": "napper"
+      },
+      "verifyStartup": true,
+      "versionCheckStrategy": "version-flag",
+      "required": true
+    }
+  ],
+  "hosts": {
+    "vscode": {
+      "artifact": "vsix-per-platform",
+      "activationVerifies": ["napper"],
+      "onMismatch": "error"
+    }
+  }
+}

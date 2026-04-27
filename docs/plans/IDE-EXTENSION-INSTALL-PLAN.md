@@ -165,14 +165,14 @@ Place a stub `napper` shell script on the test workspace's PATH (via `process.en
 - [ ] Tag `v0.12.0` to publish the first NuGet package on the new release pipeline (validates the end-to-end install flow has anything to install)
 
 ### New modules
-- [ ] Create `src/Napper.VsCode/src/cliResolver.ts` — pure resolver, no vscode SDK imports, returns `Result<…, ResolverError>` per the table above
-- [ ] Create `src/Napper.VsCode/src/cliResolverCommands.ts` — per-OS detect/install command tables
-- [ ] Create `src/Napper.VsCode/src/cliResolverUi.ts` — vscode SDK glue: consent modal, progress notification, pm-prompt notification, tank notification
-- [ ] Add `ResolverError` discriminated union to `src/Napper.VsCode/src/types.ts`
+- [x] Create `src/Napper.VsCode/src/cliResolver.ts` — pure resolver, no vscode SDK imports, returns `Result<…, ResolverError>` per the table above
+- [x] Create `src/Napper.VsCode/src/cliResolverCommands.ts` — per-OS detect/install command tables
+- [x] Create `src/Napper.VsCode/src/cliResolverUi.ts` — vscode SDK glue: consent modal, progress notification, pm-prompt notification, tank notification
+- [x] Add `ResolverError` discriminated union to `src/Napper.VsCode/src/types.ts`
 
 ### Wire-up
-- [ ] In `src/Napper.VsCode/src/extension.ts`, replace `ensureCliInstalled` (lines 159–180) with `await cliResolverUi.ensureCli({ vsixVersion, logger, outputChannel, storageDir })`
-- [ ] Drop the `bundledCliPath` / extension `bin/` lookup if no longer needed (extension stops bundling a CLI binary)
+- [x] In `src/Napper.VsCode/src/extension.ts`, replace `ensureCliInstalled` with `runEnsureCli()` calling `cliResolverUi.ensureCli()`
+- [x] Bundled binary loaded from `bin/<dtk-platform>/napper[.exe]` inside VSIX (per `bundledCliPath()`)
 - [ ] After successful install, persist the resolved absolute `cliPath` to extension globalState; warm-start probes the cached path before re-running the resolver
 
 ### LSP wire-up (depends on [LSP-PLAN.md Phase 2.5](./LSP-PLAN.md))
@@ -181,10 +181,9 @@ Place a stub `napper` shell script on the test workspace's PATH (via `process.en
 - [ ] If the resolver tanks, the LSP client is **not** started. Diagnostics, completions, and hover are unavailable until the user resolves the install issue and reloads VS Code.
 
 ### Cleanup
-- [ ] Delete `src/Napper.VsCode/src/cliInstaller.ts`
-- [ ] Delete the unused constants in `src/Napper.VsCode/src/constants.ts` (see Module Layout table)
-- [ ] Add new constants to `constants.ts` for consent text, progress titles, tank message, button labels — **one location only** per CLAUDE.md
-- [x] Keep VSIX packaging unbundled: `.vscodeignore` excludes `bin/**` and `build-extension` does not stage a bundled CLI binary
+- [ ] Delete `src/Napper.VsCode/src/cliInstaller.ts` (kept temporarily until @deploy-toolkit/vscode available)
+- [x] Add new constants to `constants.ts` for consent text, progress titles, tank message, button labels — **one location only** per CLAUDE.md
+- [x] `.vscodeignore` updated to include `bin/**` and `deployment-toolkit.json` in the VSIX per [DTK-NAPPER-VSIX-BUNDLE]
 - [ ] Delete the remaining local-dev CLI copy to `src/Napper.VsCode/bin/` from `Makefile build-cli` once no local workflow depends on it
 
 ### Tests
@@ -196,6 +195,15 @@ Place a stub `napper` shell script on the test workspace's PATH (via `process.en
 - [ ] Update [README.md](../../README.md) install section: brew tap, scoop bucket, dotnet tool, "the VS Code extension installs napper for you on first activation"
 - [ ] Update [website/src/docs/installation.md](../../website/src/docs/installation.md) to match
 - [ ] Note in the troubleshooting section that consent-declined / pm-missing / restart-required are the three states a user can self-resolve
+
+### Deployment toolkit integration [DTK-NAPPER-*]
+- [x] [DTK-NAPPER-LSP-ONE-BINARY] `napper lsp` subcommand — one binary for CLI + LSP
+- [x] [DTK-NAPPER-VERSION-CONTRACT] `napper --version` prints `napper <semver>`; `--version --json` emits deployment-toolkit version manifest
+- [x] [DTK-NAPPER-MANIFEST] `src/Napper.VsCode/deployment-toolkit.json` created with `napper` component, bundled binary layout, dotnet-tool repair source
+- [x] [DTK-NAPPER-VSIX-BUNDLE] Release CI `build-vsix` job is now a per-platform matrix; downloads and bundles the matching `napper` binary into `bin/<dtk-platform>/napper[.exe]` before packaging the VSIX
+- [x] [DTK-NAPPER-CI-GATES] `build-vsix` job verifies bundled binary version, manifest presence, and VSIX contents before upload
+- [ ] [DTK-NAPPER-VSCODE-RESOLVER] Replace `cliResolver.ts` + `cliInstaller.ts` with `@deploy-toolkit/vscode` library once published to npm
+- [x] [DTK-NAPPER-DOCS] Specs/plans updated to reflect deployment-toolkit bundling contract
 
 ### Phase 5 (blocked on [`cli-aot-migration`](../specs/CLI-SPEC.md#cli-aot-migration))
 - [ ] Drop `cliResolverCommands.ts` brew-install-dotnet / scoop-install-dotnet / choco-install-dotnet entries

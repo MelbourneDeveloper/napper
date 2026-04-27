@@ -32,7 +32,7 @@ export type ConfirmDotnetInstall = (args: {
 
 export interface ResolveCliArgs {
   readonly vsixVersion: string;
-  readonly configuredCliPath?: string;
+  readonly configuredCliPath?: string | undefined;
   readonly platform: ResolverPlatform;
   readonly exec: ResolverExec;
   readonly confirmDotnetInstall: ConfirmDotnetInstall;

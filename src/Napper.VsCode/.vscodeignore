@@ -7,4 +7,5 @@ webpack.config.js
 **/*.map
 **/*.pdb
 !dist/**
-bin/**
+!bin/**
+!deployment-toolkit.json

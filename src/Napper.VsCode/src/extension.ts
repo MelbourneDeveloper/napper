@@ -11,17 +11,11 @@ import { EnvironmentStatusBar } from './environmentAdapter';
 import { ResponsePanel } from './responsePanel';
 import { PlaylistPanel } from './playlistPanel';
 import { runCli, streamCli } from './cliRunner';
-import type { RunResult } from './types';
+import type { ResolverPlatform, RunResult } from './types';
 import { parsePlaylistStepPaths } from './explorerProvider';
 import { generatePlaylistReport } from './reportGenerator';
 import { type Logger, createLogger } from './logger';
-import {
-  type DownloadBinaryParams,
-  downloadBinary,
-  getCliVersion,
-  installDotnetTool,
-  installedBinaryPath,
-} from './cliInstaller';
+import { ensureCli } from './cliResolverUi';
 import {
   registerEditCommands,
   registerHttpConvertCommands,
@@ -31,13 +25,9 @@ import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
 import { startLspClient, stopLspClient } from './lspClient';
 import {
-  CLI_BIN_DIR,
   CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
   CLI_INSTALL_COMPLETE_MSG,
-  CLI_INSTALL_FAILED_MSG,
-  CLI_INSTALL_MSG,
-  CLI_VERSION_MISMATCH_MSG,
   CMD_OPEN_RESPONSE,
   CMD_RUN_ALL,
   CMD_RUN_FILE,
@@ -85,10 +75,23 @@ let envStatusBar: EnvironmentStatusBar,
   logger: Logger,
   outputChannel: vscode.OutputChannel,
   playlistPanel: PlaylistPanel,
-  responsePanel: ResponsePanel,
-  storageDir: string;
+  responsePanel: ResponsePanel;
 
-const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BINARY_NAME),
+const platformToDtk = (): string => {
+    const p = process.platform,
+      a = process.arch;
+    if (p === 'darwin') {
+      return a === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
+    }
+    if (p === 'linux') {
+      return 'linux-x64';
+    }
+    return a === 'arm64' ? 'win32-arm64' : 'win32-x64';
+  },
+  bundledCliPath = (): string => {
+    const bin = process.platform === 'win32' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME;
+    return path.join(extensionDir, 'bin', platformToDtk(), bin);
+  },
   getCliPath = (): string => {
     const configured = vscode.workspace
       .getConfiguration(CONFIG_SECTION)
@@ -102,85 +105,32 @@ const bundledCliPath = (): string => path.join(extensionDir, CLI_BIN_DIR, CLI_BI
     const bundled = bundledCliPath();
     return fs.existsSync(bundled) ? bundled : CLI_BINARY_NAME;
   },
-  checkVersionAt = async (cliPath: string): Promise<boolean> => {
-    logger.debug(`Version check: ${cliPath}`);
-    const result = await getCliVersion(cliPath);
-    if (!result.ok) {
-      logger.debug(`Version check failed at ${cliPath}: ${result.error}`);
-      return false;
+  resolverPlatform = (): ResolverPlatform => {
+    const p = process.platform;
+    if (p === 'darwin' || p === 'linux' || p === 'win32') {
+      return p;
     }
-    logger.debug(`${cliPath}: v${result.value} (need ${extensionVersion})`);
-    if (result.value !== extensionVersion) {
-      return false;
-    }
+    return 'linux';
+  },
+  startCliAndLsp = (cliPath: string): void => {
     installedCliOverride = cliPath;
     logger.info(`${CLI_INSTALL_COMPLETE_MSG} (${cliPath})`);
     startLspClient(cliPath, outputChannel, extensionContext);
-    return true;
   },
-  checkVersionMatch = async (): Promise<boolean> => {
-    if (await checkVersionAt(installedBinaryPath(storageDir))) {
-      return true;
+  runEnsureCli = async (): Promise<void> => {
+    logger.info('Resolving CLI...');
+    const configuredPath = vscode.workspace
+      .getConfiguration(CONFIG_SECTION)
+      .get<string>(CONFIG_CLI_PATH);
+    const cliPath = await ensureCli({
+      vsixVersion: extensionVersion,
+      configuredCliPath: configuredPath,
+      platform: resolverPlatform(),
+      outputChannel,
+    });
+    if (cliPath !== undefined) {
+      startCliAndLsp(cliPath);
     }
-    if (await checkVersionAt(bundledCliPath())) {
-      return true;
-    }
-    if (await checkVersionAt(CLI_BINARY_NAME)) {
-      return true;
-    }
-    logger.info(CLI_VERSION_MISMATCH_MSG);
-    return false;
-  },
-  installParams = (): DownloadBinaryParams => ({
-    version: extensionVersion,
-    storageDir,
-    log: (msg) => {
-      logger.info(msg);
-    },
-  }),
-  tryBinaryInstall = async (params: DownloadBinaryParams): Promise<boolean> => {
-    const dlResult = await downloadBinary(params);
-    if (!dlResult.ok) {
-      logger.error(dlResult.error);
-      return false;
-    }
-    if (await checkVersionAt(dlResult.value)) {
-      return true;
-    }
-    logger.error(`Binary downloaded but version check failed at ${dlResult.value}`);
-    return false;
-  },
-  tryDotnetFallback = async (params: DownloadBinaryParams): Promise<void> => {
-    const dotnetResult = await installDotnetTool(params);
-    if (!dotnetResult.ok) {
-      logger.error(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
-      void vscode.window.showErrorMessage(`${CLI_INSTALL_FAILED_MSG}${dotnetResult.error}`);
-      return;
-    }
-    installedCliOverride = CLI_BINARY_NAME;
-    logger.info(`${CLI_INSTALL_COMPLETE_MSG} (dotnet tool)`);
-  },
-  performInstall = async (): Promise<void> => {
-    const params = installParams();
-    if (await tryBinaryInstall(params)) {
-      return;
-    }
-    await tryDotnetFallback(params);
-  },
-  ensureCliInstalled = async (): Promise<void> => {
-    logger.info('Checking CLI installation...');
-    if (await checkVersionMatch()) {
-      return;
-    }
-    logger.info('No matching CLI found, starting install...');
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: CLI_INSTALL_MSG,
-        cancellable: false,
-      },
-      performInstall,
-    );
   },
   getWorkspacePath = (): string | undefined => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   getResponseColumn = (): vscode.ViewColumn => {
@@ -383,9 +333,8 @@ const collectResult = (state: StreamState, result: RunResult): void => {
     logger.info(LOG_MSG_ACTIVATED);
     extensionVersion = (context.extension.packageJSON as { version: string }).version;
     extensionDir = context.extensionUri.fsPath;
-    storageDir = context.globalStorageUri.fsPath;
     logger.info(`Extension version: ${extensionVersion}`);
-    ensureCliInstalled().catch(() => undefined);
+    runEnsureCli().catch(() => undefined);
   };
 
 export interface ExtensionApi {

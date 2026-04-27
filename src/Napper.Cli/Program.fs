@@ -523,9 +523,27 @@ let main argv =
                 eprintfn "Usage: nap convert http <file|dir> --output-dir <dir>"
                 2
         | "version"
-        | "--version" ->
-            let v = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-            printfn "%d.%d.%d" v.Major v.Minor v.Build
+        | "--version"
+        | "-V" ->
+            // Implements [DTK-NAPPER-VERSION-CONTRACT]
+            // Plain text: "napper <semver>" per deployment-toolkit version contract
+            let asm = Reflection.Assembly.GetExecutingAssembly()
+            let infoVersion =
+                asm.GetCustomAttributes(typeof<Reflection.AssemblyInformationalVersionAttribute>, false)
+                |> Array.tryHead
+                |> Option.map (fun a -> (a :?> Reflection.AssemblyInformationalVersionAttribute).InformationalVersion)
+                |> Option.defaultWith (fun () ->
+                    let v = asm.GetName().Version
+                    $"{v.Major}.{v.Minor}.{v.Build}")
+            // Strip any build metadata suffix (e.g. "+commit")
+            let semver = infoVersion.Split('+')[0]
+            // Check for --json flag in remaining args
+            let isJson = argv |> Array.exists (fun a -> a = "--json")
+            if isJson then
+                // JSON version manifest per deployment-toolkit version-manifest.schema.json
+                printfn """{"manifestVersion":1,"name":"napper","version":"%s","kind":"cli","language":"dotnet","product":"napper","capabilities":["cli","lsp"]}""" semver
+            else
+                printfn "napper %s" semver
             0
         | "help"
         | "--help"

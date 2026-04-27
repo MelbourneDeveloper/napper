@@ -39,6 +39,15 @@ export const err = <E>(error: E): Result<never, E> => ({
   error,
 });
 
+export const enum RunState {
+  Idle,
+  Running,
+  Passed,
+  Failed,
+  Error,
+}
+
+// CLI resolver types — [vscode-cli-acquisition]
 export const enum ResolverErrorKind {
   PathMismatch = 'path-mismatch',
   DotnetMissing = 'dotnet-missing',
@@ -74,11 +83,3 @@ export type ResolverError =
       readonly exitCode: number;
     }
   | { readonly kind: ResolverErrorKind.RestartRequired };
-
-export const enum RunState {
-  Idle,
-  Running,
-  Passed,
-  Failed,
-  Error,
-}

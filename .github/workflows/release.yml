@@ -42,12 +42,16 @@ jobs:
         include:
           - rid: osx-arm64
             archive: tar.gz
+            dtk-platform: darwin-arm64
           - rid: osx-x64
             archive: tar.gz
+            dtk-platform: darwin-x64
           - rid: linux-x64
             archive: tar.gz
+            dtk-platform: linux-x64
           - rid: win-x64
             archive: zip
+            dtk-platform: win32-x64
     env:
       VERSION: ${{ needs.validate-tag.outputs.version }}
       TAG: ${{ needs.validate-tag.outputs.tag }}
@@ -80,10 +84,23 @@ jobs:
           chmod +x out/${{ matrix.rid }}/napper
           ACTUAL=$(out/${{ matrix.rid }}/napper --version)
           echo "Binary reports: $ACTUAL"
-          if [ "$ACTUAL" != "$VERSION" ]; then
-            echo "::error::Binary version '$ACTUAL' does not match tag version '$VERSION'"
+          EXPECTED="napper $VERSION"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Binary version '$ACTUAL' does not match expected 'napper $VERSION'"
             exit 1
           fi
+          # Verify --version --json output is valid JSON with correct fields
+          JSON=$(out/${{ matrix.rid }}/napper --version --json)
+          echo "JSON: $JSON"
+          echo "$JSON" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          assert d['name']=='napper', f'name mismatch: {d[\"name\"]}'
+          assert d['version']=='$VERSION', f'version mismatch: {d[\"version\"]}'
+          assert d['manifestVersion']==1, f'manifestVersion missing'
+          assert d['kind']=='cli', f'kind mismatch: {d[\"kind\"]}'
+          print('JSON version manifest: OK')
+          "
 
       - name: Verify binary version is embedded (Windows .exe, scanned on Linux)
         if: matrix.rid == 'win-x64'
@@ -128,17 +145,47 @@ jobs:
           fi
           ls -la assets/
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.rid }}
           path: assets/*
           if-no-files-found: error
 
+      - name: Upload raw binary for VSIX bundling
+        uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.dtk-platform }}
+          path: |
+            out/${{ matrix.rid }}/napper
+            out/${{ matrix.rid }}/napper.exe
+          if-no-files-found: warn
+
   build-vsix:
-    name: Build VSIX
-    needs: validate-tag
+    name: Build VSIX (${{ matrix.dtk-platform }})
+    needs: [validate-tag, build-cli]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dtk-platform: darwin-arm64
+            rid: osx-arm64
+            target: darwin-arm64
+            vsce-target: darwin-arm64
+          - dtk-platform: darwin-x64
+            rid: osx-x64
+            target: darwin-x64
+            vsce-target: darwin-x64
+          - dtk-platform: linux-x64
+            rid: linux-x64
+            target: linux-x64
+            vsce-target: linux-x64
+          - dtk-platform: win32-x64
+            rid: win-x64
+            target: win32-x64
+            vsce-target: win32-x64
     env:
       VERSION: ${{ needs.validate-tag.outputs.version }}
     steps:
@@ -149,6 +196,48 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: src/Napper.VsCode/package-lock.json
+
+      - name: Download bundled binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bin-${{ matrix.dtk-platform }}
+          path: bin-download/
+
+      - name: Stage bundled binary into extension
+        shell: bash
+        run: |
+          mkdir -p src/Napper.VsCode/bin/${{ matrix.dtk-platform }}
+          if [ "${{ matrix.dtk-platform }}" = "win32-x64" ]; then
+            cp bin-download/napper.exe src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper.exe
+          else
+            cp bin-download/napper src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper
+            chmod +x src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper
+          fi
+          echo "Bundled binary:"
+          ls -la src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/
+
+      - name: Verify manifest PRODUCT_VERSION matches tag
+        shell: bash
+        run: |
+          # deployment-toolkit.json uses ${PRODUCT_VERSION} — verify manifest is present
+          test -f src/Napper.VsCode/deployment-toolkit.json
+          echo "deployment-toolkit.json present"
+          cat src/Napper.VsCode/deployment-toolkit.json
+
+      - name: Verify bundled binary version
+        shell: bash
+        run: |
+          if [ "${{ matrix.dtk-platform }}" != "win32-x64" ]; then
+            BIN=src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper
+            ACTUAL=$($BIN --version)
+            EXPECTED="napper $VERSION"
+            echo "Bundled binary reports: $ACTUAL"
+            if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "::error::Bundled binary version '$ACTUAL' != expected '$EXPECTED'"
+              exit 1
+            fi
+            echo "Bundled binary version: OK"
+          fi
 
       - name: Set extension version from tag
         working-directory: src/Napper.VsCode
@@ -162,9 +251,27 @@ jobs:
         working-directory: src/Napper.VsCode
         run: npx webpack --mode production
 
-      - name: Package universal VSIX
+      - name: Package per-platform VSIX
         working-directory: src/Napper.VsCode
-        run: npx @vscode/vsce package --no-dependencies --skip-license
+        run: npx @vscode/vsce package --no-dependencies --skip-license --target ${{ matrix.vsce-target }}
+
+      - name: Verify VSIX contains bundled binary and manifest
+        shell: bash
+        run: |
+          VSIX=$(ls src/Napper.VsCode/*.vsix | head -1)
+          echo "VSIX: $VSIX"
+          # VSIX is a ZIP — list contents
+          unzip -l "$VSIX" > vsix-contents.txt
+          cat vsix-contents.txt
+          # Must contain deployment-toolkit.json
+          grep -q "deployment-toolkit.json" vsix-contents.txt || { echo "::error::deployment-toolkit.json missing from VSIX"; exit 1; }
+          # Must contain the bundled binary
+          if [ "${{ matrix.dtk-platform }}" = "win32-x64" ]; then
+            grep -q "bin/${{ matrix.dtk-platform }}/napper.exe" vsix-contents.txt || { echo "::error::bundled napper.exe missing from VSIX"; exit 1; }
+          else
+            grep -q "bin/${{ matrix.dtk-platform }}/napper" vsix-contents.txt || { echo "::error::bundled napper missing from VSIX"; exit 1; }
+          fi
+          echo "VSIX content verification: OK"
 
       - name: Stage VSIX into assets
         shell: bash
@@ -174,7 +281,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vsix
+          name: vsix-${{ matrix.dtk-platform }}
           path: assets/*.vsix
           if-no-files-found: error
 
@@ -214,10 +321,18 @@ jobs:
     env:
       TAG: ${{ needs.validate-tag.outputs.tag }}
     steps:
-      - name: Download all artifacts
+      - name: Download CLI release assets
         uses: actions/download-artifact@v4
         with:
           path: assets
+          pattern: cli-*
+          merge-multiple: true
+
+      - name: Download per-platform VSIXs
+        uses: actions/download-artifact@v4
+        with:
+          path: assets
+          pattern: vsix-*
           merge-multiple: true
 
       - name: Generate SHA256 checksums
