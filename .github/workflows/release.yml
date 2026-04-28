@@ -236,10 +236,27 @@ jobs:
           echo "Bundled binary:"
           ls -la src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/
 
+      - name: Set extension version from tag
+        working-directory: src/Napper.VsCode
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Update shipwright.json version from tag
+        working-directory: src/Napper.VsCode
+        shell: bash
+        run: |
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('shipwright.json', 'utf8'));
+          m.product.version = process.env.VERSION;
+          m.components.forEach(c => { c.expectedVersion = process.env.VERSION; });
+          fs.writeFileSync('shipwright.json', JSON.stringify(m, null, 2) + '\n');
+          "
+          echo "shipwright.json updated to version $VERSION"
+          cat shipwright.json
+
       - name: Verify shipwright.json version matches tag
         shell: bash
         run: |
-          test -f src/Napper.VsCode/shipwright.json
           node -e "
           const fs = require('fs');
           const m = JSON.parse(fs.readFileSync('src/Napper.VsCode/shipwright.json','utf8'));
@@ -265,24 +282,6 @@ jobs:
             fi
             echo "Bundled binary version: OK"
           fi
-
-      - name: Set extension version from tag
-        working-directory: src/Napper.VsCode
-        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
-
-      - name: Update shipwright.json version from tag
-        working-directory: src/Napper.VsCode
-        shell: bash
-        run: |
-          node -e "
-          const fs = require('fs');
-          const m = JSON.parse(fs.readFileSync('shipwright.json', 'utf8'));
-          m.product.version = process.env.VERSION;
-          m.components.forEach(c => { c.expectedVersion = process.env.VERSION; });
-          fs.writeFileSync('shipwright.json', JSON.stringify(m, null, 2) + '\n');
-          "
-          echo "shipwright.json updated to version $VERSION"
-          cat shipwright.json
 
       - name: Install extension dependencies
         working-directory: src/Napper.VsCode
