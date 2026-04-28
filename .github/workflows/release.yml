@@ -49,9 +49,15 @@ jobs:
           - rid: linux-x64
             archive: tar.gz
             dtk-platform: linux-x64
+          - rid: linux-arm64
+            archive: tar.gz
+            dtk-platform: linux-arm64
           - rid: win-x64
             archive: zip
             dtk-platform: win32-x64
+          - rid: win-arm64
+            archive: zip
+            dtk-platform: win32-arm64
     env:
       VERSION: ${{ needs.validate-tag.outputs.version }}
       TAG: ${{ needs.validate-tag.outputs.tag }}
@@ -78,7 +84,7 @@ jobs:
             --nologo
 
       - name: Verify binary version matches tag (Unix)
-        if: matrix.rid != 'win-x64'
+        if: matrix.rid == 'osx-arm64' || matrix.rid == 'osx-x64' || matrix.rid == 'linux-x64'
         shell: bash
         run: |
           chmod +x out/${{ matrix.rid }}/napper
@@ -103,7 +109,7 @@ jobs:
           "
 
       - name: Verify binary version is embedded (Windows .exe, scanned on Linux)
-        if: matrix.rid == 'win-x64'
+        if: matrix.rid == 'win-x64' || matrix.rid == 'win-arm64'
         shell: bash
         run: |
           # Cannot execute the Windows .exe on Linux. .NET embeds InformationalVersion
@@ -124,7 +130,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p assets
-          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
             cp out/${{ matrix.rid }}/napper.exe assets/napper-${{ matrix.rid }}.exe
           else
             cp out/${{ matrix.rid }}/napper assets/napper-${{ matrix.rid }}
@@ -135,7 +141,7 @@ jobs:
         shell: bash
         run: |
           STAGE=$(mktemp -d)
-          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
             cp out/${{ matrix.rid }}/napper.exe "$STAGE/napper.exe"
             (cd "$STAGE" && zip -q -9 "$GITHUB_WORKSPACE/assets/napper-$TAG-${{ matrix.rid }}.zip" napper.exe)
           else
@@ -164,7 +170,7 @@ jobs:
   build-vsix:
     name: Build VSIX (${{ matrix.dtk-platform }})
     needs: [validate-tag, build-cli]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -172,20 +178,34 @@ jobs:
         include:
           - dtk-platform: darwin-arm64
             rid: osx-arm64
-            target: darwin-arm64
+            os: macos-15
             vsce-target: darwin-arm64
+            npm_config_arch: arm64
           - dtk-platform: darwin-x64
             rid: osx-x64
-            target: darwin-x64
+            os: macos-13
             vsce-target: darwin-x64
+            npm_config_arch: x64
           - dtk-platform: linux-x64
             rid: linux-x64
-            target: linux-x64
+            os: ubuntu-latest
             vsce-target: linux-x64
+            npm_config_arch: x64
+          - dtk-platform: linux-arm64
+            rid: linux-arm64
+            os: ubuntu-latest
+            vsce-target: linux-arm64
+            npm_config_arch: arm64
           - dtk-platform: win32-x64
             rid: win-x64
-            target: win32-x64
+            os: windows-latest
             vsce-target: win32-x64
+            npm_config_arch: x64
+          - dtk-platform: win32-arm64
+            rid: win-arm64
+            os: windows-latest
+            vsce-target: win32-arm64
+            npm_config_arch: arm
     env:
       VERSION: ${{ needs.validate-tag.outputs.version }}
     steps:
@@ -207,7 +227,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p src/Napper.VsCode/bin/${{ matrix.dtk-platform }}
-          if [ "${{ matrix.dtk-platform }}" = "win32-x64" ]; then
+          if [[ "${{ matrix.dtk-platform }}" == win32-* ]]; then
             cp bin-download/napper.exe src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper.exe
           else
             cp bin-download/napper src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper
@@ -227,7 +247,7 @@ jobs:
       - name: Verify bundled binary version
         shell: bash
         run: |
-          if [ "${{ matrix.dtk-platform }}" != "win32-x64" ]; then
+          if [[ "${{ matrix.dtk-platform }}" != win32-* && "${{ matrix.dtk-platform }}" != "linux-arm64" ]]; then
             BIN=src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/napper
             ACTUAL=$($BIN --version)
             EXPECTED="napper $VERSION"
@@ -246,6 +266,8 @@ jobs:
       - name: Install extension dependencies
         working-directory: src/Napper.VsCode
         run: npm ci
+        env:
+          npm_config_arch: ${{ matrix.npm_config_arch }}
 
       - name: Compile extension
         working-directory: src/Napper.VsCode
@@ -265,8 +287,8 @@ jobs:
           cat vsix-contents.txt
           # Must contain deployment-toolkit.json
           grep -q "deployment-toolkit.json" vsix-contents.txt || { echo "::error::deployment-toolkit.json missing from VSIX"; exit 1; }
-          # Must contain the bundled binary
-          if [ "${{ matrix.dtk-platform }}" = "win32-x64" ]; then
+          # Must contain the bundled binary — see [SWR-VSIX-VERIFY]
+          if [[ "${{ matrix.dtk-platform }}" == win32-* ]]; then
             grep -q "bin/${{ matrix.dtk-platform }}/napper.exe" vsix-contents.txt || { echo "::error::bundled napper.exe missing from VSIX"; exit 1; }
           else
             grep -q "bin/${{ matrix.dtk-platform }}/napper" vsix-contents.txt || { echo "::error::bundled napper missing from VSIX"; exit 1; }

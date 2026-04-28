@@ -356,19 +356,17 @@ These settings apply across all IDEs where the extension supports configuration.
 
 #### `vscode-cli-acquisition` — CLI install resolution
 
-The extension uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`) on activation. It reads `deployment-toolkit.json` from the extension root and resolves the napper CLI binary via the following source chain (first match wins):
+CLI resolution uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`), which reads `deployment-toolkit.json` from the extension root.
 
-1. **`vscode-cli-acq-user-setting`** — VS Code setting `napper.cliPath` points to a valid binary of the correct version → done.
-2. **`vscode-cli-acq-env`** — Env var `NAPPER_PATH` (full path) or `NAPPER_BINARY_DIR` (directory) resolves to a valid binary → done.
-3. **`vscode-cli-acq-bundled`** — **Bundled binary** at `bin/${platform}/napper[.exe]` inside the installed extension directory (e.g. `~/.vscode/extensions/nimblesite.napper-0.11.0/bin/darwin-arm64/napper`). This is the primary resolution path for all Marketplace installs. The binary is self-contained — no .NET runtime required on the host.
-4. **`vscode-cli-acq-path`** — `napper` on the system `$PATH` with a matching version → done.
-5. **`vscode-cli-acq-dotnet-tool`** — `dotnet tool` global install of the `napper` package → done.
+**Canonical reference:** [Shipwright product repo adoption guide — §4 Wire Host Resolver Checks](https://github.com/MelbourneDeveloper/deployment_toolkit/blob/main/docs/agents/product-repo-adoption-guide.md)
 
-`vscode-cli-acq-version` — The CLI version MUST exactly match `product.version` in `deployment-toolkit.json`, which MUST match the VSIX `package.json` version. On mismatch, the extension shows a hard error and refuses to start (`onMismatch: "error"`).
+Resolution order (first match wins): user setting → env var → bundled binary → PATH → dotnet tool.
 
-`vscode-cli-acq-per-platform` — Each per-platform VSIX contains exactly one binary for its target platform. The VS Code Marketplace delivers the correct VSIX for the user's OS and architecture automatically. There is no runtime binary download.
+The **bundled binary** (`bin/${platform}/napper[.exe]` inside the installed extension) is the primary path for all Marketplace installs. Each per-platform VSIX bundles exactly one binary; the Marketplace delivers the correct VSIX automatically. No runtime download, no .NET SDK required on the host.
 
-`vscode-cli-acq-tap-coexist` — Users can `brew install napper` / `scoop install napper` via [`Nimblesite/homebrew-tap`](https://github.com/Nimblesite/homebrew-tap) and [`Nimblesite/scoop-bucket`](https://github.com/Nimblesite/scoop-bucket). If the version matches, source 4 (`path`) resolves it. If not, the bundled binary (source 3) wins.
+Version MUST exactly match `product.version` in `deployment-toolkit.json` (which MUST equal the VSIX `package.json` version). Mismatch → hard error (`onMismatch: "error"`).
+
+**VSIX packaging:** see [SWR-VSIX-PACKAGE] and [SWR-VSIX-PUBLISH] in the [Shipwright VSIX platform bundling spec](https://github.com/MelbourneDeveloper/deployment_toolkit/blob/main/docs/specs/vsix-platform-bundling.md).
 
 ### Zed
 
@@ -391,6 +389,6 @@ The extension uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`)
 - [LSP Specification](./LSP-SPEC.md) — Language server capabilities, architecture, and protocol details
 - [LSP Plan](../plans/LSP-PLAN.md) — LSP implementation phases and TODO
 - [IDE Extension Plan (VSCode)](../plans/IDE-EXTENSION-PLAN.md) — VSCode implementation phases and TODO
-- [IDE Extension Install Plan](../plans/IDE-EXTENSION-INSTALL-PLAN.md) — VSIX CLI install resolver
+- [IDE Extension Install Plan](../plans/IDE-EXTENSION-INSTALL-PLAN.md) — Shipwright-based CLI bundling and VSIX packaging
 - [IDE Extension Plan (Zed)](../plans/ZED-EXTENSION-PLAN.md) — Zed implementation phases and TODO
 - [OpenAPI Generation (Extension)](./IDE-EXTENION-OPENAPI-GENERATION-SPEC.md) — Import command and AI enrichment
