@@ -146,6 +146,7 @@ _build_cli:
 	  -o "out/$(_NAP_RID)" --nologo
 	@$(_MKDIR) "$(_EXT_BIN)"
 	cp "out/$(_NAP_RID)/napper" "$(_EXT_BIN)/napper"
+	chmod +x "$(_EXT_BIN)/napper"
 	@EXPECTED=$$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' Directory.Build.props); \
 	ACTUAL=$$("out/$(_NAP_RID)/napper" --version | awk '{print $$2}'); \
 	[ "$$ACTUAL" = "$$EXPECTED" ] || { echo "ERROR: version mismatch ($$EXPECTED vs $$ACTUAL)"; exit 1; }

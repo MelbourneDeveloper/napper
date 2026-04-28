@@ -318,8 +318,8 @@
         },
         "napper.cliPath": {
           "type": "string",
-          "default": "napper",
-          "description": "Path or command name for the Napper CLI binary"
+          "default": "",
+          "description": "Override path to the Napper CLI binary. Leave empty to use the bundled binary."
         }
       }
     }
