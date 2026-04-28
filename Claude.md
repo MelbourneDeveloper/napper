@@ -2,11 +2,7 @@
 
 ## Too Many Cooks
 
-You are working with many other agents. Make sure there is effective cooperation
-
-- Register on TMC immediately
-- Don't edit files that are locked; lock files when editing
-- COMMUNICATE REGULARLY AND COORDINATE WITH OTHERS THROUGH MESSAGES
+⚠️ NEVER KILL VSCODE PROCESSES
 
 ## Coding Rules
 
@@ -28,14 +24,10 @@ You are working with many other agents. Make sure there is effective cooperation
 - **Spec IDs are hierarchical, descriptive, and non-numeric.** Every spec section MUST have a unique ID in the format `[GROUP-TOPIC]` or `[GROUP-TOPIC-DETAIL]` (e.g., `[CLI-PARSE-NAP]`, `[LSP-COMPLETION-VARS]`, `[HTTP-REQ-HEADERS]`). The first word is the **group** — all sections in the same group MUST be adjacent in the spec's TOC. NEVER use sequential numbers like `[SPEC-001]`. All code, tests, and design docs that implement a spec section MUST reference its ID in a comment (e.g., `// Implements [LSP-COMPLETION-VARS]`).
 
 ### Rust
-
-- We will soon be inserting an LSP so keep the code loose enough that this will be easy
 - Keep files under 500 LOC
 - Run fmt and clippy regularly!!!
 
 ### Typescript
-
-- We will soon be inserting an LSP so keep the code loose enough that this will be easy
 - **TypeScript strict mode** - No `any`, no implicit types, turn all lints up to error
 - **Regularly run the linter** - Fix lint errors IMMEDIATELY
 - **Decouple providers from the VSCODE SDK** - No vscode sdk use within the providers
@@ -43,7 +35,6 @@ You are working with many other agents. Make sure there is effective cooperation
 - **No throwing** - Only return `Result<T,E>`
 
 ### F#
-
 - **⚠️ MAXIMUM CODE SHARING — NON-NEGOTIABLE** - All F# projects (Napper.Cli, Napper.Lsp, future consumers) MUST share logic through `Napper.Core`. If code could live in `Napper.Core`, it MUST live in `Napper.Core`. NEVER duplicate parsing, types, environment resolution, logging, or any domain logic across projects. Before writing ANY new module in a consumer project, check if it belongs in `Napper.Core` first.
 - **Idiomatic F#**
 - **Move content out of the fsproj files and into Directory.Build.props**
@@ -53,17 +44,17 @@ You are working with many other agents. Make sure there is effective cooperation
 
 ## Testing
 
-⚠️ NEVER KILL VSCODE PROCESSES
-
 #### Rules
 
 - **Prefer e2e tests over unit tests** - only unit tests for isolating bugs
 - Separate e2e tests from unit tests by file. They should not be in the same file together.
 - **Add more assertions** - No, that's not enough. Add more!!!
+- Multiple user interactions per test, multiple assertions per user interaction
 - Prefer adding assertions to existing tests rather than adding new tests
 - NEVER remove assertions
 - FAILING TEST = ✅ OK. TEST THAT DOESN'T ENFORCE BEHAVIOR = ⛔️ ILLEGAL
-- Unit tests are for isolating issues
+- Unit tests are for isolating issues only
+- FAKE TESTS ARE ILLEGAL **A "fake test" is any test that passes without actually verifying behavior. These are STRICTLY FORBIDDEN:**
 
 ### Automated (E2E) Testing
 
@@ -76,15 +67,6 @@ You are working with many other agents. Make sure there is effective cooperation
 - This is true for both the CLI and the VSIX.
 - The test VSIX must call the actual, real CLI.
 - VSIX tests run in actual VS Code window
-
-**Illegal VSIX testing patterns**
-
-- - ❌ Calling internal methods like provider.updateTasks()
-- - ❌ Calling provider.refresh() directly
-- - ❌ Manipulating internal state directly
-- - ❌ Using any method not exposed via VS Code commands
-- - ❌ Using commands that should just happen as part of normal use. e.g.: `await vscode.commands.executeCommand('commandtree.refresh');`
-- - ❌ `executeCommand('commandtree.addToQuick', item)` - TAP the item via the DOM!!!
 
 ### Test First Process
 
@@ -100,34 +82,6 @@ You are working with many other agents. Make sure there is effective cooperation
 1. Assert on the ACTUAL OBSERVABLE BEHAVIOR (UI state, view contents, return values)
 2. Fail if the feature is broken
 3. Test the full flow, not just side effects like config files
-
-### ⛔️ FAKE TESTS ARE ILLEGAL
-
-**A "fake test" is any test that passes without actually verifying behavior. These are STRICTLY FORBIDDEN:**
-
-```typescript
-// ❌ ILLEGAL - asserts true unconditionally
-assert.ok(true, "Should work");
-
-// ❌ ILLEGAL - no assertion on actual behavior
-try {
-  await doSomething();
-} catch {}
-assert.ok(true, "Did not crash");
-
-// ❌ ILLEGAL - only checks config file, not actual UI/view behavior
-writeConfig({ quick: ["task1"] });
-const config = readConfig();
-assert.ok(config.quick.includes("task1")); // This doesn't test the FEATURE
-
-// ❌ ILLEGAL - empty catch with success assertion
-try {
-  await command();
-} catch {
-  /* swallow */
-}
-assert.ok(true, "Command ran");
-```
 
 ## Specs Structure
 
@@ -148,6 +102,12 @@ Plan files end with a TODO checklist. Specs describe _what_, plans describe _how
 
 Extensions target **VSCode and Zed** as primary IDEs (Neovim future). All extensions shell out to the Nap CLI — no IDE re-implements HTTP logic. A portable **Nap Language Server (LSP)** provides completions, diagnostics, and hover across all IDEs.
 
+You are working with many other agents. Make sure there is effective cooperation
+
+- Register on TMC immediately
+- Don't edit files that are locked; lock files when editing
+- COMMUNICATE REGULARLY AND COORDINATE WITH OTHERS THROUGH MESSAGES
+
 ## Critical Docs
 
 ### Zed SDK
@@ -167,11 +127,5 @@ Extensions target **VSCode and Zed** as primary IDEs (Neovim future). All extens
 
 ### Website
 
-https://developers.google.com/search/blog/2025/05/succeeding-in-ai-search
-https://developers.google.com/search/docs/fundamentals/seo-starter-guide
-
-https://studiohawk.com.au/blog/how-to-optimise-ai-overviews/
-https://about.ads.microsoft.com/en/blog/post/october-2025/optimizing-your-content-for-inclusion-in-ai-search-answers
-
-Never stamp commits with this. You ARE NOT THE COAUTHOR!!!
-Co-Authored-By: C*** <noreply@anthropic.com>
+Minimize CSS classes
+CSS Budget: 1.5k LOC

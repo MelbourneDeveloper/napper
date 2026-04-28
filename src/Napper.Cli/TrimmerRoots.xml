@@ -1,5 +1,7 @@
 <linker>
-  <!-- StreamJsonRpc converters are instantiated by Newtonsoft.Json via reflection.
+  <!-- These assemblies instantiate types via Newtonsoft.Json reflection at runtime.
        PublishTrimmed removes their constructors without this descriptor. -->
   <assembly fullname="StreamJsonRpc" preserve="all" />
+  <assembly fullname="Ionide.LanguageServerProtocol" preserve="all" />
+  <assembly fullname="Newtonsoft.Json" preserve="all" />
 </linker>

@@ -24,6 +24,7 @@ import {
 import { registerContextMenuCommands } from './contextMenuCommands';
 import { registerAutoRun, registerWatchers } from './watchers';
 import { startLspClient, stopLspClient } from './lspClient';
+import { bundledBinaryPath, ensureExecutable } from './binaryUtils';
 import {
   CLI_BINARY_NAME,
   CLI_ERROR_PREFIX,
@@ -107,6 +108,7 @@ const getCliPath = (): string => {
   },
   runShipwright = async (): Promise<void> => {
     logger.info('Resolving CLI via Shipwright...');
+    ensureExecutable(bundledBinaryPath(extensionContext.extensionPath));
     const result = await activateDeploymentToolkit(extensionContext, {
       vscode: makeVscodeAdapter(),
       manifestPath: path.join(extensionContext.extensionPath, 'shipwright.json'),
