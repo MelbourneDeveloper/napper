@@ -528,6 +528,7 @@ let main argv =
             // Implements [DTK-NAPPER-VERSION-CONTRACT]
             // Plain text: "napper <semver>" per deployment-toolkit version contract
             let asm = Reflection.Assembly.GetExecutingAssembly()
+
             let infoVersion =
                 asm.GetCustomAttributes(typeof<Reflection.AssemblyInformationalVersionAttribute>, false)
                 |> Array.tryHead
@@ -539,11 +540,15 @@ let main argv =
             let semver = infoVersion.Split('+')[0]
             // Check for --json flag in remaining args
             let isJson = argv |> Array.exists (fun a -> a = "--json")
+
             if isJson then
                 // JSON version manifest per deployment-toolkit version-manifest.schema.json
-                printfn """{"manifestVersion":1,"name":"napper","version":"%s","kind":"cli","language":"dotnet","product":"napper","capabilities":["cli","lsp"]}""" semver
+                printfn
+                    """{"manifestVersion":1,"name":"napper","version":"%s","kind":"cli","language":"dotnet","product":"napper","capabilities":["cli","lsp"]}"""
+                    semver
             else
                 printfn "napper %s" semver
+
             0
         | "help"
         | "--help"

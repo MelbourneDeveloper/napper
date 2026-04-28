@@ -46,4 +46,3 @@ export const enum RunState {
   Failed,
   Error,
 }
-

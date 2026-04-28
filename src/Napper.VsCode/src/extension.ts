@@ -107,7 +107,9 @@ const getCliPath = (): string => {
   },
   runShipwright = async (): Promise<void> => {
     logger.info('Resolving CLI via Shipwright...');
-    const result = await activateDeploymentToolkit(extensionContext, { vscode: makeVscodeAdapter() });
+    const result = await activateDeploymentToolkit(extensionContext, {
+      vscode: makeVscodeAdapter(),
+    });
     logShipwrightResult(result);
     if (result.ok) {
       const napperDiag = result.diagnostics.find((d) => d.componentId === 'napper');
