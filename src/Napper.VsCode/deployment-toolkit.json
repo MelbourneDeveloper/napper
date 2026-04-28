@@ -3,7 +3,7 @@
   "product": {
     "id": "napper",
     "displayName": "Napper",
-    "version": "${PRODUCT_VERSION}"
+    "version": "0.11.0"
   },
   "components": [
     {
