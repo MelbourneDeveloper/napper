@@ -11,8 +11,8 @@
       "kind": "cli",
       "language": "dotnet",
       "binaryName": "napper",
-      "expectedVersion": "${PRODUCT_VERSION}",
-      "platforms": ["darwin-arm64", "darwin-x64", "linux-x64", "win32-x64"],
+      "expectedVersion": "0.11.0",
+      "platforms": ["darwin-arm64", "darwin-x64", "linux-x64", "linux-arm64", "win32-x64", "win32-arm64"],
       "bundled": {
         "bundlePath": "bin/${platform}/${binaryName}${exe}",
         "perPlatformArtifact": true

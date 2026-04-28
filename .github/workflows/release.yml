@@ -236,13 +236,20 @@ jobs:
           echo "Bundled binary:"
           ls -la src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/
 
-      - name: Verify manifest PRODUCT_VERSION matches tag
+      - name: Verify deployment-toolkit.json version matches tag
         shell: bash
         run: |
-          # deployment-toolkit.json uses ${PRODUCT_VERSION} — verify manifest is present
           test -f src/Napper.VsCode/deployment-toolkit.json
-          echo "deployment-toolkit.json present"
-          cat src/Napper.VsCode/deployment-toolkit.json
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('src/Napper.VsCode/deployment-toolkit.json','utf8'));
+          const v = process.env.VERSION;
+          if (m.product.version !== v) { process.stderr.write('product.version mismatch: ' + m.product.version + ' vs ' + v + '\n'); process.exit(1); }
+          m.components.forEach(c => {
+            if (c.expectedVersion !== v) { process.stderr.write('expectedVersion mismatch: ' + c.expectedVersion + ' vs ' + v + '\n'); process.exit(1); }
+          });
+          console.log('deployment-toolkit.json version OK: ' + v);
+          "
 
       - name: Verify bundled binary version
         shell: bash
@@ -262,6 +269,20 @@ jobs:
       - name: Set extension version from tag
         working-directory: src/Napper.VsCode
         run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Update deployment-toolkit.json version from tag
+        working-directory: src/Napper.VsCode
+        shell: bash
+        run: |
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('deployment-toolkit.json', 'utf8'));
+          m.product.version = process.env.VERSION;
+          m.components.forEach(c => { c.expectedVersion = process.env.VERSION; });
+          fs.writeFileSync('deployment-toolkit.json', JSON.stringify(m, null, 2) + '\n');
+          "
+          echo "deployment-toolkit.json updated to version $VERSION"
+          cat deployment-toolkit.json
 
       - name: Install extension dependencies
         working-directory: src/Napper.VsCode
