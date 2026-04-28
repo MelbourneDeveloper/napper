@@ -1,0 +1,5 @@
+<linker>
+  <!-- StreamJsonRpc converters are instantiated by Newtonsoft.Json via reflection.
+       PublishTrimmed removes their constructors without this descriptor. -->
+  <assembly fullname="StreamJsonRpc" preserve="all" />
+</linker>

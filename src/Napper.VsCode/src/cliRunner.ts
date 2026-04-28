@@ -4,6 +4,7 @@
 
 import { execFile, spawn } from 'child_process';
 import {
+  CLI_BINARY_NAME,
   CLI_CMD_CHECK,
   CLI_CMD_RUN,
   CLI_FLAG_ENV,
@@ -12,7 +13,6 @@ import {
   CLI_OUTPUT_NDJSON,
   CLI_PARSE_FAILED_PREFIX,
   CLI_SPAWN_FAILED_PREFIX,
-  DEFAULT_CLI_PATH,
 } from './constants';
 import { type Result, type RunResult, err, ok } from './types';
 
@@ -72,7 +72,7 @@ const appendEnvArgs = (args: string[], env: string | undefined): void => {
         },
       );
     }),
-  resolveCliPath = (cliPath: string): string => (cliPath.length > 0 ? cliPath : DEFAULT_CLI_PATH);
+  resolveCliPath = (cliPath: string): string => (cliPath.length > 0 ? cliPath : CLI_BINARY_NAME);
 
 export const runCli = async (
   options: RunOptions,

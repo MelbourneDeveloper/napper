@@ -22,5 +22,9 @@
     <ProjectReference Include="..\Napper.Lsp\Napper.Lsp.fsproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+  </ItemGroup>
+
 
 </Project>

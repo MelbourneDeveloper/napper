@@ -34,8 +34,8 @@ export const CONFIG_SPLIT_LAYOUT = 'splitEditorLayout';
 export const CONFIG_MASK_SECRETS = 'maskSecretsInPreview';
 export const CONFIG_CLI_PATH = 'cliPath';
 
-// CLI defaults
-export const DEFAULT_CLI_PATH = 'napper';
+// CLI defaults — empty string means "use Shipwright-resolved path"
+export const DEFAULT_CLI_PATH = '';
 export const CLI_OUTPUT_JSON = 'json';
 export const CLI_OUTPUT_NDJSON = 'ndjson';
 export const CLI_CMD_RUN = 'run';
