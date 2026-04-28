@@ -356,33 +356,19 @@ These settings apply across all IDEs where the extension supports configuration.
 
 #### `vscode-cli-acquisition` — CLI install resolution
 
-The CLI version MUST exactly match the VSIX `package.json` version. The VSIX is the source of truth. The canonical channel is `dotnet tool install -g napper --version X` because it is the only channel that pins to an arbitrary historical version. Brew/scoop/choco are used **only to install the .NET SDK prerequisite** — never `napper` itself. The VSIX MUST NOT download binaries directly over HTTPS.
+The extension uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`) on activation. It reads `deployment-toolkit.json` from the extension root and resolves the napper CLI binary via the following source chain (first match wins):
 
-Resolution runs on activation, idempotent, first match wins:
+1. **`vscode-cli-acq-user-setting`** — VS Code setting `napper.cliPath` points to a valid binary of the correct version → done.
+2. **`vscode-cli-acq-env`** — Env var `NAPPER_PATH` (full path) or `NAPPER_BINARY_DIR` (directory) resolves to a valid binary → done.
+3. **`vscode-cli-acq-bundled`** — **Bundled binary** at `bin/${platform}/napper[.exe]` inside the installed extension directory (e.g. `~/.vscode/extensions/nimblesite.napper-0.11.0/bin/darwin-arm64/napper`). This is the primary resolution path for all Marketplace installs. The binary is self-contained — no .NET runtime required on the host.
+4. **`vscode-cli-acq-path`** — `napper` on the system `$PATH` with a matching version → done.
+5. **`vscode-cli-acq-dotnet-tool`** — `dotnet tool` global install of the `napper` package → done.
 
-1. **`vscode-cli-acq-path-probe`** — `<nap.cliPath || 'napper'> --version` equals VSIX version → done.
-2. **`vscode-cli-acq-dotnet-probe`** — `dotnet --version` succeeds → skip to 4.
-3. **`vscode-cli-acq-dotnet-consent`** — Detect package manager. Show modal: `Napper needs the .NET 10 SDK. Install it now via <pm>?` with **Install** / **Cancel** buttons. Cancel → `vscode-cli-acq-tank`.
-4. **`vscode-cli-acq-install-dotnet`** — On consent, install .NET SDK:
+`vscode-cli-acq-version` — The CLI version MUST exactly match `product.version` in `deployment-toolkit.json`, which MUST match the VSIX `package.json` version. On mismatch, the extension shows a hard error and refuses to start (`onMismatch: "error"`).
 
-   | OS      | Detect | Command |
-   |---------|--------|---------|
-   | macOS   | `brew` | `brew install --cask dotnet-sdk` |
-   | Linux   | `brew` | `brew install dotnet-sdk` |
-   | Windows | `scoop` | `scoop bucket add extras && scoop install dotnet-sdk` |
-   | Windows | `choco` | `choco install dotnet-sdk -y` |
+`vscode-cli-acq-per-platform` — Each per-platform VSIX contains exactly one binary for its target platform. The VS Code Marketplace delivers the correct VSIX for the user's OS and architecture automatically. There is no runtime binary download.
 
-   No detected package manager → `vscode-cli-acq-pm-prompt`. After install, if `dotnet` still not on PATH (process env not refreshed), prompt user to restart VS Code.
-5. **`vscode-cli-acq-dotnet-tool-install`** — `dotnet tool install -g napper --version <VSIX_VERSION>` (or `update -g` if present), re-probe.
-6. **`vscode-cli-acq-tank`** — Hard error notification with buttons: **Open install guide** (`https://napperapi.dev/docs/installation/`), **Open GitHub release** (`…/releases/tag/v<VSIX_VERSION>`), **Open output log**. CLI-dependent commands fail with the same message until resolved.
-
-`vscode-cli-acq-pm-prompt` — When no package manager is detected: notification with link buttons to `brew.sh` (mac/Linux) or `scoop.sh` + `chocolatey.org/install` (Windows), plus **Open install guide**.
-
-`vscode-cli-acq-progress` — Steps 3 and 4 run inside `vscode.window.withProgress` (`ProgressLocation.Notification`, non-cancellable). All spawned process stdout/stderr streams to the Napper output channel. No terminal windows.
-
-`vscode-cli-acq-tap-coexist` — Users can `brew install napper` / `scoop install napper` themselves via [`Nimblesite/homebrew-tap`](https://github.com/Nimblesite/homebrew-tap) and [`Nimblesite/scoop-bucket`](https://github.com/Nimblesite/scoop-bucket). If the user-installed version matches, step 1 finds it and the chain stops. If not, step 4 installs the matching version alongside; the VSIX never touches the user-managed binary.
-
-> When [`cli-aot-migration`](./CLI-SPEC.md#cli-aot-migration) lands, steps 2–4 disappear and step 5 becomes `brew install napper` / `scoop install napper` directly.
+`vscode-cli-acq-tap-coexist` — Users can `brew install napper` / `scoop install napper` via [`Nimblesite/homebrew-tap`](https://github.com/Nimblesite/homebrew-tap) and [`Nimblesite/scoop-bucket`](https://github.com/Nimblesite/scoop-bucket). If the version matches, source 4 (`path`) resolves it. If not, the bundled binary (source 3) wins.
 
 ### Zed
 

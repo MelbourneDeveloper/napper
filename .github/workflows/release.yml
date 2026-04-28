@@ -285,6 +285,28 @@ jobs:
           path: assets/*.vsix
           if-no-files-found: error
 
+  publish-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: [validate-tag, build-vsix]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download all per-platform VSIXes
+        uses: actions/download-artifact@v4
+        with:
+          path: vsix-artifacts
+          pattern: vsix-*
+          merge-multiple: true
+
+      - name: Publish all platforms to VS Code Marketplace
+        run: npx @vscode/vsce publish --packagePath $(find vsix-artifacts -name '*.vsix' | tr '\n' ' ')
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
   publish-nuget:
     name: Publish to NuGet
     needs: validate-tag
@@ -315,7 +337,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [validate-tag, build-cli, build-vsix, publish-nuget]
+    needs: [validate-tag, build-cli, build-vsix, publish-nuget, publish-marketplace]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

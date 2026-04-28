@@ -18,20 +18,28 @@ else
   _MKDIR     = mkdir -p
 endif
 
-# --- Platform detection for .NET RID ---
+# --- Platform detection for .NET RID and Shipwright/vsce target ---
 ifeq ($(OS),Windows_NT)
-  _NAP_RID ?= win-x64
+  _NAP_RID     ?= win-x64
+  _DTK_PLATFORM := win32-x64
 else
   _ARCH    := $(shell uname -m)
   _UNAME_S := $(shell uname -s)
   ifeq ($(_UNAME_S),Darwin)
-    _NAP_RID ?= $(if $(filter arm64,$(_ARCH)),osx-arm64,osx-x64)
+    ifeq ($(filter arm64,$(_ARCH)),arm64)
+      _NAP_RID     ?= osx-arm64
+      _DTK_PLATFORM := darwin-arm64
+    else
+      _NAP_RID     ?= osx-x64
+      _DTK_PLATFORM := darwin-x64
+    endif
   else
-    _NAP_RID ?= linux-x64
+    _NAP_RID     ?= linux-x64
+    _DTK_PLATFORM := linux-x64
   endif
 endif
 
-_EXT_BIN     := src/Napper.VsCode/bin
+_EXT_BIN     := src/Napper.VsCode/bin/$(_DTK_PLATFORM)
 _LOG_DIR     := .commandtree/logs
 _COV         := coverage
 _FSHARP_COV  := $(_COV)/fsharp
@@ -74,7 +82,7 @@ endef
 # =============================================================================
 
 package-vsix: clean _build_cli _build_extension
-	cd src/Napper.VsCode && npx @vscode/vsce package --no-dependencies --skip-license
+	cd src/Napper.VsCode && npx @vscode/vsce package --no-dependencies --skip-license --target $(_DTK_PLATFORM)
 	@echo "==> VSIX packaged"
 
 test: _test_fsharp _test_rust _test_vsix _coverage_check
@@ -128,10 +136,8 @@ _build_cli:
 	  -r "$(_NAP_RID)" --self-contained \
 	  -p:PublishTrimmed=true -p:PublishSingleFile=true \
 	  -o "out/$(_NAP_RID)" --nologo
-	@$(_MKDIR) "$(_EXT_BIN)" "$(HOME)/.local/bin"
+	@$(_MKDIR) "$(_EXT_BIN)"
 	cp "out/$(_NAP_RID)/napper" "$(_EXT_BIN)/napper"
-	cp "out/$(_NAP_RID)/napper" "$(HOME)/.local/bin/napper"
-	chmod +x "$(HOME)/.local/bin/napper"
 	@EXPECTED=$$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' Directory.Build.props); \
 	ACTUAL=$$("out/$(_NAP_RID)/napper" --version | awk '{print $$2}'); \
 	[ "$$ACTUAL" = "$$EXPECTED" ] || { echo "ERROR: version mismatch ($$EXPECTED vs $$ACTUAL)"; exit 1; }
