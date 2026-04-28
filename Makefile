@@ -87,9 +87,9 @@ package-vsix: clean _build_cli _build_extension
 	  [ -n "$$VSIX" ] || { echo "ERROR: no VSIX file found"; exit 1; }; \
 	  echo "==> Verifying VSIX contents: $$VSIX"; \
 	  unzip -l "$$VSIX" > /tmp/vsix-contents.txt; \
-	  grep -q "deployment-toolkit.json" /tmp/vsix-contents.txt || { echo "ERROR: deployment-toolkit.json missing from VSIX"; exit 1; }; \
+	  grep -q "shipwright.json" /tmp/vsix-contents.txt || { echo "ERROR: shipwright.json missing from VSIX"; exit 1; }; \
 	  grep -q "bin/$(_DTK_PLATFORM)/napper" /tmp/vsix-contents.txt || { echo "ERROR: bin/$(_DTK_PLATFORM)/napper missing from VSIX"; exit 1; }; \
-	  echo "  deployment-toolkit.json: OK"; \
+	  echo "  shipwright.json: OK"; \
 	  echo "  bin/$(_DTK_PLATFORM)/napper: OK"; \
 	  echo "==> VSIX packaged and verified"
 

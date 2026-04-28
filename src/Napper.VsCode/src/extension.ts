@@ -109,6 +109,7 @@ const getCliPath = (): string => {
     logger.info('Resolving CLI via Shipwright...');
     const result = await activateDeploymentToolkit(extensionContext, {
       vscode: makeVscodeAdapter(),
+      manifestPath: path.join(extensionContext.extensionPath, 'shipwright.json'),
     });
     logShipwrightResult(result);
     if (result.ok) {

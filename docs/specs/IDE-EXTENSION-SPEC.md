@@ -356,7 +356,7 @@ These settings apply across all IDEs where the extension supports configuration.
 
 #### `vscode-cli-acquisition` — CLI install resolution
 
-CLI resolution uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`), which reads `deployment-toolkit.json` from the extension root.
+CLI resolution uses `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`), which reads `shipwright.json` from the extension root.
 
 **Canonical reference:** [Shipwright product repo adoption guide — §4 Wire Host Resolver Checks](https://github.com/MelbourneDeveloper/deployment_toolkit/blob/main/docs/agents/product-repo-adoption-guide.md)
 
@@ -364,7 +364,7 @@ Resolution order (first match wins): user setting → env var → bundled binary
 
 The **bundled binary** (`bin/${platform}/napper[.exe]` inside the installed extension) is the primary path for all Marketplace installs. Each per-platform VSIX bundles exactly one binary; the Marketplace delivers the correct VSIX automatically. No runtime download, no .NET SDK required on the host.
 
-Version MUST exactly match `product.version` in `deployment-toolkit.json` (which MUST equal the VSIX `package.json` version). Mismatch → hard error (`onMismatch: "error"`).
+Version MUST exactly match `product.version` in `shipwright.json` (which MUST equal the VSIX `package.json` version). Mismatch → hard error (`onMismatch: "error"`).
 
 **VSIX packaging:** see [SWR-VSIX-PACKAGE] and [SWR-VSIX-PUBLISH] in the [Shipwright VSIX platform bundling spec](https://github.com/MelbourneDeveloper/deployment_toolkit/blob/main/docs/specs/vsix-platform-bundling.md).
 

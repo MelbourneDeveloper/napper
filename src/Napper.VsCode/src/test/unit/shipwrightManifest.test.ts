@@ -1,10 +1,10 @@
-// Verifies deployment-toolkit.json has resolved versions — not unresolved templates.
+// Verifies shipwright.json has resolved versions — not unresolved templates.
 // Implements [DTK-NAPPER-MANIFEST], [DTK-NAPPER-VERSION-CONTRACT]
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const _MANIFEST_PATH = path.join(__dirname, '../../../deployment-toolkit.json');
+const _MANIFEST_PATH = path.join(__dirname, '../../../shipwright.json');
 const _PKG_PATH = path.join(__dirname, '../../../package.json');
 
 interface Manifest {
@@ -14,7 +14,7 @@ interface Manifest {
 
 const _TEMPLATE_RE = /\$\{[^}]+\}/;
 
-suite('deployment-toolkit.json', () => {
+suite('shipwright.json', () => {
   test('product.version is a resolved semver, not an unresolved template placeholder', () => {
     const manifest = JSON.parse(fs.readFileSync(_MANIFEST_PATH, 'utf8')) as Manifest;
     assert.doesNotMatch(

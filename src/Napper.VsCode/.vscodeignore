@@ -17,4 +17,4 @@ coverage/**
 out/**
 !dist/**
 !bin/**
-!deployment-toolkit.json
+!shipwright.json

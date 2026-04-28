@@ -236,19 +236,19 @@ jobs:
           echo "Bundled binary:"
           ls -la src/Napper.VsCode/bin/${{ matrix.dtk-platform }}/
 
-      - name: Verify deployment-toolkit.json version matches tag
+      - name: Verify shipwright.json version matches tag
         shell: bash
         run: |
-          test -f src/Napper.VsCode/deployment-toolkit.json
+          test -f src/Napper.VsCode/shipwright.json
           node -e "
           const fs = require('fs');
-          const m = JSON.parse(fs.readFileSync('src/Napper.VsCode/deployment-toolkit.json','utf8'));
+          const m = JSON.parse(fs.readFileSync('src/Napper.VsCode/shipwright.json','utf8'));
           const v = process.env.VERSION;
           if (m.product.version !== v) { process.stderr.write('product.version mismatch: ' + m.product.version + ' vs ' + v + '\n'); process.exit(1); }
           m.components.forEach(c => {
             if (c.expectedVersion !== v) { process.stderr.write('expectedVersion mismatch: ' + c.expectedVersion + ' vs ' + v + '\n'); process.exit(1); }
           });
-          console.log('deployment-toolkit.json version OK: ' + v);
+          console.log('shipwright.json version OK: ' + v);
           "
 
       - name: Verify bundled binary version
@@ -270,19 +270,19 @@ jobs:
         working-directory: src/Napper.VsCode
         run: npm version "$VERSION" --no-git-tag-version --allow-same-version
 
-      - name: Update deployment-toolkit.json version from tag
+      - name: Update shipwright.json version from tag
         working-directory: src/Napper.VsCode
         shell: bash
         run: |
           node -e "
           const fs = require('fs');
-          const m = JSON.parse(fs.readFileSync('deployment-toolkit.json', 'utf8'));
+          const m = JSON.parse(fs.readFileSync('shipwright.json', 'utf8'));
           m.product.version = process.env.VERSION;
           m.components.forEach(c => { c.expectedVersion = process.env.VERSION; });
-          fs.writeFileSync('deployment-toolkit.json', JSON.stringify(m, null, 2) + '\n');
+          fs.writeFileSync('shipwright.json', JSON.stringify(m, null, 2) + '\n');
           "
-          echo "deployment-toolkit.json updated to version $VERSION"
-          cat deployment-toolkit.json
+          echo "shipwright.json updated to version $VERSION"
+          cat shipwright.json
 
       - name: Install extension dependencies
         working-directory: src/Napper.VsCode
@@ -306,8 +306,8 @@ jobs:
           # VSIX is a ZIP — list contents
           unzip -l "$VSIX" > vsix-contents.txt
           cat vsix-contents.txt
-          # Must contain deployment-toolkit.json
-          grep -q "deployment-toolkit.json" vsix-contents.txt || { echo "::error::deployment-toolkit.json missing from VSIX"; exit 1; }
+          # Must contain shipwright.json
+          grep -q "shipwright.json" vsix-contents.txt || { echo "::error::shipwright.json missing from VSIX"; exit 1; }
           # Must contain the bundled binary — see [SWR-VSIX-VERIFY]
           if [[ "${{ matrix.dtk-platform }}" == win32-* ]]; then
             grep -q "bin/${{ matrix.dtk-platform }}/napper.exe" vsix-contents.txt || { echo "::error::bundled napper.exe missing from VSIX"; exit 1; }

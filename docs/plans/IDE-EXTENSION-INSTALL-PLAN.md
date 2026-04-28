@@ -10,7 +10,7 @@ Implements [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-
 
 ## Approach
 
-CLI resolution is handled by `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`) reading `deployment-toolkit.json`. The bespoke installer (cliResolver.ts, cliResolverUi.ts, cliResolverCommands.ts, cliInstaller.ts) has been deleted. Do not re-introduce it.
+CLI resolution is handled by `@nimblesite/shipwright-vscode` (`activateDeploymentToolkit`) reading `shipwright.json`. The bespoke installer (cliResolver.ts, cliResolverUi.ts, cliResolverCommands.ts, cliInstaller.ts) has been deleted. Do not re-introduce it.
 
 One install gives you both CLI and LSP. The LSP is `napper lsp` — the same binary, no second discovery ([`lsp-one-binary`](../specs/LSP-SPEC.md#lsp-one-binary)).
 
@@ -47,13 +47,13 @@ Local dev: `make package-vsix` builds a single-platform VSIX for the current mac
 - [x] [`vscode-cli-acquisition`](../specs/IDE-EXTENSION-SPEC.md#vscode-cli-acquisition) updated to reference Shipwright approach
 - [x] `@nimblesite/shipwright-vscode` wired in `extension.ts`
 - [x] Bespoke installer files deleted (cliResolver.ts, cliResolverUi.ts, cliResolverCommands.ts, cliInstaller.ts)
-- [x] `deployment-toolkit.json` present with correct `bundlePath` and `perPlatformArtifact: true`
-- [x] `deployment-toolkit.json` `expectedVersion` is a real semver (not `${PRODUCT_VERSION}` template)
-- [x] `deployment-toolkit.json` platforms list includes all 6: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64, win32-arm64
+- [x] `shipwright.json` present with correct `bundlePath` and `perPlatformArtifact: true`
+- [x] `shipwright.json` `expectedVersion` is a real semver (not `${PRODUCT_VERSION}` template)
+- [x] `shipwright.json` platforms list includes all 6: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64, win32-arm64
 - [x] Release CI builds 6 per-platform VSIXes (darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64, win32-arm64)
 - [x] Release CI uses platform-native runners and `npm_config_arch` per [SWR-VSIX-CI-MATRIX]
-- [x] Release CI updates `deployment-toolkit.json` `product.version` and `expectedVersion` from release tag
-- [x] Release CI verifies `deployment-toolkit.json` version matches tag before packaging
+- [x] Release CI updates `shipwright.json` `product.version` and `expectedVersion` from release tag
+- [x] Release CI verifies `shipwright.json` version matches tag before packaging
 - [x] `publish-marketplace` job publishes all 6 VSIXes atomically per [SWR-VSIX-PUBLISH]
 - [x] `engines.vscode` set to `^1.99.0` per [SWR-VSIX-PACKAGE]
 - [x] [DTK-NAPPER-VSCODE-RESOLVER] Complete — Shipwright replaces bespoke resolver
@@ -62,6 +62,6 @@ Local dev: `make package-vsix` builds a single-platform VSIX for the current mac
 ### Testing
 - [x] Unit test: `product.version` is resolved semver matching `package.json` version
 - [x] Unit test: `expectedVersion` is resolved semver matching `product.version`
-- [x] VSIX content verification in `make package-vsix` per [SWR-VSIX-VERIFY]: checks `deployment-toolkit.json` and `bin/${platform}/napper` present
+- [x] VSIX content verification in `make package-vsix` per [SWR-VSIX-VERIFY]: checks `shipwright.json` and `bin/${platform}/napper` present
 - [x] Release CI VSIX content verification step per [SWR-VSIX-VERIFY]
 - [ ] E2E test: install VSIX, assert Shipwright resolves bundled binary (source = `bundled`), assert `napper.runFile` succeeds against a real `.nap` fixture
