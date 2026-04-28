@@ -62,7 +62,7 @@ define _cov_check
 	@{ \
 	  t=$$(jq '.projects["$(1)"].threshold // .default_threshold' coverage-thresholds.json); \
 	  if [ -f "$(2)" ]; then \
-	    c=$$(grep -oP 'Line coverage: \K[0-9.]+' "$(2)" 2>/dev/null || echo "0"); \
+	    c=$$(awk '/Line coverage:/ {gsub(/%/,""); print $$3}' "$(2)" 2>/dev/null || echo "0"); \
 	    echo "  $(3): $${c}% (threshold $${t}%)"; \
 	    [ $$(echo "$${c} < $${t}" | bc -l) -eq 1 ] && { echo "  FAIL"; exit 1; } || echo "  OK"; \
 	  else echo "  $(3): no data"; fi; \
