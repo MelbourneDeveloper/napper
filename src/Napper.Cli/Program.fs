@@ -526,7 +526,7 @@ let main argv =
         | "--version"
         | "-V" ->
             // Implements [DTK-NAPPER-VERSION-CONTRACT]
-            // Plain text: "napper <semver>" per deployment-toolkit version contract
+            // Plain text: "napper <semver>" per Shipwright version contract
             let asm = Reflection.Assembly.GetExecutingAssembly()
 
             let infoVersion =
@@ -542,7 +542,7 @@ let main argv =
             let isJson = argv |> Array.exists (fun a -> a = "--json")
 
             if isJson then
-                // JSON version manifest per deployment-toolkit version-manifest.schema.json
+                // JSON version manifest per Shipwright version-manifest.schema.json
                 printfn
                     """{"manifestVersion":1,"name":"napper","version":"%s","kind":"cli","language":"dotnet","product":"napper","capabilities":["cli","lsp"]}"""
                     semver
